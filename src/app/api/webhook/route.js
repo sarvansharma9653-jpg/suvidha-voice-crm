@@ -95,7 +95,7 @@ export async function POST(req) {
       const callSid = message.call?.id;
       const transcript = message.transcript || '';
       const summary = message.summary || 'No summary available';
-      const sentiment = analyzeSentiment(transcript);
+      const sentiment = classifyLeadQuality(transcript);
       const recordingUrl = message.recordingUrl || null;
       const duration = message.durationSeconds || 0;
       const name = message.call?.metadata?.contactName || 'Unknown';
@@ -139,7 +139,7 @@ export async function POST(req) {
       }
 
       // Trigger WhatsApp Alert for positive leads
-      if (sentiment.includes('Positive')) {
+      if (sentiment.includes('Hot')) {
         await sendWhatsAppAlert({
           leadName: name,
           summary: summary,
@@ -162,17 +162,20 @@ export async function GET() {
   return NextResponse.json({ status: 'active' });
 }
 
-function analyzeSentiment(transcript) {
+function classifyLeadQuality(transcript) {
   const lower = transcript.toLowerCase();
-  const positiveWords = ['interested', 'yes', 'sure', 'great', 'good', 'haan', 'bilkul', 'theek', 'achha', 'okay'];
-  const negativeWords = ['no', 'not interested', 'nahi', 'mat karo', 'busy', 'don\'t call', 'stop'];
+  
+  const hotKeywords = ['buy', 'purchase', 'site visit', 'interested', 'price', 'details', 'khareed', 'rate', 'budget', 'location', 'yes', 'haan', 'bilkul', 'interested in property'];
+  const warmKeywords = ['tomorrow', 'later', 'busy', 'call back', 'baad mein', 'kal', 'time nahi'];
+  const coldKeywords = ['no', 'not interested', 'nahi', 'wrong number', 'wrong', 'stop', 'disconnect', 'galt'];
 
-  const positiveCount = positiveWords.filter(w => lower.includes(w)).length;
-  const negativeCount = negativeWords.filter(w => lower.includes(w)).length;
+  const hotCount = hotKeywords.filter(w => lower.includes(w)).length;
+  const warmCount = warmKeywords.filter(w => lower.includes(w)).length;
+  const coldCount = coldKeywords.filter(w => lower.includes(w)).length;
 
-  if (positiveCount > negativeCount) return '😊 Positive';
-  if (negativeCount > positiveCount) return '😠 Negative';
-  return '😐 Neutral';
+  if (hotCount > warmCount && hotCount > coldCount) return '🔥 Hot Lead (Interested)';
+  if (warmCount > hotCount && warmCount > coldCount) return '⚡ Warm Lead (Follow-up)';
+  return '❄️ Cold Lead (No Interest)';
 }
 
 function detectFollowUpRequest(transcript) {

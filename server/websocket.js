@@ -117,6 +117,50 @@ wss.on('connection', (ws, req) => {
   // Convert Text to Speech (TTS) and stream back to Twilio
   const generateTTSResponse = async (text) => {
     try {
+      // 1. Prioritize Sarvam AI if API Key is configured
+      if (process.env.SARVAM_API_KEY) {
+        console.log('🗣️ Generating voice via Sarvam AI (Bulbul:v3)...');
+        const response = await fetch('https://api.sarvam.ai/text-to-speech', {
+          method: 'POST',
+          headers: {
+            'api-subscription-key': process.env.SARVAM_API_KEY,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            inputs: [text],
+            target_language_code: 'hi-IN',
+            speaker: 'meera', // Natural female voice
+            pitch: 0,
+            pace: 1.05,
+            loudness: 1.5,
+            speech_sample_rate: 8000,
+            enable_preprocessing: true,
+            model: 'bulbul:v3'
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(`Sarvam API responded with status ${response.status}: ${JSON.stringify(errData)}`);
+        }
+
+        const data = await response.json();
+        const base64Audio = data.audios?.[0];
+
+        if (base64Audio) {
+          // Send base64 audio frames back to Twilio Media Stream
+          ws.send(JSON.stringify({
+            event: 'media',
+            streamSid: streamSid,
+            media: {
+              payload: base64Audio
+            }
+          }));
+        }
+        return;
+      }
+
+      // 2. Fallback to Cartesia / Elevenlabs
       const apiKey = process.env.CARTESIA_API_KEY || process.env.ELEVENLABS_API_KEY;
       
       if (!apiKey) {

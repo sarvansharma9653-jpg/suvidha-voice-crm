@@ -7,11 +7,26 @@ export default function DashboardHome() {
   const [recentCalls, setRecentCalls] = useState([]);
   const [isTesting, setIsTesting] = useState(false);
   const [testStatus, setTestStatus] = useState('Idle');
-  const [selectedVoice, setSelectedVoice] = useState('sarah');
+  
+  // Custom configurations
+  const [selectedVoice, setSelectedVoice] = useState('sarvam_hindi');
   const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
-  const [prompt, setPrompt] = useState(
-    "You are a friendly and professional AI calling agent for Suvidha. Speak in natural Hinglish."
-  );
+  const [businessType, setBusinessType] = useState('real-estate');
+  const [productDetails, setProductDetails] = useState('3 BHK Luxury Flat in Sector 62 Noida for 1.2 Crore, 10% discount on downpayment.');
+  const [prompt, setPrompt] = useState('');
+
+  // Handle wizard changes to build the AI calling script prompt
+  useEffect(() => {
+    if (businessType === 'real-estate') {
+      setPrompt(`You are a friendly and professional Hinglish AI Real Estate Agent for Suvidha. Your goal is to qualify leads for: ${productDetails}. Explain key benefits briefly, ask if they want to schedule a site visit, and note their preferred callback date.`);
+    } else if (businessType === 'customer-support') {
+      setPrompt(`You are a polite AI Support Assistant. Product context: ${productDetails}. Answer questions based on this details, resolve queries in natural Hindi-English mix, and note down if they require human agent follow-up.`);
+    } else if (businessType === 'financial-services') {
+      setPrompt(`You are an AI Personal Loan Advisor. Offer details: ${productDetails}. Qualify the lead by checking their required loan amount, monthly income level, and interest in our offers.`);
+    } else {
+      setPrompt(`You are a custom AI Assistant. Business details: ${productDetails || 'General consulting'}. Speak naturally in natural Hinglish, be concise (1-2 sentences), and qualify the lead interest level.`);
+    }
+  }, [businessType, productDetails]);
 
   useEffect(() => {
     const contacts = store.getContacts();
@@ -148,9 +163,36 @@ export default function DashboardHome() {
           {isTesting ? '🔴 Terminate WebRTC Session' : '🎙️ Test Assistant in Browser'}
         </button>
 
-        {/* Configurations */}
+        {/* Business Prompt Wizard */}
+        <h3 style={{ fontSize: '0.95rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.5rem' }}>
+          🏢 Business Context Wizard
+        </h3>
+
         <div className="form-group">
-          <label>Agent System Prompt / Prompt Script</label>
+          <label>Business / Campaign Template</label>
+          <select className="form-control" value={businessType} onChange={e => setBusinessType(e.target.value)}>
+            <option value="real-estate">Real Estate / Property Sales</option>
+            <option value="customer-support">Customer Support Desk</option>
+            <option value="financial-services">Financial & Loan Services</option>
+            <option value="custom">Custom AI Assistant</option>
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label>Product / Service details</label>
+          <textarea 
+            rows="3"
+            className="form-control"
+            value={productDetails}
+            onChange={(e) => setProductDetails(e.target.value)}
+            placeholder="e.g. details of properties, pricing, discounts..."
+            style={{ resize: 'none', fontSize: '0.8125rem' }}
+          />
+        </div>
+
+        {/* Generated Script */}
+        <div className="form-group">
+          <label>Compiled System Script Prompt</label>
           <textarea 
             rows="5"
             className="form-control"
@@ -163,9 +205,9 @@ export default function DashboardHome() {
         <div className="form-group">
           <label>Select Voice Engine</label>
           <select className="form-control" value={selectedVoice} onChange={e => setSelectedVoice(e.target.value)}>
-            <option value="sarah">Sarah (11labs - Professional)</option>
-            <option value="dom">Dom (Cartesia - Indian English)</option>
-            <option value="rachel">Rachel (11labs - Hindi/English)</option>
+            <option value="sarvam_hindi">Bulbul:v3 (Sarvam AI - Hindi Female)</option>
+            <option value="sarah">Sarah (11labs - English Female)</option>
+            <option value="dom">Dom (Cartesia - Indian Accent)</option>
           </select>
         </div>
 

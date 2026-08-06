@@ -13,17 +13,21 @@ export default function SettingsPage() {
   const [metaPhoneNumberId, setMetaPhoneNumberId] = useState('');
   const [adminNumber, setAdminNumber] = useState('');
 
+  // Sarvam AI API Key Credentials
+  const [sarvamApiKey, setSarvamApiKey] = useState('');
+
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [status, setStatus] = useState(null);
 
   useEffect(() => {
     fetchCredentials();
-    // Load local storage values for WhatsApp configuration
+    // Load local storage values for WhatsApp and Sarvam AI configurations
     if (typeof window !== 'undefined') {
       setMetaAccessToken(localStorage.getItem('metaAccessToken') || '');
       setMetaPhoneNumberId(localStorage.getItem('metaPhoneNumberId') || '');
       setAdminNumber(localStorage.getItem('adminNumber') || '');
+      setSarvamApiKey(localStorage.getItem('sarvamApiKey') || '');
     }
   }, []);
 
@@ -102,12 +106,13 @@ export default function SettingsPage() {
 
       if (error) throw error;
 
-      // Save WhatsApp settings in LocalStorage
+      // Save WhatsApp & Sarvam settings in LocalStorage
       localStorage.setItem('metaAccessToken', metaAccessToken);
       localStorage.setItem('metaPhoneNumberId', metaPhoneNumberId);
       localStorage.setItem('adminNumber', adminNumber);
+      localStorage.setItem('sarvamApiKey', sarvamApiKey);
 
-      setStatus({ type: 'success', message: '🎉 Credentials & WhatsApp settings saved successfully!' });
+      setStatus({ type: 'success', message: '🎉 Telephony, WhatsApp, & Sarvam credentials saved successfully!' });
     } catch (err) {
       setStatus({ type: 'error', message: `❌ Error: ${err.message}` });
     } finally {
@@ -120,71 +125,105 @@ export default function SettingsPage() {
   }
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-      {/* Telephony config */}
-      <div className="card" style={{ padding: '2.5rem' }}>
-        <h2 style={{ marginTop: 0 }}>🔌 Telephony Config</h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '2rem' }}>
-          Connect your Twilio/Plivo account for outbound and inbound calls.
-        </p>
+    <div>
+      <h1>⚙️ Settings</h1>
+      <p className="subtitle" style={{ marginBottom: '2rem' }}>Configure integrations and AI voice providers</p>
 
-        <form onSubmit={handleSave}>
-          <div className="form-group">
-            <label>Telephony Provider</label>
-            <select className="form-control" value={provider} onChange={e => setProvider(e.target.value)}>
-              <option value="twilio">Twilio</option>
-              <option value="plivo">Plivo</option>
-            </select>
-          </div>
+      {status && (
+        <div className="card mb-4" style={{
+          borderColor: status.type === 'success' ? 'var(--accent-green)' : 'var(--accent-red)',
+          padding: '1rem 1.5rem',
+          maxWidth: '800px'
+        }}>
+          {status.message}
+        </div>
+      )}
 
-          <div className="form-group">
-            <label>{provider === 'twilio' ? 'Twilio Account SID' : 'Plivo Auth ID'}</label>
-            <input required type="text" className="form-control" value={accountSid} onChange={e => setAccountSid(e.target.value)} placeholder="AC..." />
-          </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
+        {/* Telephony config */}
+        <div className="card" style={{ padding: '2.5rem' }}>
+          <h2 style={{ marginTop: 0 }}>🔌 Telephony Config</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '2rem' }}>
+            Connect your Twilio/Plivo account for outbound and inbound calls.
+          </p>
 
-          <div className="form-group">
-            <label>{provider === 'twilio' ? 'Twilio Auth Token' : 'Plivo Auth Token'}</label>
-            <input required type="password" className="form-control" value={authToken} onChange={e => setAuthToken(e.target.value)} placeholder="••••••••••••" />
-          </div>
+          <form onSubmit={handleSave}>
+            <div className="form-group">
+              <label>Telephony Provider</label>
+              <select className="form-control" value={provider} onChange={e => setProvider(e.target.value)}>
+                <option value="twilio">Twilio</option>
+                <option value="plivo">Plivo</option>
+              </select>
+            </div>
 
-          <div className="form-group" style={{ marginBottom: '2rem' }}>
-            <label>{provider === 'twilio' ? 'Twilio Phone Number' : 'Plivo Phone Number'}</label>
-            <input required type="tel" className="form-control" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} placeholder="+1..." />
-          </div>
+            <div className="form-group">
+              <label>{provider === 'twilio' ? 'Twilio Account SID' : 'Plivo Auth ID'}</label>
+              <input required type="text" className="form-control" value={accountSid} onChange={e => setAccountSid(e.target.value)} placeholder="AC..." />
+            </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
-            {loading ? 'Saving settings...' : '💾 Save Telephony'}
-          </button>
-        </form>
-      </div>
+            <div className="form-group">
+              <label>{provider === 'twilio' ? 'Twilio Auth Token' : 'Plivo Auth Token'}</label>
+              <input required type="password" className="form-control" value={authToken} onChange={e => setAuthToken(e.target.value)} placeholder="••••••••••••" />
+            </div>
 
-      {/* WhatsApp config */}
-      <div className="card" style={{ padding: '2.5rem' }}>
-        <h2 style={{ marginTop: 0 }}>💬 WhatsApp CRM Alert</h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '2rem' }}>
-          Receive real-time notifications on WhatsApp for positive qualified hot leads.
-        </p>
+            <div className="form-group" style={{ marginBottom: '2rem' }}>
+              <label>{provider === 'twilio' ? 'Twilio Phone Number' : 'Plivo Phone Number'}</label>
+              <input required type="tel" className="form-control" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} placeholder="+1..." />
+            </div>
 
-        <form onSubmit={handleSave}>
-          <div className="form-group">
-            <label>Meta Access Token</label>
-            <input type="password" className="form-control" value={metaAccessToken} onChange={e => setMetaAccessToken(e.target.value)} placeholder="EAAb..." />
-          </div>
+            <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
+              Save Telephony
+            </button>
+          </form>
+        </div>
 
-          <div className="form-group">
-            <label>Meta Phone Number ID</label>
-            <input type="text" className="form-control" value={metaPhoneNumberId} onChange={e => setMetaPhoneNumberId(e.target.value)} placeholder="e.g. 1048472917" />
-          </div>
+        {/* Sarvam AI config */}
+        <div className="card" style={{ padding: '2.5rem' }}>
+          <h2 style={{ marginTop: 0 }}>🇮🇳 Sarvam AI Voice</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '2rem' }}>
+            Connect your Sarvam AI account subscription key for premium Hinglish voices.
+          </p>
 
-          <div className="form-group" style={{ marginBottom: '2rem' }}>
-            <label>Admin Notification Number</label>
-            <input type="tel" className="form-control" value={adminNumber} onChange={e => setAdminNumber(e.target.value)} placeholder="+91..." />
-          </div>
+          <form onSubmit={handleSave}>
+            <div className="form-group" style={{ marginBottom: '2rem' }}>
+              <label>Sarvam AI Subscription Key</label>
+              <input type="password" className="form-control" value={sarvamApiKey} onChange={e => setSarvamApiKey(e.target.value)} placeholder="e.g. 5d5a2d9a-..." />
+            </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
-            {loading ? 'Saving settings...' : '💾 Save WhatsApp Settings'}
-          </button>
-        </form>
+            <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
+              Save Sarvam AI
+            </button>
+          </form>
+        </div>
+
+        {/* WhatsApp config */}
+        <div className="card" style={{ padding: '2.5rem' }}>
+          <h2 style={{ marginTop: 0 }}>💬 WhatsApp CRM Alert</h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '2rem' }}>
+            Receive real-time notifications on WhatsApp for positive qualified hot leads.
+          </p>
+
+          <form onSubmit={handleSave}>
+            <div className="form-group">
+              <label>Meta Access Token</label>
+              <input type="password" className="form-control" value={metaAccessToken} onChange={e => setMetaAccessToken(e.target.value)} placeholder="EAAb..." />
+            </div>
+
+            <div className="form-group">
+              <label>Meta Phone Number ID</label>
+              <input type="text" className="form-control" value={metaPhoneNumberId} onChange={e => setMetaPhoneNumberId(e.target.value)} placeholder="e.g. 1048472917" />
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '2rem' }}>
+              <label>Admin Notification Number</label>
+              <input type="tel" className="form-control" value={adminNumber} onChange={e => setAdminNumber(e.target.value)} placeholder="+91..." />
+            </div>
+
+            <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
+              Save WhatsApp
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   );
