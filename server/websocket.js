@@ -8,7 +8,7 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-const PORT = process.env.WEBSOCKET_PORT || 5050;
+const PORT = process.env.PORT || process.env.WEBSOCKET_PORT || 5050;
 const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
   res.end('Suvidha Voice WebSocket Server Active\n');
