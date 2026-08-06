@@ -23,6 +23,7 @@ wss.on('connection', (ws, req) => {
   let callSid = '';
   let deepgramWs = null;
   let conversationHistory = [];
+  let systemPrompt = 'You are a friendly Hinglish AI voice calling agent for Suvidha. Be conversational and concise (1-2 sentences). Speak Hindi-English mix naturally.';
 
   // Setup Deepgram Live Transcription connection
   const setupDeepgram = () => {
@@ -92,7 +93,7 @@ wss.on('connection', (ws, req) => {
           messages: [
             {
               role: 'system',
-              content: 'You are a friendly Hinglish AI voice calling agent for Suvidha. Be conversational and concise (1-2 sentences). Speak Hindi-English mix naturally.'
+              content: systemPrompt
             },
             ...conversationHistory
           ]
@@ -224,7 +225,10 @@ wss.on('connection', (ws, req) => {
         case 'start':
           streamSid = data.start.streamSid;
           callSid = data.start.callSid;
-          console.log(`🚀 Call started. StreamSid: ${streamSid}, CallSid: ${callSid}`);
+          if (data.start.customParameters?.systemPrompt) {
+            systemPrompt = data.start.customParameters.systemPrompt;
+          }
+          console.log(`🚀 Call started. StreamSid: ${streamSid}, CallSid: ${callSid}. Prompt: ${systemPrompt}`);
           break;
 
         case 'media':

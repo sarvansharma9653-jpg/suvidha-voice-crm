@@ -1,22 +1,53 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { store } from '@/lib/store';
+import { supabase } from '@/lib/supabase';
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState([]);
+  const [assistants, setAssistants] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [formData, setFormData] = useState({ name: '', systemPrompt: '', voice: 'en-IN-Standard-A' });
+  const [formData, setFormData] = useState({ name: '', systemPrompt: '', voice: 'sarvam_hindi' });
 
   useEffect(() => {
     setCampaigns(store.getCampaigns());
+    fetchAssistants();
   }, []);
+
+  const fetchAssistants = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('assistants')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      setAssistants(data || []);
+    } catch (err) {
+      console.error('Error fetching assistants:', err);
+    }
+  };
+
+  const handleAssistantChange = (assistantId) => {
+    const selected = assistants.find(a => a.id === assistantId || a.id.toString() === assistantId);
+    if (selected) {
+      setFormData({
+        ...formData,
+        systemPrompt: selected.system_prompt,
+        voice: selected.voice_provider
+      });
+    }
+  };
 
   const handleAdd = (e) => {
     e.preventDefault();
     store.addCampaign({...formData, totalContacts: 0, successRate: 0});
     setCampaigns(store.getCampaigns());
     setShowModal(false);
-    setFormData({ name: '', systemPrompt: '', voice: 'en-IN-Standard-A' });
+    setFormData({ name: '', systemPrompt: '', voice: 'sarvam_hindi' });
   };
 
   return (
@@ -65,19 +96,29 @@ export default function CampaignsPage() {
             <form onSubmit={handleAdd}>
               <div className="form-group">
                 <label>Campaign Name</label>
-                <input required type="text" className="form-control" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="e.g. Q3 Feedback" />
+                <input required type="text" className="form-control" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="e.g. Real Estate Outbound Noida" />
               </div>
+              
               <div className="form-group">
-                <label>AI System Prompt / Script</label>
+                <label>Link Configured Assistant</label>
+                <select className="form-control" onChange={e => handleAssistantChange(e.target.value)}>
+                  <option value="">-- Choose Saved Assistant Script --</option>
+                  {assistants.map(a => (
+                    <option key={a.id} value={a.id}>{a.name} ({a.voice_provider})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>AI System Prompt / Script (Auto-filled by Assistant)</label>
                 <textarea required className="form-control" style={{minHeight: '120px'}} value={formData.systemPrompt} onChange={e => setFormData({...formData, systemPrompt: e.target.value})} placeholder="You are a helpful AI assistant calling from XYZ company..." />
               </div>
               <div className="form-group">
                 <label>Voice Selection</label>
                 <select className="form-control" value={formData.voice} onChange={e => setFormData({...formData, voice: e.target.value})}>
-                  <option value="en-IN-Standard-A">Indian English (Female) - Standard</option>
-                  <option value="en-IN-Standard-B">Indian English (Male) - Standard</option>
-                  <option value="hi-IN-Standard-A">Hindi (Female) - Standard</option>
-                  <option value="en-US-Standard-C">US English (Female) - Premium</option>
+                  <option value="sarvam_hindi">Bulbul:v3 (Sarvam AI - Hindi)</option>
+                  <option value="sarah">Sarah (11labs - English)</option>
+                  <option value="dom">Dom (Cartesia - Indian English)</option>
                 </select>
               </div>
               <div className="flex justify-between mt-8">

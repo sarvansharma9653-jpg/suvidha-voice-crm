@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { store } from '@/lib/store';
 
 export default function DashboardHome() {
@@ -14,6 +14,13 @@ export default function DashboardHome() {
   const [businessType, setBusinessType] = useState('real-estate');
   const [productDetails, setProductDetails] = useState('3 BHK Luxury Flat in Sector 62 Noida for 1.2 Crore, 10% discount on downpayment.');
   const [prompt, setPrompt] = useState('');
+
+  // Audio References
+  const wsRef = useRef(null);
+  const audioCtxRef = useRef(null);
+  const micStreamRef = useRef(null);
+  const processorRef = useRef(null);
+  const nextStartTimeRef = useRef(0);
 
   // Handle wizard changes to build the AI calling script prompt
   useEffect(() => {
@@ -34,7 +41,7 @@ export default function DashboardHome() {
     
     const totalContacts = contacts.length;
     const todayCalls = calls.filter(c => new Date(c.date).toDateString() === new Date().toDateString()).length;
-    const successCalls = calls.filter(c => c.sentiment === '😊 Positive' || c.sentiment === '✅ Positive').length;
+    const successCalls = calls.filter(c => c.sentiment === '😊 Positive' || c.sentiment === '✅ Positive' || c.sentiment.includes('Hot')).length;
     const successRate = calls.length > 0 ? Math.round((successCalls / calls.length) * 100) : 0;
     const avgDuration = calls.length > 0 ? Math.round(calls.reduce((acc, curr) => acc + curr.duration, 0) / calls.length) : 0;
 
@@ -42,17 +49,194 @@ export default function DashboardHome() {
     setRecentCalls(calls.slice(0, 5));
   }, []);
 
-  const startTestSession = () => {
+  // Browser sandbox testing via Web Audio API & WebSockets
+  const startTestSession = async () => {
     if (isTesting) {
-      setIsTesting(false);
-      setTestStatus('Idle');
-    } else {
-      setIsTesting(true);
-      setTestStatus('Connecting microphone...');
-      setTimeout(() => {
-        setTestStatus('Agent is listening... Speak now!');
-      }, 1500);
+      // Terminate
+      stopTestSession();
+      return;
     }
+
+    try {
+      setIsTesting(true);
+      setTestStatus('Starting audio context...');
+
+      // 1. Initialize Web Audio
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      audioCtxRef.current = new AudioContext({ sampleRate: 8000 });
+      nextStartTimeRef.current = 0;
+
+      // 2. Connect WebSocket to local server or render service
+      setTestStatus('Connecting to calling server...');
+      const host = window.location.hostname === 'localhost' ? 'ws://localhost:5050' : 'wss://suvidha-voice-server.onrender.com';
+      wsRef.current = new WebSocket(host);
+
+      wsRef.current.onopen = async () => {
+        setTestStatus('Microphone connected. Talk now!');
+        
+        // Send start event emulating Twilio payload
+        wsRef.current.send(JSON.stringify({
+          event: 'start',
+          start: {
+            streamSid: 'browser-stream',
+            callSid: 'browser-call',
+            customParameters: {
+              systemPrompt: prompt
+            }
+          }
+        }));
+
+        // 3. Request Microphone access
+        micStreamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const source = audioCtxRef.current.createMediaStreamSource(micStreamRef.current);
+        
+        // 4. Create raw audio downsampler processor node
+        processorRef.current = audioCtxRef.current.createScriptProcessor(4096, 1, 1);
+        processorRef.current.onaudioprocess = (e) => {
+          const inputData = e.inputBuffer.getChannelData(0);
+          const mulawData = encodeMulaw(inputData);
+          const base64Audio = arrayBufferToBase64(mulawData);
+          
+          if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({
+              event: 'media',
+              media: {
+                payload: base64Audio
+              }
+            }));
+          }
+        };
+
+        source.connect(processorRef.current);
+        processorRef.current.connect(audioCtxRef.current.destination);
+      };
+
+      wsRef.current.onmessage = async (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.event === 'media' && data.media?.payload) {
+            const base64 = data.media.payload;
+            const mulawBytes = base64ToArrayBuffer(base64);
+            const float32PCM = decodeMulaw(mulawBytes);
+            
+            // Queue and play synthesized speech buffer
+            if (audioCtxRef.current) {
+              const buffer = audioCtxRef.current.createBuffer(1, float32PCM.length, 8000);
+              buffer.getChannelData(0).set(float32PCM);
+              
+              const source = audioCtxRef.current.createBufferSource();
+              source.buffer = buffer;
+              source.connect(audioCtxRef.current.destination);
+              
+              const currentTime = audioCtxRef.current.currentTime;
+              if (nextStartTimeRef.current < currentTime) {
+                nextStartTimeRef.current = currentTime;
+              }
+              source.start(nextStartTimeRef.current);
+              nextStartTimeRef.current += buffer.duration;
+            }
+          }
+        } catch (err) {
+          console.error('Error handling WebSocket audio packet:', err);
+        }
+      };
+
+      wsRef.current.onerror = (err) => {
+        console.error('WebSocket Sandbox Error:', err);
+        setTestStatus('Connection error.');
+      };
+
+      wsRef.current.onclose = () => {
+        stopTestSession();
+      };
+
+    } catch (error) {
+      console.error('Failed to start browser voice sandbox:', error);
+      setTestStatus(`Error: Microphone access denied.`);
+      setIsTesting(false);
+    }
+  };
+
+  const stopTestSession = () => {
+    setTestStatus('Session closed.');
+    setIsTesting(false);
+
+    if (micStreamRef.current) {
+      micStreamRef.current.getTracks().forEach(track => track.stop());
+      micStreamRef.current = null;
+    }
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current = null;
+    }
+    if (audioCtxRef.current) {
+      audioCtxRef.current.close();
+      audioCtxRef.current = null;
+    }
+    if (wsRef.current) {
+      if (wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ event: 'stop' }));
+        wsRef.current.close();
+      }
+      wsRef.current = null;
+    }
+  };
+
+  // --- Audio DSP Utils (Hinglish browser telephony emulation) ---
+  const encodeMulaw = (float32Array) => {
+    const buffer = new Uint8Array(float32Array.length);
+    for (let i = 0; i < float32Array.length; i++) {
+      let sample = float32Array[i];
+      if (sample > 1) sample = 1;
+      else if (sample < -1) sample = -1;
+      let pcm = Math.round(sample * 32767);
+      let sign = (pcm & 0x8000) >> 8;
+      if (sign !== 0) pcm = -pcm;
+      if (pcm > 32635) pcm = 32635;
+      pcm += 0x84;
+      pcm >>= 2;
+      let exponent = 0;
+      if (pcm >= 0x100) { exponent += 4; pcm >>= 4; }
+      if (pcm >= 0x40) { exponent += 2; pcm >>= 2; }
+      if (pcm >= 0x20) { exponent += 1; pcm >>= 1; }
+      let mantissa = pcm & 0x0f;
+      let uval = ~(sign | (exponent << 4) | mantissa) & 0xff;
+      buffer[i] = uval;
+    }
+    return buffer;
+  };
+
+  const decodeMulaw = (mulawBytes) => {
+    const float32 = new Float32Array(mulawBytes.length);
+    for (let i = 0; i < mulawBytes.length; i++) {
+      let uval = ~mulawBytes[i] & 0xff;
+      let sign = (uval & 0x80);
+      let segment = (uval & 0x70) >> 4;
+      let quantization = uval & 0x0f;
+      let clip = (quantization << 3) + 132;
+      clip <<= segment;
+      let sample = clip - 132;
+      float32[i] = (sign !== 0 ? -sample : sample) / 32768.0;
+    }
+    return float32;
+  };
+
+  const arrayBufferToBase64 = (buffer) => {
+    let binary = '';
+    const bytes = new Uint8Array(buffer);
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return window.btoa(binary);
+  };
+
+  const base64ToArrayBuffer = (base64) => {
+    const binaryString = window.atob(base64);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return bytes;
   };
 
   const formatDuration = (seconds) => {
