@@ -118,6 +118,41 @@ wss.on('connection', (ws, req) => {
   // Convert Text to Speech (TTS) and stream back to Twilio
   const generateTTSResponse = async (text) => {
     try {
+      // 0. Prioritize Self-Hosted AWS GPU Voice Cloning Server if configured
+      if (process.env.AWS_GPU_TTS_URL) {
+        console.log('🗣️ Generating voice via Self-Hosted AWS GPU Server...');
+        const response = await fetch(`${process.env.AWS_GPU_TTS_URL}/tts`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            text: text,
+            language: 'hi',
+            speaker_wav_base64: '' // Can be optionally populated with base64 reference to clone
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(`AWS GPU Server responded with status ${response.status}: ${JSON.stringify(errData)}`);
+        }
+
+        const data = await response.json();
+        const base64Audio = data.audio_data;
+
+        if (base64Audio) {
+          ws.send(JSON.stringify({
+            event: 'media',
+            streamSid: streamSid,
+            media: {
+              payload: base64Audio
+            }
+          }));
+        }
+        return;
+      }
+
       // 1. Prioritize Sarvam AI if API Key is configured
       if (process.env.SARVAM_API_KEY) {
         console.log('🗣️ Generating voice via Sarvam AI (Bulbul:v3)...');
