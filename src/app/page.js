@@ -7,6 +7,7 @@ export default function DashboardHome() {
   const [recentCalls, setRecentCalls] = useState([]);
   const [isTesting, setIsTesting] = useState(false);
   const [testStatus, setTestStatus] = useState('Idle');
+  const [textMsg, setTextMsg] = useState('');
   
   // Custom configurations
   const [selectedVoice, setSelectedVoice] = useState('sarvam_hindi');
@@ -68,7 +69,7 @@ export default function DashboardHome() {
 
       // 2. Connect WebSocket to local server or render service
       setTestStatus('Connecting to calling server...');
-      const host = window.location.hostname === 'localhost' ? 'ws://localhost:5050' : 'wss://suvidha-voice-server.onrender.com';
+      const host = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'ws://127.0.0.1:3001' : 'wss://suvidha-voice-server.onrender.com';
       wsRef.current = new WebSocket(host);
 
       wsRef.current.onopen = async () => {
@@ -179,6 +180,16 @@ export default function DashboardHome() {
         wsRef.current.close();
       }
       wsRef.current = null;
+    }
+  };
+
+  const sendTextMessage = () => {
+    if (wsRef.current && wsRef.current.readyState === 1 && textMsg.trim()) {
+      wsRef.current.send(JSON.stringify({
+        event: 'text',
+        text: textMsg
+      }));
+      setTextMsg('');
     }
   };
 
@@ -346,6 +357,30 @@ export default function DashboardHome() {
         >
           {isTesting ? '🔴 Terminate WebRTC Session' : '🎙️ Test Assistant in Browser'}
         </button>
+
+        {isTesting && (
+          <div className="form-group" style={{ marginBottom: '2rem', background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+            <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>💬 Type message (Bypasses Deepgram key dependency)</label>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <input 
+                type="text" 
+                className="form-control" 
+                value={textMsg} 
+                onChange={e => setTextMsg(e.target.value)} 
+                placeholder="Namaste, kaise ho?..." 
+                onKeyDown={e => { if (e.key === 'Enter') sendTextMessage(); }}
+                style={{ fontSize: '0.8125rem', height: '36px', flex: 1 }}
+              />
+              <button 
+                onClick={sendTextMessage} 
+                className="btn btn-success" 
+                style={{ padding: '0 1rem', height: '36px', minWidth: 'auto', fontSize: '0.8125rem' }}
+              >
+                Send
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Business Prompt Wizard */}
         <h3 style={{ fontSize: '0.95rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.5rem' }}>

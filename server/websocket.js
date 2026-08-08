@@ -6,9 +6,10 @@ const WebSocket = require('ws');
 const http = require('http');
 const dotenv = require('dotenv');
 
+dotenv.config({ path: '.env.local' });
 dotenv.config();
 
-const PORT = process.env.PORT || process.env.WEBSOCKET_PORT || 5050;
+const PORT = process.env.PORT || process.env.WEBSOCKET_PORT || 3001;
 const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
   res.end('Suvidha Voice WebSocket Server Active\n');
@@ -252,7 +253,7 @@ wss.on('connection', (ws, req) => {
   setupDeepgram();
 
   // Listen to incoming messages from Twilio Media Streams
-  ws.on('message', (message) => {
+  ws.on('message', async (message) => {
     try {
       const data = JSON.parse(message);
 
@@ -276,6 +277,12 @@ wss.on('connection', (ws, req) => {
 
         case 'stop':
           console.log(`📴 Stream stopped. Call ended for StreamSid: ${streamSid}`);
+          break;
+
+        case 'text':
+          console.log(`👤 User (Text): ${data.text}`);
+          conversationHistory.push({ role: 'user', content: data.text });
+          await generateLLMResponse(data.text);
           break;
       }
     } catch (err) {
