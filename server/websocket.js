@@ -75,10 +75,47 @@ wss.on('connection', (ws, req) => {
   // Generate reply from LLM and pipe to TTS
   const generateLLMResponse = async (userInput) => {
     try {
+      // 1. Prioritize Gemini API (Free Tier) if configured
+      if (process.env.GEMINI_API_KEY) {
+        console.log('🧠 Generating brain response via Gemini API (Free Tier)...');
+        const geminiContents = conversationHistory.map(msg => ({
+          role: msg.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: msg.content }]
+        }));
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            contents: geminiContents,
+            systemInstruction: {
+              parts: [{ text: systemPrompt }]
+            }
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Gemini API responded with status ${response.status}`);
+        }
+
+        const data = await response.json();
+        const aiReply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (aiReply) {
+          console.log(`🤖 AI (Gemini): ${aiReply}`);
+          conversationHistory.push({ role: 'assistant', content: aiReply.trim() });
+          await generateTTSResponse(aiReply.trim());
+        }
+        return;
+      }
+
+      // 2. Fallback to OpenAI
       const apiKey = process.env.OPENAI_API_KEY;
       if (!apiKey) {
-        console.warn('⚠️ OPENAI_API_KEY is missing. Using mock AI response.');
-        await generateTTSResponse("Hello! This is Suvidha Assistant. Please configure your OpenAI API Key.");
+        console.warn('⚠️ Both GEMINI_API_KEY and OPENAI_API_KEY are missing. Using mock AI response.');
+        await generateTTSResponse("Hello! Please configure your Gemini API Key in the settings page to start calling.");
         return;
       }
 
