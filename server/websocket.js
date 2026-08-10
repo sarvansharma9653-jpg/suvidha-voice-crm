@@ -183,7 +183,7 @@ wss.on('connection', (ws, req) => {
           },
           body: JSON.stringify({
             text: cleanedText,
-            language: 'hi',
+            language: 'en',
             speaker_wav_base64: '' // Can be optionally populated with base64 reference to clone
           })
         });
