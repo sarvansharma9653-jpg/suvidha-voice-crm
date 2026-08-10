@@ -117,12 +117,15 @@ export default function DashboardHome() {
           const data = JSON.parse(event.data);
           if (data.event === 'media' && data.media?.payload) {
             const base64 = data.media.payload;
+            console.log(`📥 Browser received audio payload size: ${base64.length} characters`);
             const mulawBytes = base64ToArrayBuffer(base64);
             const float32PCM = decodeMulaw(mulawBytes);
+            console.log(`🔊 Decoded PCM float array length: ${float32PCM.length}`);
             
             // Queue and play synthesized speech buffer
             if (audioCtxRef.current) {
               if (audioCtxRef.current.state === 'suspended') {
+                console.log('🔄 Resuming suspended AudioContext...');
                 await audioCtxRef.current.resume();
               }
               const buffer = audioCtxRef.current.createBuffer(1, float32PCM.length, 8000);
@@ -137,6 +140,7 @@ export default function DashboardHome() {
                 nextStartTimeRef.current = currentTime;
               }
               source.start(nextStartTimeRef.current);
+              console.log(`🎵 Playing audio block at time ${nextStartTimeRef.current} (duration: ${buffer.duration}s)`);
               nextStartTimeRef.current += buffer.duration;
             }
           }

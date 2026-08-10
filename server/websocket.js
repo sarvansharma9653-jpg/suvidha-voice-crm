@@ -197,6 +197,7 @@ wss.on('connection', (ws, req) => {
         const base64Audio = data.audio_data;
 
         if (base64Audio) {
+          console.log(`🔊 Sending audio payload of size ${base64Audio.length} characters to client...`);
           ws.send(JSON.stringify({
             event: 'media',
             streamSid: streamSid,
