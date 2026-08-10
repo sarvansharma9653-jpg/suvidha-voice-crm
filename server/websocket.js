@@ -154,19 +154,35 @@ wss.on('connection', (ws, req) => {
     }
   };
 
+  // Clean text for TTS: remove markdown asterisks, emojis, hashes, and extra spaces to prevent tokenizer crashes
+  const cleanTextForTTS = (text) => {
+    if (!text) return "";
+    let cleaned = text.replace(/\*+/g, "");
+    cleaned = cleaned.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2702}-\u{27B0}\u{24C2}-\u{1F251}]/gu, "");
+    cleaned = cleaned.replace(/[#_\-`]/g, " ");
+    cleaned = cleaned.replace(/\s+/g, " ").trim();
+    return cleaned;
+  };
+
   // Convert Text to Speech (TTS) and stream back to Twilio
   const generateTTSResponse = async (text) => {
     try {
+      const cleanedText = cleanTextForTTS(text);
+      if (!cleanedText) {
+        console.warn('⚠️ Cleaned text is empty, skipping TTS synthesis.');
+        return;
+      }
+
       // 0. Prioritize Self-Hosted AWS GPU Voice Cloning Server if configured
       if (process.env.AWS_GPU_TTS_URL) {
-        console.log('🗣️ Generating voice via Self-Hosted AWS GPU Server...');
+        console.log(`🗣️ Generating voice via Self-Hosted AWS GPU Server for cleaned text: "${cleanedText}"...`);
         const response = await fetch(`${process.env.AWS_GPU_TTS_URL}/tts`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            text: text,
+            text: cleanedText,
             language: 'hi',
             speaker_wav_base64: '' // Can be optionally populated with base64 reference to clone
           })
