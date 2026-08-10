@@ -150,11 +150,12 @@ export default function DashboardHome() {
       };
 
       wsRef.current.onerror = (err) => {
-        console.error('WebSocket Sandbox Error:', err);
+        console.error('❌ WebSocket Sandbox Error:', err);
         setTestStatus('Connection error.');
       };
-
-      wsRef.current.onclose = () => {
+ 
+      wsRef.current.onclose = (event) => {
+        console.log(`🔌 WebSocket connection closed: code=${event.code}, reason=${event.reason}`);
         stopTestSession();
       };
 
