@@ -122,6 +122,9 @@ export default function DashboardHome() {
             
             // Queue and play synthesized speech buffer
             if (audioCtxRef.current) {
+              if (audioCtxRef.current.state === 'suspended') {
+                await audioCtxRef.current.resume();
+              }
               const buffer = audioCtxRef.current.createBuffer(1, float32PCM.length, 8000);
               buffer.getChannelData(0).set(float32PCM);
               
