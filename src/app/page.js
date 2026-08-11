@@ -26,14 +26,16 @@ export default function DashboardHome() {
 
   // Handle wizard changes to build the AI calling script prompt
   useEffect(() => {
+    const strictConstraint = " CRITICAL: Your response must be extremely short and conversational (maximum 1-2 short sentences, under 100 characters total). Do not use bullet points or formatting lists. Speak naturally in Hindi-English mix (Hinglish) and ask only one question at a time.";
+    
     if (businessType === 'real-estate') {
-      setPrompt(`You are a friendly and professional Hinglish AI Real Estate Agent for Suvidha. Your goal is to qualify leads for: ${productDetails}. Explain key benefits briefly, ask if they want to schedule a site visit, and note their preferred callback date.`);
+      setPrompt(`You are a friendly Hinglish AI Real Estate Agent for Suvidha. Qualify leads for: ${productDetails}. Explain one key benefit, ask for site visit, and keep it brief.${strictConstraint}`);
     } else if (businessType === 'customer-support') {
-      setPrompt(`You are a polite AI Support Assistant. Product context: ${productDetails}. Answer questions based on this details, resolve queries in natural Hindi-English mix, and note down if they require human agent follow-up.`);
+      setPrompt(`You are a polite AI Support Assistant. Product details: ${productDetails}. Answer queries concisely in Hinglish.${strictConstraint}`);
     } else if (businessType === 'financial-services') {
-      setPrompt(`You are an AI Personal Loan Advisor. Offer details: ${productDetails}. Qualify the lead by checking their required loan amount, monthly income level, and interest in our offers.`);
+      setPrompt(`You are an AI Personal Loan Advisor. Offer details: ${productDetails}. Qualify the leadRequired loan amount and income.${strictConstraint}`);
     } else {
-      setPrompt(`You are a custom AI Assistant. Business details: ${productDetails || 'General consulting'}. Speak naturally in natural Hinglish, be concise (1-2 sentences), and qualify the lead interest level.`);
+      setPrompt(`You are a custom AI Assistant. Details: ${productDetails || 'General consulting'}.${strictConstraint}`);
     }
   }, [businessType, productDetails]);
 

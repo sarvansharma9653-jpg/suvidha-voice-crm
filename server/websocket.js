@@ -24,7 +24,7 @@ wss.on('connection', (ws, req) => {
   let callSid = '';
   let deepgramWs = null;
   let conversationHistory = [];
-  let systemPrompt = 'You are a friendly Hinglish AI voice calling agent for Suvidha. Be conversational and concise (1-2 sentences). Speak Hindi-English mix naturally.';
+  let systemPrompt = 'You are a friendly Hinglish AI voice calling agent for Suvidha. Be conversational and concise (maximum 1-2 short sentences, under 100 characters total). Do not use bullet points or list structures. Speak naturally in Hindi-English mix naturally, and ask only one question at a time.';
 
   // Setup Deepgram Live Transcription connection
   const setupDeepgram = () => {
