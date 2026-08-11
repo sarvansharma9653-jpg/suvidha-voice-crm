@@ -22,6 +22,7 @@ export default function DashboardHome() {
   const micStreamRef = useRef(null);
   const processorRef = useRef(null);
   const nextStartTimeRef = useRef(0);
+  const lastActionTimeRef = useRef(0);
 
   // Handle wizard changes to build the AI calling script prompt
   useEffect(() => {
@@ -52,6 +53,13 @@ export default function DashboardHome() {
 
   // Browser sandbox testing via Web Audio API & WebSockets
   const startTestSession = async () => {
+    const now = Date.now();
+    if (now - lastActionTimeRef.current < 1000) {
+      console.log('⏳ Ignoring rapid double click on sandbox button...');
+      return;
+    }
+    lastActionTimeRef.current = now;
+
     if (isTesting) {
       // Terminate
       stopTestSession();

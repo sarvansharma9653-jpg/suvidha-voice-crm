@@ -348,7 +348,13 @@ wss.on('connection', (ws, req) => {
   ws.on('close', () => {
     console.log('🔇 Call session closed.');
     if (deepgramWs) {
-      deepgramWs.close();
+      try {
+        if (deepgramWs.readyState === WebSocket.OPEN || deepgramWs.readyState === WebSocket.CONNECTING) {
+          deepgramWs.close();
+        }
+      } catch (err) {
+        console.error('Error closing Deepgram connection:', err);
+      }
     }
   });
 });
