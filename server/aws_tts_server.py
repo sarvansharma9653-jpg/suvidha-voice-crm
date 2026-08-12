@@ -33,6 +33,7 @@ import numpy as np
 import wave
 
 def wav_to_mulaw_8k(wav_path):
+    import audioop
     with wave.open(wav_path, "rb") as w:
         params = w.getparams()
         frames = w.readframes(params.nframes)
@@ -44,24 +45,7 @@ def wav_to_mulaw_8k(wav_path):
         num_samples = int(duration * 8000)
         samples = np.interp(np.linspace(0, len(samples), num_samples), np.arange(len(samples)), samples).astype(np.int16)
     
-    # G.711 Mu-law encoder
-    mulaw = []
-    for sample in samples:
-        sign = 0x80 if sample < 0 else 0x00
-        val = abs(sample)
-        if val > 32635: val = 32635
-        val += 132
-        
-        exponent = 7
-        mask = 0x4000
-        while (val & mask) == 0 and exponent > 0:
-            exponent -= 1
-            mask >>= 1
-            
-        mantissa = (val >> (exponent + 3)) & 0x0f
-        uval = ~(sign | (exponent << 4) | mantissa) & 0xff
-        mulaw.append(uval)
-    return bytes(mulaw)
+    return audioop.lin2ulaw(samples.tobytes(), 2)
 
 @app.post("/tts")
 async def text_to_speech(req: TTSRequest):
@@ -124,4 +108,15 @@ def health():
     return {"status": "active", "device": device}
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    import asyncio
+    config = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="info")
+    server = uvicorn.Server(config)
+    
+    try:
+        loop = asyncio.get_running_loop()
+        print("🔗 Active Jupyter event loop detected! Starting Uvicorn in background...")
+        loop.create_task(server.serve())
+        print("🚀 Uvicorn running in background on http://0.0.0.0:8000 (Cell execution finished successfully!)")
+    except RuntimeError:
+        print("🔄 Starting Uvicorn synchronously...")
+        uvicorn.run(app, host="0.0.0.0", port=8000)
