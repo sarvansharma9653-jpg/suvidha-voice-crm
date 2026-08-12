@@ -81,45 +81,55 @@ export default function DashboardHome() {
       setTestStatus('Connecting to calling server...');
       const host = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'ws://127.0.0.1:3001' : 'wss://suvidha-voice-crm.onrender.com';
       wsRef.current = new WebSocket(host);
-
-      wsRef.current.onopen = async () => {
+      const socket = wsRef.current;
+ 
+      socket.onopen = async () => {
         setTestStatus('Microphone connected. Talk now!');
         
         // Send start event emulating Twilio payload
-        wsRef.current.send(JSON.stringify({
-          event: 'start',
-          start: {
-            streamSid: 'browser-stream',
-            callSid: 'browser-call',
-            customParameters: {
-              systemPrompt: prompt
-            }
-          }
-        }));
-
-        // 3. Request Microphone access
-        micStreamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const source = audioCtxRef.current.createMediaStreamSource(micStreamRef.current);
-        
-        // 4. Create raw audio downsampler processor node
-        processorRef.current = audioCtxRef.current.createScriptProcessor(4096, 1, 1);
-        processorRef.current.onaudioprocess = (e) => {
-          const inputData = e.inputBuffer.getChannelData(0);
-          const mulawData = encodeMulaw(inputData);
-          const base64Audio = arrayBufferToBase64(mulawData);
-          
-          if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({
-              event: 'media',
-              media: {
-                payload: base64Audio
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({
+            event: 'start',
+            start: {
+              streamSid: 'browser-stream',
+              callSid: 'browser-call',
+              customParameters: {
+                systemPrompt: prompt
               }
-            }));
-          }
-        };
-
-        source.connect(processorRef.current);
-        processorRef.current.connect(audioCtxRef.current.destination);
+            }
+          }));
+        }
+ 
+        try {
+          // 3. Request Microphone access
+          micStreamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true });
+          if (!audioCtxRef.current) return;
+          const source = audioCtxRef.current.createMediaStreamSource(micStreamRef.current);
+          
+          // 4. Create raw audio downsampler processor node
+          processorRef.current = audioCtxRef.current.createScriptProcessor(4096, 1, 1);
+          processorRef.current.onaudioprocess = (e) => {
+            const inputData = e.inputBuffer.getChannelData(0);
+            const mulawData = encodeMulaw(inputData);
+            const base64Audio = arrayBufferToBase64(mulawData);
+            
+            if (socket.readyState === WebSocket.OPEN) {
+              socket.send(JSON.stringify({
+                event: 'media',
+                media: {
+                  payload: base64Audio
+                }
+              }));
+            }
+          };
+ 
+          source.connect(processorRef.current);
+          processorRef.current.connect(audioCtxRef.current.destination);
+        } catch (micErr) {
+          console.error('🎙️ Microphone access error:', micErr);
+          setTestStatus('Mic access denied or blocked.');
+          stopTestSession();
+        }
       };
 
       wsRef.current.onmessage = async (event) => {
