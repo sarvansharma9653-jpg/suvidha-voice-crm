@@ -72,9 +72,12 @@ export default function DashboardHome() {
       setIsTesting(true);
       setTestStatus('Starting audio context...');
 
-      // 1. Initialize Web Audio
+      // 1. Initialize Web Audio (Use native hardware sample rate, Web Audio will auto-resample 8kHz buffers)
       const AudioContext = window.AudioContext || window.webkitAudioContext;
-      audioCtxRef.current = new AudioContext({ sampleRate: 8000 });
+      audioCtxRef.current = new AudioContext();
+      if (audioCtxRef.current.state === 'suspended') {
+        await audioCtxRef.current.resume();
+      }
       nextStartTimeRef.current = 0;
 
       // 2. Connect WebSocket to local server or render service
