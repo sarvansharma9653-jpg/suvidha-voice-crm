@@ -175,8 +175,9 @@ wss.on('connection', (ws, req) => {
 
       // 0. Prioritize Self-Hosted AWS GPU Voice Cloning Server if configured
       if (process.env.AWS_GPU_TTS_URL) {
-        console.log(`🗣️ Generating voice via Self-Hosted AWS GPU Server for cleaned text: "${cleanedText}"...`);
-        const response = await fetch(`${process.env.AWS_GPU_TTS_URL}/tts`, {
+        const baseUrl = process.env.AWS_GPU_TTS_URL.replace(/\/+$/, '');
+        console.log(`🗣️ Generating voice via Self-Hosted AWS GPU Server (${baseUrl}) for cleaned text: "${cleanedText}"...`);
+        const response = await fetch(`${baseUrl}/tts`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
