@@ -83,26 +83,39 @@ wss.on('connection', (ws, req) => {
           parts: [{ text: msg.content }]
         }));
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            contents: geminiContents,
-            systemInstruction: {
-              parts: [{ text: systemPrompt }]
+        let aiReply = null;
+        const modelsToTry = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+
+        for (const modelName of modelsToTry) {
+          try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                contents: geminiContents,
+                systemInstruction: {
+                  parts: [{ text: systemPrompt }]
+                }
+              })
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              aiReply = data.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (aiReply) {
+                console.log(`✅ Brain LLM response success using model: ${modelName}`);
+                break;
+              }
+            } else {
+              const errText = await response.text().catch(() => '');
+              console.warn(`⚠️ Model ${modelName} returned status ${response.status}: ${errText}`);
             }
-          })
-        });
-
-        if (!response.ok) {
-          const errText = await response.text();
-          throw new Error(`Gemini API responded with status ${response.status}: ${errText}`);
+          } catch (mErr) {
+            console.warn(`⚠️ Gemini model ${modelName} error: ${mErr.message}`);
+          }
         }
-
-        const data = await response.json();
-        const aiReply = data.candidates?.[0]?.content?.parts?.[0]?.text;
 
         if (aiReply) {
           console.log(`🤖 AI (Gemini): ${aiReply}`);
