@@ -82,7 +82,7 @@ export default function DashboardHome() {
 
       // 2. Connect WebSocket to local server or render service
       setTestStatus('Connecting to calling server...');
-      const host = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'ws://127.0.0.1:3001' : 'wss://suvidha-voice-crm.onrender.com';
+      const host = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'ws://127.0.0.1:3001' : 'ws://16.170.166.247';
       wsRef.current = new WebSocket(host);
       const socket = wsRef.current;
  
