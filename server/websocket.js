@@ -180,7 +180,8 @@ wss.on('connection', (ws, req) => {
         const response = await fetch(`${baseUrl}/tts`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'bypass-tunnel-reminder': 'true'
           },
           body: JSON.stringify({
             text: cleanedText,
