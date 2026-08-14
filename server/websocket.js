@@ -70,6 +70,7 @@ wss.on('connection', (ws, req) => {
     deepgramWs.on('close', () => {
       console.log('📴 Deepgram Live Transcription connection closed.');
     });
+  };
   // Smart Hinglish Conversational Rule Engine (Zero-Failure Fallback)
   const getSmartFallbackReply = (text, prompt) => {
     const input = (text || '').toLowerCase().trim();
