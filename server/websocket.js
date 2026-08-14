@@ -360,6 +360,12 @@ wss.on('connection', (ws, req) => {
             systemPrompt = data.start.customParameters.systemPrompt;
           }
           console.log(`🚀 Call started. StreamSid: ${streamSid}, CallSid: ${callSid}. Prompt: ${systemPrompt}`);
+          
+          // 🎙️ Instant Initial Welcome Greeting on button click
+          const initialGreeting = "Namaste! Main Suvidha AI Assistant hoon. Aapki kya sahayata kar sakta hoon?";
+          console.log(`🤖 AI Initial Greeting: ${initialGreeting}`);
+          conversationHistory.push({ role: 'assistant', content: initialGreeting });
+          await generateTTSResponse(initialGreeting);
           break;
 
         case 'media':
