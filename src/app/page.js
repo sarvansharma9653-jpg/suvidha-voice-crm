@@ -129,9 +129,8 @@ export default function DashboardHome() {
           source.connect(processorRef.current);
           processorRef.current.connect(audioCtxRef.current.destination);
         } catch (micErr) {
-          console.error('🎙️ Microphone access error:', micErr);
-          setTestStatus('Mic access denied or blocked.');
-          stopTestSession();
+          console.warn('🎙️ Microphone access not granted, running in Text-to-Speech mode:', micErr);
+          setTestStatus('Connected! Type your message below 💬');
         }
       };
 
