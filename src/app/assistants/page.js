@@ -1,187 +1,171 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { store } from '@/lib/store';
 
-export default function AssistantsPage() {
-  const [assistantId, setAssistantId] = useState(null);
-  const [name, setName] = useState('Suvidha AI Agent');
-  const [businessType, setBusinessType] = useState('real-estate');
-  const [productDetails, setProductDetails] = useState('3 BHK Luxury Flat in Sector 62 Noida for 1.2 Crore, 10% discount on downpayment.');
-  const [prompt, setPrompt] = useState('');
-  const [voiceProvider, setVoiceProvider] = useState('sarvam_hindi');
-  
-  const [loading, setLoading] = useState(false);
-  const [fetching, setFetching] = useState(true);
+export default function DograhVoiceAgentStudioPage() {
+  const [agents, setAgents] = useState([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  // Dograh Studio Form Fields (Screenshot 4)
+  const [callType, setCallType] = useState('Outbound (AI calls users)');
+  const [useCase, setUseCase] = useState('Lead Qualification');
+  const [activityDescription, setActivityDescription] = useState('Qualify real estate leads for Sector 62 Noida 3 BHK flats. Speak in polite feminine Hindi grammar (kar rahi hoon, bata rahi hoon). Check budget and site visit availability.');
+  const [agentName, setAgentName] = useState('Ananya - Real Estate Lead Qualifier');
+
   const [status, setStatus] = useState(null);
 
-  // Handle wizard changes to build the AI script prompt
   useEffect(() => {
-    if (businessType === 'real-estate') {
-      setPrompt(`You are a friendly and professional Hinglish AI Real Estate Agent for Suvidha. Your goal is to qualify leads for: ${productDetails}. Explain key benefits briefly, ask if they want to schedule a site visit, and note their preferred callback date.`);
-    } else if (businessType === 'customer-support') {
-      setPrompt(`You are a polite AI Support Assistant. Product context: ${productDetails}. Answer questions based on this details, resolve queries in natural Hindi-English mix, and note down if they require human agent follow-up.`);
-    } else if (businessType === 'financial-services') {
-      setPrompt(`You are an AI Personal Loan Advisor. Offer details: ${productDetails}. Qualify the lead by checking their required loan amount, monthly income level, and interest in our offers.`);
+    // Initial sample agents if empty
+    const saved = localStorage.getItem('dograh_agents');
+    if (!saved) {
+      const initial = [
+        {
+          id: 'ag_1',
+          name: 'Ananya - Real Estate Lead Qualifier',
+          callType: 'Outbound (AI calls users)',
+          useCase: 'Lead Qualification',
+          description: 'Qualifies Noida property buyers in polite Hindi female voice (kar rahi hoon).',
+          voice: 'hi-IN-SwaraNeural'
+        },
+        {
+          id: 'ag_2',
+          name: 'Priya - Support & Feedback Agent',
+          callType: 'Inbound (Users call AI)',
+          useCase: 'Customer Support',
+          description: 'Answers customer queries and collects rating scores.',
+          voice: 'hi-IN-SwaraNeural'
+        }
+      ];
+      localStorage.setItem('dograh_agents', JSON.stringify(initial));
+      setAgents(initial);
     } else {
-      setPrompt(`You are a custom AI Assistant. Business details: ${productDetails || 'General consulting'}. Speak naturally in natural Hinglish, be concise (1-2 sentences), and qualify the lead interest level.`);
+      setAgents(JSON.parse(saved));
     }
-  }, [businessType, productDetails]);
-
-  useEffect(() => {
-    fetchAssistant();
   }, []);
 
-  const fetchAssistant = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data, error } = await supabase
-        .from('assistants')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (data) {
-        setAssistantId(data.id);
-        setName(data.name);
-        setPrompt(data.system_prompt);
-        setVoiceProvider(data.voice_provider);
-      }
-    } catch (err) {
-      console.error('Error fetching assistant:', err);
-    } finally {
-      setFetching(false);
-    }
-  };
-
-  const handleSave = async (e) => {
+  const handleCreateAgent = (e) => {
     e.preventDefault();
-    setLoading(true);
-    setStatus(null);
+    const newAgent = {
+      id: 'ag_' + Date.now(),
+      name: agentName,
+      callType,
+      useCase,
+      description: activityDescription,
+      voice: 'hi-IN-SwaraNeural'
+    };
 
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Authentication required.');
-
-      let error;
-      if (assistantId) {
-        // Update
-        const { error: err } = await supabase
-          .from('assistants')
-          .update({
-            name,
-            system_prompt: prompt,
-            first_message: `Hello, main Suvidha AI assistant bol raha hoon. Kya aapke paas 2 minute hain?`,
-            voice_provider: voiceProvider
-          })
-          .eq('id', assistantId);
-        error = err;
-      } else {
-        // Insert
-        const { error: err } = await supabase
-          .from('assistants')
-          .insert([{
-            user_id: user.id,
-            name,
-            system_prompt: prompt,
-            first_message: `Hello, main Suvidha AI assistant bol raha hoon. Kya aapke paas 2 minute hain?`,
-            voice_provider: voiceProvider,
-            voice_id: voiceProvider === 'sarvam_hindi' ? 'meera' : 'sarah'
-          }]);
-        error = err;
-      }
-
-      if (error) throw error;
-      setStatus({ type: 'success', message: '🎉 AI Assistant script and configurations saved successfully!' });
-      fetchAssistant();
-    } catch (err) {
-      setStatus({ type: 'error', message: `❌ Error: ${err.message}` });
-    } finally {
-      setLoading(false);
-    }
+    const updated = [newAgent, ...agents];
+    localStorage.setItem('dograh_agents', JSON.stringify(updated));
+    setAgents(updated);
+    setShowCreateModal(false);
+    setStatus({ type: 'success', message: `🎉 Voice Agent "${agentName}" created successfully!` });
+    setTimeout(() => setStatus(null), 4000);
   };
-
-  if (fetching) {
-    return <div style={{ textAlign: 'center', padding: '3rem' }}>Loading configurations...</div>;
-  }
 
   return (
-    <div>
-      <h1>🤖 AI Assistants Configurations</h1>
-      <p className="subtitle">Set up your AI Agent prompt scripts, target business, and voice models</p>
+    <div style={{ maxWidth: '1000px' }}>
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1>🤖 Voice Agent Creation Studio</h1>
+          <p className="subtitle">Tell us about your use case and we'll create a customized voice agent for you</p>
+        </div>
+
+        <button className="btn btn-primary" onClick={() => setShowCreateModal(true)}>
+          ➕ Create New Voice Agent
+        </button>
+      </div>
 
       {status && (
-        <div className="card mb-4" style={{
-          borderColor: status.type === 'success' ? 'var(--accent-green)' : 'var(--accent-red)',
-          padding: '1rem 1.5rem',
-          maxWidth: '800px'
-        }}>
+        <div className="card mb-6" style={{ padding: '1rem', borderColor: status.type === 'success' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
           {status.message}
         </div>
       )}
 
-      <div className="card" style={{ maxWidth: '800px', padding: '2.5rem' }}>
-        <h2 style={{ marginTop: 0 }}>Configure Calling Agent</h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '2rem' }}>
-          Input details about your product or service below. The wizard will automatically construct a prompt script, which you can also edit manually.
-        </p>
+      {/* Main Dograh Create Agent Box */}
+      <div className="card mb-8" style={{ padding: '2.5rem', background: '#0e0e14' }}>
+        <h2 style={{ marginTop: 0, fontSize: '1.35rem', marginBottom: '0.5rem' }}>Agent Details</h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '2rem' }}>Configure your voice agent settings and system prompts</p>
 
-        <form onSubmit={handleSave}>
-          <div className="form-group">
-            <label>Agent Name</label>
-            <input required type="text" className="form-control" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Suvidha Real Estate Assistant" />
-          </div>
-
-          <div className="form-group">
-            <label>Business / Campaign Template</label>
-            <select className="form-control" value={businessType} onChange={e => setBusinessType(e.target.value)}>
-              <option value="real-estate">Real Estate / Property Sales</option>
-              <option value="customer-support">Customer Support Desk</option>
-              <option value="financial-services">Financial & Loan Services</option>
-              <option value="custom">Custom AI Assistant</option>
+        <form onSubmit={handleCreateAgent}>
+          <div className="form-group mb-6">
+            <label style={{ fontSize: '0.875rem', fontWeight: '600' }}>Call Type</label>
+            <select className="form-control" value={callType} onChange={e => setCallType(e.target.value)}>
+              <option value="Outbound (AI calls users)">Outbound (AI calls users)</option>
+              <option value="Inbound (Users call AI)">Inbound (Users call AI)</option>
             </select>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>Choose whether users will call your AI or your AI will call users</span>
           </div>
 
-          <div className="form-group">
-            <label>Product / Business Details (Offer specifications, pricing, location...)</label>
-            <textarea 
-              rows="3"
-              className="form-control"
-              value={productDetails}
-              onChange={(e) => setProductDetails(e.target.value)}
-              placeholder="e.g. details of properties, pricing, discounts..."
-              style={{ resize: 'none', fontSize: '0.8125rem' }}
+          <div className="form-group mb-6">
+            <label style={{ fontSize: '0.875rem', fontWeight: '600' }}>Agent Name & Title</label>
+            <input 
+              required
+              type="text" 
+              className="form-control" 
+              value={agentName}
+              onChange={e => setAgentName(e.target.value)}
+              placeholder="e.g. Ananya - Real Estate Lead Qualifier" 
             />
           </div>
 
-          <div className="form-group">
-            <label>Final Compiled System Script Prompt (What the AI will read and follow)</label>
+          <div className="form-group mb-6">
+            <label style={{ fontSize: '0.875rem', fontWeight: '600' }}>Use Case</label>
+            <input 
+              required
+              type="text" 
+              className="form-control" 
+              value={useCase}
+              onChange={e => setUseCase(e.target.value)}
+              placeholder="e.g., Lead Qualification, HR Screening, Customer Support" 
+            />
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>Describe the primary purpose of your voice agent</span>
+          </div>
+
+          <div className="form-group mb-8">
+            <label style={{ fontSize: '0.875rem', fontWeight: '600' }}>Activity Description & Prompt</label>
             <textarea 
               required
-              rows="6"
-              className="form-control"
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              style={{ resize: 'none', fontSize: '0.8125rem', background: 'rgba(0, 0, 0, 0.4)', fontFamily: 'monospace' }}
+              rows="4"
+              className="form-control" 
+              value={activityDescription}
+              onChange={e => setActivityDescription(e.target.value)}
+              placeholder="Describe briefly what your voice agent will do (e.g. Qualify leads for real estate, Screen candidates for roles...). This will be a prompt to an LLM." 
             />
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>This description will be used to generate the AI prompt for your voice agent</span>
           </div>
 
-          <div className="form-group" style={{ marginBottom: '2rem' }}>
-            <label>Select Voice Model</label>
-            <select className="form-control" value={voiceProvider} onChange={e => setVoiceProvider(e.target.value)}>
-              <option value="sarvam_hindi">Bulbul:v3 (Sarvam AI - Hindi Female)</option>
-              <option value="sarah">Sarah (11labs - English Female)</option>
-              <option value="dom">Dom (Cartesia - Indian Accent)</option>
-            </select>
-          </div>
-
-          <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
-            {loading ? 'Saving configurations...' : '💾 Save Agent Configuration'}
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.85rem' }}>
+            🚀 Create Voice Agent
           </button>
         </form>
+      </div>
+
+      {/* Saved Voice Agents List */}
+      <div>
+        <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Active Voice Agents ({agents.length})</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem' }}>
+          {agents.map(ag => (
+            <div className="card" key={ag.id} style={{ padding: '1.5rem' }}>
+              <div className="flex justify-between items-center mb-3">
+                <h3 style={{ margin: 0, fontSize: '1.05rem' }}>{ag.name}</h3>
+                <span className="badge success">{ag.callType.includes('Outbound') ? 'Outbound' : 'Inbound'}</span>
+              </div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: '1.5' }}>
+                {ag.description}
+              </p>
+              <div className="flex justify-between items-center pt-3" style={{ borderTop: '1px solid var(--border-light)', fontSize: '0.8125rem' }}>
+                <span style={{ color: 'var(--accent-purple)' }}>Voice: Swara Neural (Female)</span>
+                <button 
+                  onClick={() => alert(`✅ Agent "${ag.name}" ready! Go to Overview & Playground to test.`)}
+                  className="btn btn-secondary" 
+                  style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}
+                >
+                  ⚡ Test Agent
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

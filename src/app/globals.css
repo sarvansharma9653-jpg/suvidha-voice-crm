@@ -79,16 +79,23 @@ body {
 }
 
 .sidebar-logo {
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 700;
-  margin-bottom: 3rem;
+  margin-bottom: 1.5rem;
   padding: 0 1rem;
-  background: linear-gradient(to right, var(--accent-blue), var(--accent-purple));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: var(--text-primary);
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.65rem;
+}
+
+.nav-section-title {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  padding: 0 1.25rem 0.5rem;
+  text-transform: uppercase;
 }
 
 .nav-links {
@@ -706,10 +713,91 @@ select.form-control {
   line-height: 1.4;
 }
 
-.notif-item-time {
-  font-size: 0.6875rem;
-  color: var(--text-muted);
-  margin-top: 0.35rem;
+/* --- Deepgram-Style Glowing Pulsing Audio Ring Visualizer --- */
+.deepgram-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  background: #08080c;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  min-height: 420px;
+  position: relative;
 }
+
+.ring-visualizer {
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2.5rem;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.05) 0%, transparent 70%);
+}
+
+.ring-circle {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  border: 3px solid rgba(139, 92, 246, 0.5);
+  box-shadow: 0 0 30px rgba(139, 92, 246, 0.3), inset 0 0 20px rgba(59, 130, 246, 0.3);
+  transition: all 0.3s ease;
+  position: absolute;
+}
+
+.ring-circle.active {
+  border-color: #10b981;
+  box-shadow: 0 0 50px rgba(16, 185, 129, 0.6), inset 0 0 30px rgba(16, 185, 129, 0.4);
+  animation: ringPulse 1.5s infinite ease-in-out;
+}
+
+.ring-circle.speaking {
+  border-color: #3b82f6;
+  box-shadow: 0 0 60px rgba(59, 130, 246, 0.8), inset 0 0 40px rgba(139, 92, 246, 0.5);
+  animation: ringBounce 0.8s infinite ease-in-out;
+}
+
+@keyframes ringPulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+
+@keyframes ringBounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+}
+
+.talk-agent-btn {
+  background: #10b981;
+  color: #000;
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 0.875rem 2.25rem;
+  border-radius: var(--radius-full);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  box-shadow: 0 0 25px rgba(16, 185, 129, 0.4);
+  transition: all 0.25 ease;
+}
+
+.talk-agent-btn:hover {
+  background: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 0 35px rgba(16, 185, 129, 0.6);
+}
+
+.talk-agent-btn.active {
+  background: #ef4444;
+  color: #fff;
+  box-shadow: 0 0 35px rgba(239, 68, 68, 0.6);
+}
+
 
 

@@ -16,21 +16,17 @@ export default function RootLayout({ children }) {
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
 
   useEffect(() => {
-    // Check active session on load
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    // Load Notifications
     setNotifications(store.getNotifications());
-
     return () => subscription.unsubscribe();
   }, []);
 
@@ -53,13 +49,12 @@ export default function RootLayout({ children }) {
     return (
       <html lang="en">
         <body className={inter.className} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#0a0a0f', color: '#fff' }}>
-          <div>Loading Suvidha Voice CRM...</div>
+          <div>Loading Suvidha Voice Platform...</div>
         </body>
       </html>
     );
   }
 
-  // FORCE LOGIN: If user is not authenticated, render the AuthPage directly
   if (!user) {
     return (
       <html lang="en">
@@ -76,74 +71,93 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={inter.className}>
         <div className="app-container">
+          {/* Dograh & Sarvam AI Style Categorized Sidebar */}
           <aside className="sidebar">
             <div className="sidebar-logo">
-              🤖 Suvidha Voice CRM
-            </div>
-            
-            <div style={{ padding: '0 1rem 1rem 1.5rem', borderBottom: '1px solid var(--border-light)', marginBottom: '1.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              👤 Client Account: <strong style={{ color: 'var(--accent-blue)' }}>{user.email}</strong>
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, #10b981, #3b82f6)', display: 'inline-block' }}></div>
+              Suvidha AI
             </div>
 
-            <nav>
+            <div style={{ padding: '0 1rem 1rem 1.25rem', borderBottom: '1px solid var(--border-light)', marginBottom: '1.25rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+              Team: <strong style={{ color: 'var(--text-primary)' }}>Sarvan Sharma's Team</strong>
+            </div>
+
+            <nav style={{ flex: 1, overflowY: 'auto' }}>
+              <div className="nav-section-title">MAIN</div>
               <ul className="nav-links">
                 <li>
                   <Link href="/" className="nav-item">
-                    📊 Dashboard
+                    🏠 Overview & Playground
                   </Link>
                 </li>
+              </ul>
+
+              <div className="nav-section-title" style={{ marginTop: '1.25rem' }}>BUILD</div>
+              <ul className="nav-links">
                 <li>
-                  <Link href="/contacts" className="nav-item">
-                    👥 Contacts & CSV
+                  <Link href="/assistants" className="nav-item">
+                    🤖 Voice Agents
                   </Link>
                 </li>
                 <li>
                   <Link href="/campaigns" className="nav-item">
-                    🎯 AI Auto-Campaigns
+                    🎯 Campaigns
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/contacts" className="nav-item">
+                    👥 Lead Lists & CSV
+                  </Link>
+                </li>
+              </ul>
+
+              <div className="nav-section-title" style={{ marginTop: '1.25rem' }}>DEPLOY & TELEPHONY</div>
+              <ul className="nav-links">
+                <li>
+                  <Link href="/settings" className="nav-item">
+                    📞 Telephony & Numbers
                   </Link>
                 </li>
                 <li>
                   <Link href="/followups" className="nav-item">
-                    📅 AI Follow-ups
+                    📅 AI Follow-up Queue
                   </Link>
                 </li>
+              </ul>
+
+              <div className="nav-section-title" style={{ marginTop: '1.25rem' }}>MONITOR & LOGS</div>
+              <ul className="nav-links">
                 <li>
                   <Link href="/calls" className="nav-item">
-                    📞 Call Transcripts
+                    🎙️ Call Recordings & Transcripts
                   </Link>
                 </li>
                 <li>
                   <Link href="/analytics" className="nav-item">
-                    📈 Analytics
+                    📊 Agent Analytics
                   </Link>
-                </li>
-                <li>
-                  <Link href="/settings" className="nav-item">
-                    ⚙️ Telephony Settings
-                  </Link>
-                </li>
-                <li style={{ marginTop: '2rem' }}>
-                  <button 
-                    onClick={handleLogout} 
-                    className="nav-item" 
-                    style={{ background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', color: 'var(--accent-red)' }}
-                  >
-                    🚪 Logout
-                  </button>
                 </li>
               </ul>
+
+              <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid var(--border-light)' }}>
+                <button 
+                  onClick={handleLogout} 
+                  className="nav-item" 
+                  style={{ background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', color: 'var(--accent-red)' }}
+                >
+                  🚪 Logout
+                </button>
+              </div>
             </nav>
           </aside>
 
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
             {/* Top Bar with Real-Time Notification Bell & Onboarding Banner */}
             <header className="top-header">
-              <div className="onboarding-steps flex items-center gap-4">
-                <span className="step-pill">1. ⚙️ Connect Telephony</span>
-                <span className="step-arrow">➔</span>
-                <span className="step-pill">2. 👥 Upload Leads (CSV)</span>
-                <span className="step-arrow">➔</span>
-                <span className="step-pill active">3. 🚀 Launch Auto-Campaign</span>
+              <div className="onboarding-steps flex items-center gap-3">
+                <span className="step-pill active">🤖 Suvidha Voice Platform v1.45</span>
+                <span className="step-arrow">•</span>
+                <span className="step-pill">🟢 AWS Swara Engine Online</span>
               </div>
 
               {/* Notification Bell */}

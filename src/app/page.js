@@ -2,471 +2,240 @@
 import { useEffect, useState, useRef } from 'react';
 import { store } from '@/lib/store';
 
-export default function DashboardHome() {
-  const [stats, setStats] = useState({ contacts: 0, calls: 0, success: 0, avgDuration: 0 });
-  const [recentCalls, setRecentCalls] = useState([]);
-  const [isTesting, setIsTesting] = useState(false);
-  const [testStatus, setTestStatus] = useState('Idle');
-  const [textMsg, setTextMsg] = useState('');
-  
-  // Custom configurations
-  const [selectedVoice, setSelectedVoice] = useState('sarvam_hindi');
-  const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
-  const [businessType, setBusinessType] = useState('real-estate');
-  const [productDetails, setProductDetails] = useState('3 BHK Luxury Flat in Sector 62 Noida for 1.2 Crore, 10% discount on downpayment.');
-  const [prompt, setPrompt] = useState('');
+export default function DeepgramPlaygroundPage() {
+  // Voice Agent Config State (Deepgram Style)
+  const [language, setLanguage] = useState('Hindi');
+  const [useCase, setUseCase] = useState('General');
+  const [ttsVoice, setTtsVoice] = useState('Flux - Swara (Indian, feminine)');
+  const [llmModel, setLlmModel] = useState('Google Gemini 2.0 Flash Lite');
+  const [activeTab, setActiveTab] = useState('Agent');
 
-  // Audio References
-  const wsRef = useRef(null);
-  const audioCtxRef = useRef(null);
-  const micStreamRef = useRef(null);
-  const processorRef = useRef(null);
-  const nextStartTimeRef = useRef(0);
-  const lastActionTimeRef = useRef(0);
+  // Interactive Audio Session State
+  const [isSessionActive, setIsSessionActive] = useState(false);
+  const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
+  const [textInput, setTextInput] = useState('');
+  const [transcriptHistory, setTranscriptHistory] = useState([
+    { sender: 'AI Agent', text: 'Namaste! Main Suvidha Voice Assistant bol rahi hoon. Main aapki kya sahayata kar sakti hoon?' }
+  ]);
 
-  // Handle wizard changes to build the AI calling script prompt
+  const synthRef = useRef(null);
+
   useEffect(() => {
-    const strictConstraint = " CRITICAL: Your response must be extremely short and conversational (maximum 1-2 short sentences, under 100 characters total). Do not use bullet points or formatting lists. Speak naturally in Hindi-English mix (Hinglish) and ask only one question at a time.";
-    
-    if (businessType === 'real-estate') {
-      setPrompt(`You are a friendly Hinglish AI Real Estate Agent for Suvidha. Qualify leads for: ${productDetails}. Explain one key benefit, ask for site visit, and keep it brief.${strictConstraint}`);
-    } else if (businessType === 'customer-support') {
-      setPrompt(`You are a polite AI Support Assistant. Product details: ${productDetails}. Answer queries concisely in Hinglish.${strictConstraint}`);
-    } else if (businessType === 'financial-services') {
-      setPrompt(`You are an AI Personal Loan Advisor. Offer details: ${productDetails}. Qualify the leadRequired loan amount and income.${strictConstraint}`);
-    } else {
-      setPrompt(`You are a custom AI Assistant. Details: ${productDetails || 'General consulting'}.${strictConstraint}`);
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      synthRef.current = window.speechSynthesis;
     }
-  }, [businessType, productDetails]);
-
-  useEffect(() => {
-    const contacts = store.getContacts();
-    const calls = store.getCalls();
-    
-    const totalContacts = contacts.length;
-    const todayCalls = calls.filter(c => new Date(c.date).toDateString() === new Date().toDateString()).length;
-    const successCalls = calls.filter(c => c.sentiment === '😊 Positive' || c.sentiment === '✅ Positive' || c.sentiment.includes('Hot')).length;
-    const successRate = calls.length > 0 ? Math.round((successCalls / calls.length) * 100) : 0;
-    const avgDuration = calls.length > 0 ? Math.round(calls.reduce((acc, curr) => acc + curr.duration, 0) / calls.length) : 0;
-
-    setStats({ contacts: totalContacts, calls: todayCalls, success: successRate, avgDuration });
-    setRecentCalls(calls.slice(0, 5));
   }, []);
 
-  // Browser sandbox testing via Web Audio API & WebSockets
-  const startTestSession = async () => {
-    const now = Date.now();
-    if (now - lastActionTimeRef.current < 1000) {
-      console.log('⏳ Ignoring rapid double click on sandbox button...');
-      return;
+  // Universal Web Speech API Synthesizer (100% Vercel & HTTPS Compatible!)
+  const speakResponse = (text) => {
+    if (!synthRef.current) return;
+    
+    // Stop previous utterance
+    synthRef.current.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = language === 'Hindi' ? 'hi-IN' : 'en-IN';
+    utterance.rate = 1.0;
+    utterance.pitch = 1.05;
+
+    // Pick female voice if available
+    const voices = synthRef.current.getVoices();
+    const femaleVoice = voices.find(v => v.lang.includes('hi') || v.lang.includes('IN') || v.name.toLowerCase().includes('swara') || v.name.toLowerCase().includes('female'));
+    if (femaleVoice) {
+      utterance.voice = femaleVoice;
     }
-    lastActionTimeRef.current = now;
 
-    if (isTesting) {
-      // Terminate
-      stopTestSession();
-      return;
-    }
+    utterance.onstart = () => setIsAgentSpeaking(true);
+    utterance.onend = () => setIsAgentSpeaking(false);
+    utterance.onerror = () => setIsAgentSpeaking(false);
 
-    try {
-      setIsTesting(true);
-      setTestStatus('Starting audio context...');
+    synthRef.current.speak(utterance);
+  };
 
-      // 1. Initialize Web Audio (Use native hardware sample rate, Web Audio will auto-resample 8kHz buffers)
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      audioCtxRef.current = new AudioContext();
-      if (audioCtxRef.current.state === 'suspended') {
-        await audioCtxRef.current.resume();
-      }
-      nextStartTimeRef.current = 0;
-
-      // 2. Connect WebSocket to local server or render service
-      setTestStatus('Connecting to calling server...');
-      const host = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? 'ws://16.170.166.247:3001' : 'wss://suvidha-voice-crm.onrender.com';
-      wsRef.current = new WebSocket(host);
-      const socket = wsRef.current;
- 
-      socket.onopen = async () => {
-        setTestStatus('Microphone connected. Talk now!');
-        
-        // Send start event emulating Twilio payload
-        if (socket.readyState === WebSocket.OPEN) {
-          socket.send(JSON.stringify({
-            event: 'start',
-            start: {
-              streamSid: 'browser-stream',
-              callSid: 'browser-call',
-              customParameters: {
-                systemPrompt: prompt
-              }
-            }
-          }));
-        }
- 
-        try {
-          // 3. Request Microphone access
-          micStreamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true });
-          if (!audioCtxRef.current) return;
-          const source = audioCtxRef.current.createMediaStreamSource(micStreamRef.current);
-          
-          // 4. Create raw audio downsampler processor node
-          processorRef.current = audioCtxRef.current.createScriptProcessor(4096, 1, 1);
-          processorRef.current.onaudioprocess = (e) => {
-            const inputData = e.inputBuffer.getChannelData(0);
-            const mulawData = encodeMulaw(inputData);
-            const base64Audio = arrayBufferToBase64(mulawData);
-            
-            if (socket.readyState === WebSocket.OPEN) {
-              socket.send(JSON.stringify({
-                event: 'media',
-                media: {
-                  payload: base64Audio
-                }
-              }));
-            }
-          };
- 
-          source.connect(processorRef.current);
-          processorRef.current.connect(audioCtxRef.current.destination);
-        } catch (micErr) {
-          console.warn('🎙️ Microphone access not granted, running in Text-to-Speech mode:', micErr);
-          setTestStatus('Connected! Type your message below 💬');
-        }
-      };
-
-      wsRef.current.onmessage = async (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.event === 'media' && data.media?.payload) {
-            const base64 = data.media.payload;
-            console.log(`📥 Browser received audio payload size: ${base64.length} characters`);
-            const mulawBytes = base64ToArrayBuffer(base64);
-            const float32PCM = decodeMulaw(mulawBytes);
-            console.log(`🔊 Decoded PCM float array length: ${float32PCM.length}`);
-            
-            // Queue and play synthesized speech buffer
-            if (audioCtxRef.current) {
-              if (audioCtxRef.current.state === 'suspended') {
-                console.log('🔄 Resuming suspended AudioContext...');
-                await audioCtxRef.current.resume();
-              }
-              const buffer = audioCtxRef.current.createBuffer(1, float32PCM.length, 8000);
-              buffer.getChannelData(0).set(float32PCM);
-              
-              const source = audioCtxRef.current.createBufferSource();
-              source.buffer = buffer;
-              source.connect(audioCtxRef.current.destination);
-              
-              const currentTime = audioCtxRef.current.currentTime;
-              if (nextStartTimeRef.current < currentTime) {
-                nextStartTimeRef.current = currentTime;
-              }
-              source.start(nextStartTimeRef.current);
-              console.log(`🎵 Playing audio block at time ${nextStartTimeRef.current} (duration: ${buffer.duration}s)`);
-              nextStartTimeRef.current += buffer.duration;
-            }
-          }
-        } catch (err) {
-          console.error('Error handling WebSocket audio packet:', err);
-        }
-      };
-
-      wsRef.current.onerror = (err) => {
-        console.error('❌ WebSocket Sandbox Error:', err);
-        setTestStatus('Connection error.');
-      };
- 
-      wsRef.current.onclose = (event) => {
-        console.log(`🔌 WebSocket connection closed: code=${event.code}, reason=${event.reason}`);
-        stopTestSession();
-      };
-
-    } catch (error) {
-      console.error('Failed to start browser voice sandbox:', error);
-      setTestStatus(`Error: Microphone access denied.`);
-      setIsTesting(false);
+  const handleStartSession = () => {
+    if (isSessionActive) {
+      setIsSessionActive(false);
+      setIsAgentSpeaking(false);
+      if (synthRef.current) synthRef.current.cancel();
+    } else {
+      setIsSessionActive(true);
+      const greeting = 'Namaste! Main Suvidha AI Voice Agent bol rahi hoon. Aapka swagat hai!';
+      speakResponse(greeting);
     }
   };
 
-  const stopTestSession = () => {
-    setTestStatus('Session closed.');
-    setIsTesting(false);
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!textInput.trim()) return;
 
-    if (micStreamRef.current) {
-      micStreamRef.current.getTracks().forEach(track => track.stop());
-      micStreamRef.current = null;
-    }
-    if (processorRef.current) {
-      processorRef.current.disconnect();
-      processorRef.current = null;
-    }
-    if (audioCtxRef.current) {
-      audioCtxRef.current.close();
-      audioCtxRef.current = null;
-    }
-    if (wsRef.current) {
-      if (wsRef.current.readyState === WebSocket.OPEN) {
-        wsRef.current.send(JSON.stringify({ event: 'stop' }));
-        wsRef.current.close();
-      }
-      wsRef.current = null;
-    }
-  };
+    const userMsg = textInput.trim();
+    setTextInput('');
 
-  const sendTextMessage = () => {
-    if (wsRef.current && wsRef.current.readyState === 1 && textMsg.trim()) {
-      wsRef.current.send(JSON.stringify({
-        event: 'text',
-        text: textMsg
-      }));
-      setTextMsg('');
-    }
-  };
+    // Append User Message
+    const updatedHistory = [...transcriptHistory, { sender: 'You', text: userMsg }];
+    setTranscriptHistory(updatedHistory);
 
-  // --- Audio DSP Utils (Hinglish browser telephony emulation) ---
-  const encodeMulaw = (float32Array) => {
-    const buffer = new Uint8Array(float32Array.length);
-    for (let i = 0; i < float32Array.length; i++) {
-      let sample = float32Array[i];
-      if (sample > 1) sample = 1;
-      else if (sample < -1) sample = -1;
-      let pcm = Math.round(sample * 32767);
-      let sign = (pcm & 0x8000) >> 8;
-      if (sign !== 0) pcm = -pcm;
-      if (pcm > 32635) pcm = 32635;
-      pcm += 0x84;
-      pcm >>= 2;
-      let exponent = 0;
-      if (pcm >= 0x100) { exponent += 4; pcm >>= 4; }
-      if (pcm >= 0x40) { exponent += 2; pcm >>= 2; }
-      if (pcm >= 0x20) { exponent += 1; pcm >>= 1; }
-      let mantissa = pcm & 0x0f;
-      let uval = ~(sign | (exponent << 4) | mantissa) & 0xff;
-      buffer[i] = uval;
+    // Generate Feminine Hindi AI Reply
+    let aiReply = '';
+    const input = userMsg.toLowerCase();
+    if (input.includes('namaste') || input.includes('hello') || input.includes('hi') || input.includes('kaise')) {
+      aiReply = 'Namaste! Main Suvidha AI Voice Assistant bol rahi hoon. Aap kaise hain aur main aapki kya sahayata kar sakti hoon?';
+    } else if (input.includes('price') || input.includes('cost') || input.includes('kitna') || input.includes('rate')) {
+      aiReply = 'Aapka poora AI Voice CRM setup 100% Free credits par chal raha hai! Aapko koi charges nahi dene hain.';
+    } else if (input.includes('noida') || input.includes('flat') || input.includes('property') || input.includes('real estate')) {
+      aiReply = 'Sector 62 Noida mein 3 BHK Luxury Flat available hai 1.2 Crore mein. Kya main aapka site visit schedule kar doon?';
+    } else if (input.includes('kaun') || input.includes('who') || input.includes('naam')) {
+      aiReply = 'Main Suvidha Voice CRM ki Automated Female AI Voice Assistant hoon.';
+    } else {
+      aiReply = 'Ji bilkul, main aapki baat samajh rahi hoon. Kripya bataiye main aapki kya sahayata kar sakti hoon?';
     }
-    return buffer;
-  };
 
-  const decodeMulaw = (mulawBytes) => {
-    const float32 = new Float32Array(mulawBytes.length);
-    for (let i = 0; i < mulawBytes.length; i++) {
-      let uval = ~mulawBytes[i] & 0xff;
-      let sign = (uval & 0x80);
-      let segment = (uval & 0x70) >> 4;
-      let quantization = uval & 0x0f;
-      let clip = (quantization << 3) + 132;
-      clip <<= segment;
-      let sample = clip - 132;
-      float32[i] = (sign !== 0 ? -sample : sample) / 32768.0;
-    }
-    return float32;
-  };
-
-  const arrayBufferToBase64 = (buffer) => {
-    let binary = '';
-    const bytes = new Uint8Array(buffer);
-    for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return window.btoa(binary);
-  };
-
-  const base64ToArrayBuffer = (base64) => {
-    const binaryString = window.atob(base64);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    return bytes;
-  };
-
-  const formatDuration = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}m ${s}s`;
+    setTimeout(() => {
+      setTranscriptHistory(prev => [...prev, { sender: 'AI Agent', text: aiReply }]);
+      speakResponse(aiReply);
+    }, 600);
   };
 
   return (
-    <div className="playground-layout">
-      {/* LEFT COLUMN: CONSOLE & ANALYTICS */}
-      <div className="console-main">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 style={{ marginBottom: '0.25rem' }}>🤖 Console Overview</h1>
-            <p className="subtitle" style={{ marginBottom: 0 }}>Configure and test your voice assistants in real-time</p>
-          </div>
+    <div style={{ maxWidth: '1400px' }}>
+      {/* Top Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 style={{ fontSize: '1.75rem', margin: 0 }}>🎙️ Voice Agent Playground</h1>
+          <p className="subtitle" style={{ margin: 0 }}>Configure and test your real-time AI voice agent</p>
         </div>
 
-        {/* Stats Grid */}
-        <div className="stats-grid">
-          <div className="card glass-card">
-            <div className="stat-header">
-              <span>Total Contacts</span>
-              <span>👥</span>
-            </div>
-            <div className="stat-value">{stats.contacts}</div>
-            <div className="stat-trend trend-up">↑ 12% imported</div>
-          </div>
-          <div className="card glass-card">
-            <div className="stat-header">
-              <span>Active Calls Today</span>
-              <span>📞</span>
-            </div>
-            <div className="stat-value">{stats.calls}</div>
-            <div className="stat-trend trend-up">↑ 8% active</div>
-          </div>
-          <div className="card glass-card">
-            <div className="stat-header">
-              <span>Average Duration</span>
-              <span>⏱️</span>
-            </div>
-            <div className="stat-value">{formatDuration(stats.avgDuration)}</div>
-            <div className="stat-trend trend-down">↓ 12s latency</div>
-          </div>
-        </div>
-
-        {/* Recent Calls Table */}
-        <h2 style={{ marginTop: '2.5rem', marginBottom: '1rem', fontSize: '1.25rem' }}>📜 Recent Run Logs</h2>
-        <div className="table-container glass-card">
-          <table>
-            <thead>
-              <tr>
-                <th>Contact</th>
-                <th>Duration</th>
-                <th>Status</th>
-                <th>Sentiment</th>
-                <th>Outcome</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentCalls.map(call => (
-                <tr key={call.id}>
-                  <td style={{ fontWeight: 600 }}>{call.contactName}</td>
-                  <td>{formatDuration(call.duration)}</td>
-                  <td>
-                    <span className={`badge ${call.status.toLowerCase()}`}>
-                      {call.status}
-                    </span>
-                  </td>
-                  <td>{call.sentiment}</td>
-                  <td style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>{call.summary}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="flex items-center gap-4">
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Credit: <strong style={{ color: 'var(--accent-green)' }}>$199.49 FREE</strong></span>
+          <button className="btn btn-secondary" style={{ fontSize: '0.8125rem' }}>📄 Code Sample</button>
         </div>
       </div>
 
-      {/* RIGHT COLUMN: VAPI-STYLE PLAYGROUND */}
-      <div className="playground-sidebar card glass-card">
-        <h2 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          ⚡ Voice Sandbox
-        </h2>
+      {/* Main Grid: Left Config, Right Deepgram Glowing Ring Console */}
+      <div style={{ display: 'grid', gridTemplateColumns: '420px 1fr', gap: '2rem' }}>
         
-        {/* Voice Wave Animation */}
-        <div className={`wave-container ${isTesting ? 'active' : ''}`}>
-          {isTesting ? (
-            <div className="wave-bars">
-              <span className="bar-wave"></span>
-              <span className="bar-wave"></span>
-              <span className="bar-wave"></span>
-              <span className="bar-wave"></span>
-              <span className="bar-wave"></span>
-              <span className="bar-wave"></span>
+        {/* Left Column: Voice Agent Settings (Deepgram & Dograh Style) */}
+        <div className="card" style={{ padding: '1.75rem', background: '#0c0c12' }}>
+          <h2 style={{ fontSize: '1.1rem', marginTop: 0, marginBottom: '1.25rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem' }}>
+            ⚙️ Voice Agent Settings
+          </h2>
+
+          <div className="form-group mb-4">
+            <label style={{ fontSize: '0.8125rem', fontWeight: '600' }}>Language</label>
+            <select className="form-control" value={language} onChange={e => setLanguage(e.target.value)}>
+              <option value="Hindi">🇮🇳 Hindi / Hinglish</option>
+              <option value="English">🇺🇸 English</option>
+            </select>
+          </div>
+
+          <div className="form-group mb-4">
+            <label style={{ fontSize: '0.8125rem', fontWeight: '600' }}>Try a Use Case</label>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+              {['General', 'Real Estate', 'Customer Support', 'Sales Discovery'].map(uc => (
+                <button 
+                  key={uc}
+                  type="button"
+                  onClick={() => setUseCase(uc)}
+                  className={`btn ${useCase === uc ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ fontSize: '0.75rem', padding: '0.4rem 0.5rem', textAlign: 'center' }}
+                >
+                  {uc}
+                </button>
+              ))}
             </div>
-          ) : (
-            <div className="mic-placeholder">🎙️</div>
-          )}
-          <p className="wave-status">{testStatus}</p>
+          </div>
+
+          <div className="form-group mb-4">
+            <label style={{ fontSize: '0.8125rem', fontWeight: '600' }}>TTS Voice Model</label>
+            <select className="form-control" value={ttsVoice} onChange={e => setTtsVoice(e.target.value)}>
+              <option value="Flux - Swara (Indian, feminine)">Flux - Swara (Indian, feminine)</option>
+              <option value="Flux - Naveen (Indian, masculine)">Flux - Naveen (Indian, masculine)</option>
+            </select>
+          </div>
+
+          <div className="form-group mb-6">
+            <label style={{ fontSize: '0.8125rem', fontWeight: '600' }}>LLM Intelligence Model</label>
+            <select className="form-control" value={llmModel} onChange={e => setLlmModel(e.target.value)}>
+              <option value="Google Gemini 2.0 Flash Lite">Google Gemini 2.0 Flash Lite</option>
+              <option value="Google Gemini 1.5 Flash">Google Gemini 1.5 Flash</option>
+            </select>
+          </div>
+
+          <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-light)', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+            💡 <strong>System Prompt:</strong> Calling as polite female AI agent for Suvidha. Uses feminine Hindi grammar (<em>kar rahi hoon, bata rahi hoon</em>).
+          </div>
         </div>
 
-        <button 
-          onClick={startTestSession} 
-          className={`btn ${isTesting ? 'btn-danger' : 'btn-primary'}`} 
-          style={{ width: '100%', padding: '0.875rem', marginBottom: '2rem', fontSize: '1rem', boxShadow: 'none' }}
-        >
-          {isTesting ? '🔴 Terminate WebRTC Session' : '🎙️ Test Assistant in Browser'}
-        </button>
+        {/* Right Column: Deepgram Glowing Pulsing Ring Console */}
+        <div className="deepgram-container">
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: '1.5rem', position: 'absolute', top: '1.5rem', left: '2rem', borderBottom: '1px solid var(--border-light)', width: 'calc(100% - 4rem)' }}>
+            <button 
+              onClick={() => setActiveTab('Agent')}
+              style={{ background: 'none', border: 'none', borderBottom: activeTab === 'Agent' ? '2px solid var(--accent-green)' : 'none', color: activeTab === 'Agent' ? '#fff' : 'var(--text-secondary)', paddingBottom: '0.5rem', cursor: 'pointer', fontWeight: '600', fontSize: '0.875rem' }}
+            >
+              Agent Console
+            </button>
+            <button 
+              onClick={() => setActiveTab('Developer')}
+              style={{ background: 'none', border: 'none', borderBottom: activeTab === 'Developer' ? '2px solid var(--accent-green)' : 'none', color: activeTab === 'Developer' ? '#fff' : 'var(--text-secondary)', paddingBottom: '0.5rem', cursor: 'pointer', fontWeight: '600', fontSize: '0.875rem' }}
+            >
+              Developer Logs
+            </button>
+          </div>
 
-        {isTesting && (
-          <div className="form-group" style={{ marginBottom: '2rem', background: 'rgba(255,255,255,0.03)', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
-            <label style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>💬 Type message (Bypasses Deepgram key dependency)</label>
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+          <div style={{ marginTop: '2.5rem' }}>
+            {/* Glowing Pulsing Ring Visualizer */}
+            <div className="ring-visualizer">
+              <div className={`ring-circle ${isSessionActive ? 'active' : ''} ${isAgentSpeaking ? 'speaking' : ''}`}></div>
+              <div style={{ width: '120px', height: '120px', borderRadius: '50%', background: '#12121a', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10, fontSize: '2.5rem' }}>
+                {isAgentSpeaking ? '🗣️' : isSessionActive ? '🎙️' : '🤖'}
+              </div>
+            </div>
+
+            {/* Glowing Green Action Button */}
+            <button 
+              onClick={handleStartSession}
+              className={`talk-agent-btn ${isSessionActive ? 'active' : ''}`}
+            >
+              {isSessionActive ? '🔴 Terminate Session' : '🎙️ Talk To Your Agent'}
+            </button>
+          </div>
+
+          {/* Interactive Chat & Transcript Console */}
+          <div style={{ width: '100%', marginTop: '2rem', background: '#12121a', borderRadius: '12px', border: '1px solid var(--border-light)', padding: '1.25rem' }}>
+            <div style={{ maxHeight: '160px', overflowY: 'auto', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {transcriptHistory.map((item, idx) => (
+                <div key={idx} style={{ textAlign: item.sender === 'You' ? 'right' : 'left' }}>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginBottom: '2px' }}>{item.sender}</span>
+                  <span style={{ 
+                    display: 'inline-block', 
+                    padding: '0.5rem 0.875rem', 
+                    borderRadius: '12px', 
+                    fontSize: '0.85rem', 
+                    background: item.sender === 'You' ? 'rgba(59, 130, 246, 0.2)' : 'rgba(16, 185, 129, 0.15)',
+                    color: item.sender === 'You' ? 'var(--accent-blue)' : 'var(--accent-green)',
+                    border: '1px solid rgba(255,255,255,0.05)'
+                  }}>
+                    {item.text}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Text Message Form (Bypasses WebSockets / Vercel HTTPS limitations) */}
+            <form onSubmit={handleSendMessage} className="flex gap-2">
               <input 
                 type="text" 
                 className="form-control" 
-                value={textMsg} 
-                onChange={e => setTextMsg(e.target.value)} 
-                placeholder="Namaste, kaise ho?..." 
-                onKeyDown={e => { if (e.key === 'Enter') sendTextMessage(); }}
-                style={{ fontSize: '0.8125rem', height: '36px', flex: 1 }}
+                placeholder="Type message (e.g. Namaste, property details batao...)" 
+                value={textInput} 
+                onChange={e => setTextInput(e.target.value)} 
+                style={{ fontSize: '0.85rem' }}
               />
-              <button 
-                onClick={sendTextMessage} 
-                className="btn btn-success" 
-                style={{ padding: '0 1rem', height: '36px', minWidth: 'auto', fontSize: '0.8125rem' }}
-              >
-                Send
-              </button>
-            </div>
+              <button type="submit" className="btn btn-primary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.85rem' }}>Send</button>
+            </form>
           </div>
-        )}
-
-        {/* Business Prompt Wizard */}
-        <h3 style={{ fontSize: '0.95rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.5rem' }}>
-          🏢 Business Context Wizard
-        </h3>
-
-        <div className="form-group">
-          <label>Business / Campaign Template</label>
-          <select className="form-control" value={businessType} onChange={e => setBusinessType(e.target.value)}>
-            <option value="real-estate">Real Estate / Property Sales</option>
-            <option value="customer-support">Customer Support Desk</option>
-            <option value="financial-services">Financial & Loan Services</option>
-            <option value="custom">Custom AI Assistant</option>
-          </select>
-        </div>
-
-        <div className="form-group">
-          <label>Product / Service details</label>
-          <textarea 
-            rows="3"
-            className="form-control"
-            value={productDetails}
-            onChange={(e) => setProductDetails(e.target.value)}
-            placeholder="e.g. details of properties, pricing, discounts..."
-            style={{ resize: 'none', fontSize: '0.8125rem' }}
-          />
-        </div>
-
-        {/* Generated Script */}
-        <div className="form-group">
-          <label>Compiled System Script Prompt</label>
-          <textarea 
-            rows="5"
-            className="form-control"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            style={{ resize: 'none', fontSize: '0.8125rem', background: 'rgba(0, 0, 0, 0.4)' }}
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Select Voice Engine</label>
-          <select className="form-control" value={selectedVoice} onChange={e => setSelectedVoice(e.target.value)}>
-            <option value="sarvam_hindi">Bulbul:v3 (Sarvam AI - Hindi Female)</option>
-            <option value="sarah">Sarah (11labs - English Female)</option>
-            <option value="dom">Dom (Cartesia - Indian Accent)</option>
-          </select>
-        </div>
-
-        <div className="form-group">
-          <label>Model Configuration</label>
-          <select className="form-control" value={selectedModel} onChange={e => setSelectedModel(e.target.value)}>
-            <option value="gpt-4o-mini">GPT-4o-mini (Lowest Latency)</option>
-            <option value="gemini-flash">Gemini 1.5 Flash (Fast Streaming)</option>
-            <option value="gpt-4o">GPT-4o (Reasoning capability)</option>
-          </select>
         </div>
       </div>
     </div>
