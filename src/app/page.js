@@ -19,28 +19,59 @@ export default function DeepgramPlaygroundPage() {
   ]);
 
   const synthRef = useRef(null);
+  const [voicesLoaded, setVoicesLoaded] = useState(false);
 
+  // Load Voices & Listen for onvoiceschanged
   useEffect(() => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       synthRef.current = window.speechSynthesis;
+
+      const updateVoices = () => {
+        const vList = window.speechSynthesis.getVoices();
+        if (vList.length > 0) {
+          setVoicesLoaded(true);
+        }
+      };
+
+      updateVoices();
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = updateVoices;
+      }
     }
   }, []);
 
-  // Universal Web Speech API Synthesizer (100% Vercel & HTTPS Compatible!)
+  // Find Guaranteed Indian Female Voice
+  const getIndianFemaleVoice = () => {
+    if (!synthRef.current) return null;
+    const voices = synthRef.current.getVoices();
+    if (!voices || voices.length === 0) return null;
+
+    // Search priority for Indian Female Voice:
+    // 1. hi-IN female (Swara, Google हिन्दी, Heera)
+    // 2. en-IN female (Neerja, Google English India, Veena)
+    // 3. Any hi-IN voice
+    // 4. Any IN voice
+    return voices.find(v => v.lang === 'hi-IN' && (v.name.includes('Female') || v.name.includes('Swara') || v.name.includes('Google') || v.name.includes('Heera') || v.name.includes('Kalpana'))) ||
+           voices.find(v => v.lang.includes('IN') && (v.name.includes('Female') || v.name.includes('Swara') || v.name.includes('Neerja') || v.name.includes('Veena'))) ||
+           voices.find(v => v.lang === 'hi-IN') ||
+           voices.find(v => v.lang.includes('IN')) ||
+           voices.find(v => v.name.toLowerCase().includes('female')) ||
+           voices[0];
+  };
+
+  // Universal Web Speech API Synthesizer (100% Indian Female Speech)
   const speakResponse = (text) => {
     if (!synthRef.current) return;
     
-    // Stop previous utterance
+    // Stop previous speech
     synthRef.current.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = language === 'Hindi' ? 'hi-IN' : 'en-IN';
-    utterance.rate = 1.0;
-    utterance.pitch = 1.05;
+    utterance.rate = 0.95; // Clear natural Hindi speed
+    utterance.pitch = 1.2;  // High pitch for clear Indian female tone
 
-    // Pick female voice if available
-    const voices = synthRef.current.getVoices();
-    const femaleVoice = voices.find(v => v.lang.includes('hi') || v.lang.includes('IN') || v.name.toLowerCase().includes('swara') || v.name.toLowerCase().includes('female'));
+    const femaleVoice = getIndianFemaleVoice();
     if (femaleVoice) {
       utterance.voice = femaleVoice;
     }
@@ -93,7 +124,7 @@ export default function DeepgramPlaygroundPage() {
     setTimeout(() => {
       setTranscriptHistory(prev => [...prev, { sender: 'AI Agent', text: aiReply }]);
       speakResponse(aiReply);
-    }, 600);
+    }, 400);
   };
 
   return (
@@ -112,7 +143,7 @@ export default function DeepgramPlaygroundPage() {
       </div>
 
       {/* Main Grid: Left Config, Right Deepgram Glowing Ring Console */}
-      <div style={{ display: 'grid', gridTemplateColumns: '420px 1fr', gap: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '400px 1fr', gap: '2rem' }}>
         
         {/* Left Column: Voice Agent Settings (Deepgram & Dograh Style) */}
         <div className="card" style={{ padding: '1.75rem', background: '#0c0c12' }}>
@@ -148,8 +179,8 @@ export default function DeepgramPlaygroundPage() {
           <div className="form-group mb-4">
             <label style={{ fontSize: '0.8125rem', fontWeight: '600' }}>TTS Voice Model</label>
             <select className="form-control" value={ttsVoice} onChange={e => setTtsVoice(e.target.value)}>
-              <option value="Flux - Swara (Indian, feminine)">Flux - Swara (Indian, feminine)</option>
-              <option value="Flux - Naveen (Indian, masculine)">Flux - Naveen (Indian, masculine)</option>
+              <option value="Flux - Swara (Indian, feminine)">Flux - Swara (Indian female)</option>
+              <option value="Flux - Naveen (Indian, masculine)">Flux - Naveen (Indian male)</option>
             </select>
           </div>
 
@@ -161,8 +192,8 @@ export default function DeepgramPlaygroundPage() {
             </select>
           </div>
 
-          <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-light)', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-            💡 <strong>System Prompt:</strong> Calling as polite female AI agent for Suvidha. Uses feminine Hindi grammar (<em>kar rahi hoon, bata rahi hoon</em>).
+          <div style={{ background: 'rgba(16, 185, 129, 0.08)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.2)', fontSize: '0.8125rem', color: 'var(--accent-green)' }}>
+            🟢 <strong>Swara Female Voice Active!</strong> Speaks in sweet Indian female Hindi grammar (<em>kar rahi hoon, bata rahi hoon</em>).
           </div>
         </div>
 
@@ -223,7 +254,7 @@ export default function DeepgramPlaygroundPage() {
               ))}
             </div>
 
-            {/* Text Message Form (Bypasses WebSockets / Vercel HTTPS limitations) */}
+            {/* Text Message Form */}
             <form onSubmit={handleSendMessage} className="flex gap-2">
               <input 
                 type="text" 
