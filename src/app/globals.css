@@ -65,17 +65,56 @@ body {
 }
 
 .sidebar {
-  width: 260px;
+  width: 240px;
   background: var(--bg-sidebar);
   backdrop-filter: var(--glass-backdrop);
   -webkit-backdrop-filter: var(--glass-backdrop);
   border-right: 1px solid var(--border-light);
-  padding: 2rem 1rem;
+  padding: 1.5rem 1rem;
   display: flex;
   flex-direction: column;
   position: fixed;
   height: 100vh;
   z-index: 100;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar.collapsed {
+  width: 70px;
+  padding: 1.5rem 0.5rem;
+}
+
+.sidebar-toggle-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-light);
+  color: var(--text-primary);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.2rem;
+  transition: all 0.2s ease;
+}
+
+.sidebar-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 240px;
+  padding: 2.5rem;
+  min-height: 100vh;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.main-content.collapsed {
+  margin-left: 70px;
 }
 
 .sidebar-logo {
@@ -586,10 +625,15 @@ select.form-control {
   align-items: center;
   justify-content: space-between;
   padding: 0 2rem;
-  margin-left: 260px;
+  margin-left: 240px;
   position: sticky;
   top: 0;
   z-index: 90;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.top-header.collapsed {
+  margin-left: 70px;
 }
 
 .onboarding-steps {

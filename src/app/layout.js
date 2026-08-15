@@ -14,6 +14,7 @@ export default function RootLayout({ children }) {
   const [loading, setLoading] = useState(true);
   const [notifications, setNotifications] = useState([]);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -70,71 +71,73 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={inter.className}>
-        <div className="app-container">
-          {/* Dograh & Sarvam AI Style Categorized Sidebar */}
-          <aside className="sidebar">
+        <div className={`app-container ${isSidebarCollapsed ? 'collapsed' : ''}`}>
+          {/* Collapsible Sidebar */}
+          <aside className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
             <div className="sidebar-logo">
-              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, #10b981, #3b82f6)', display: 'inline-block' }}></div>
-              Suvidha AI
+              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, #10b981, #3b82f6)', display: 'inline-block', flexShrink: 0 }}></div>
+              {!isSidebarCollapsed && <span>Suvidha AI</span>}
             </div>
 
-            <div style={{ padding: '0 1rem 1rem 1.25rem', borderBottom: '1px solid var(--border-light)', marginBottom: '1.25rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-              Team: <strong style={{ color: 'var(--text-primary)' }}>Sarvan Sharma's Team</strong>
-            </div>
+            {!isSidebarCollapsed && (
+              <div style={{ padding: '0 1rem 1rem 1.25rem', borderBottom: '1px solid var(--border-light)', marginBottom: '1.25rem', fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                Team: <strong style={{ color: 'var(--text-primary)' }}>Sarvan's Team</strong>
+              </div>
+            )}
 
             <nav style={{ flex: 1, overflowY: 'auto' }}>
-              <div className="nav-section-title">MAIN</div>
+              {!isSidebarCollapsed && <div className="nav-section-title">MAIN</div>}
               <ul className="nav-links">
                 <li>
                   <Link href="/" className="nav-item">
-                    🏠 Overview & Playground
+                    <span>🏠</span> {!isSidebarCollapsed && <span>Overview & Playground</span>}
                   </Link>
                 </li>
               </ul>
 
-              <div className="nav-section-title" style={{ marginTop: '1.25rem' }}>BUILD</div>
+              {!isSidebarCollapsed && <div className="nav-section-title" style={{ marginTop: '1.25rem' }}>BUILD</div>}
               <ul className="nav-links">
                 <li>
                   <Link href="/assistants" className="nav-item">
-                    🤖 Voice Agents
+                    <span>🤖</span> {!isSidebarCollapsed && <span>Voice Agents</span>}
                   </Link>
                 </li>
                 <li>
                   <Link href="/campaigns" className="nav-item">
-                    🎯 Campaigns
+                    <span>🎯</span> {!isSidebarCollapsed && <span>Campaigns</span>}
                   </Link>
                 </li>
                 <li>
                   <Link href="/contacts" className="nav-item">
-                    👥 Lead Lists & CSV
+                    <span>👥</span> {!isSidebarCollapsed && <span>Lead Lists & CSV</span>}
                   </Link>
                 </li>
               </ul>
 
-              <div className="nav-section-title" style={{ marginTop: '1.25rem' }}>DEPLOY & TELEPHONY</div>
+              {!isSidebarCollapsed && <div className="nav-section-title" style={{ marginTop: '1.25rem' }}>DEPLOY & TELEPHONY</div>}
               <ul className="nav-links">
                 <li>
                   <Link href="/settings" className="nav-item">
-                    📞 Telephony & Numbers
+                    <span>📞</span> {!isSidebarCollapsed && <span>Telephony & Numbers</span>}
                   </Link>
                 </li>
                 <li>
                   <Link href="/followups" className="nav-item">
-                    📅 AI Follow-up Queue
+                    <span>📅</span> {!isSidebarCollapsed && <span>AI Follow-up Queue</span>}
                   </Link>
                 </li>
               </ul>
 
-              <div className="nav-section-title" style={{ marginTop: '1.25rem' }}>MONITOR & LOGS</div>
+              {!isSidebarCollapsed && <div className="nav-section-title" style={{ marginTop: '1.25rem' }}>MONITOR & LOGS</div>}
               <ul className="nav-links">
                 <li>
                   <Link href="/calls" className="nav-item">
-                    🎙️ Call Recordings & Transcripts
+                    <span>🎙️</span> {!isSidebarCollapsed && <span>Call Transcripts</span>}
                   </Link>
                 </li>
                 <li>
                   <Link href="/analytics" className="nav-item">
-                    📊 Agent Analytics
+                    <span>📊</span> {!isSidebarCollapsed && <span>Agent Analytics</span>}
                   </Link>
                 </li>
               </ul>
@@ -145,19 +148,30 @@ export default function RootLayout({ children }) {
                   className="nav-item" 
                   style={{ background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', color: 'var(--accent-red)' }}
                 >
-                  🚪 Logout
+                  <span>🚪</span> {!isSidebarCollapsed && <span>Logout</span>}
                 </button>
               </div>
             </nav>
           </aside>
 
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-            {/* Top Bar with Real-Time Notification Bell & Onboarding Banner */}
-            <header className="top-header">
-              <div className="onboarding-steps flex items-center gap-3">
-                <span className="step-pill active">🤖 Suvidha Voice Platform v1.45</span>
-                <span className="step-arrow">•</span>
-                <span className="step-pill">🟢 AWS Swara Engine Online</span>
+            {/* Top Bar with Sidebar Toggle & Real-Time Notifications */}
+            <header className={`top-header ${isSidebarCollapsed ? 'collapsed' : ''}`}>
+              <div className="flex items-center gap-4">
+                {/* Sidebar Collapse Toggle Button */}
+                <button 
+                  className="sidebar-toggle-btn" 
+                  onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                  title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+                >
+                  {isSidebarCollapsed ? '☰' : '◧'}
+                </button>
+
+                <div className="onboarding-steps flex items-center gap-3">
+                  <span className="step-pill active">🤖 Suvidha Voice v1.45</span>
+                  <span className="step-arrow">•</span>
+                  <span className="step-pill">🟢 AWS Swara Engine Online</span>
+                </div>
               </div>
 
               {/* Notification Bell */}
@@ -193,7 +207,7 @@ export default function RootLayout({ children }) {
               </div>
             </header>
 
-            <main className="main-content" style={{ marginLeft: 0 }}>
+            <main className={`main-content ${isSidebarCollapsed ? 'collapsed' : ''}`}>
               {children}
             </main>
           </div>
