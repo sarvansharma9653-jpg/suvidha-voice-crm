@@ -75,21 +75,21 @@ wss.on('connection', (ws, req) => {
   const getSmartFallbackReply = (text, prompt) => {
     const input = (text || '').toLowerCase().trim();
     if (input.includes('namaste') || input.includes('hello') || input.includes('hi') || input.includes('kaise')) {
-      return 'Namaste! Main Suvidha AI Assistant bol raha hoon. Aap kaise hain aur kya sahayata chahiye?';
+      return 'Namaste! Main Suvidha AI Assistant bol rahi hoon. Aap kaise hain aur main aapki kya sahayata kar sakti hoon?';
     }
     if (input.includes('kaun') || input.includes('who') || input.includes('naam')) {
-      return 'Main Suvidha Voice CRM ka Automated AI Calling Agent hoon.';
+      return 'Main Suvidha Voice CRM ki Automated AI Calling Assistant hoon.';
     }
     if (input.includes('price') || input.includes('cost') || input.includes('kitna') || input.includes('paise')) {
       return 'Aapka poora AI Voice setup Free AWS Credits par chal raha hai. Aapko koi extra charges nahi dene hain.';
     }
     if (input.includes('detail') || input.includes('jaankari') || input.includes('product') || input.includes('batao')) {
-      return 'Suvidha AI Voice CRM aapke customers ko automated Hindi calls karke leads qualify karta hai.';
+      return 'Suvidha AI Voice CRM aapke customers ko automated Hindi calls karke leads qualify karti hai.';
     }
     if (input.includes('bye') || input.includes('alvida') || input.includes('dhanyawad') || input.includes('thanks')) {
       return 'Dhanyawad Suvidha AI se baat karne ke liye! Aapka din shubh ho.';
     }
-    return 'Ji bilkul, main aapki baat samajh raha hoon. Kripya bataiye aapko is baare mein kya jaankari chahiye?';
+    return 'Ji bilkul, main aapki baat samajh rahi hoon. Kripya bataiye main aapki kya sahayata kar sakti hoon?';
   };
 
   // Generate reply from LLM and pipe to TTS
