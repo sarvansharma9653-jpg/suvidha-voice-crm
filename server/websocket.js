@@ -406,6 +406,6 @@ wss.on('connection', (ws, req) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`🚀 Suvidha Voice WebSocket server is running on port ${PORT}`);
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Suvidha Voice WebSocket server is running on port ${PORT} (0.0.0.0)`);
 });
