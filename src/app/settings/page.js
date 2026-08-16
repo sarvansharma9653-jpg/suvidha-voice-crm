@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
 export default function SettingsPage() {
-  const [provider, setProvider] = useState('plivo');
+  const [provider, setProvider] = useState('exotel');
   const [accountSid, setAccountSid] = useState('');
   const [authToken, setAuthToken] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('+91');
@@ -25,7 +25,7 @@ export default function SettingsPage() {
       setMetaPhoneNumberId(localStorage.getItem('metaPhoneNumberId') || '');
       setAdminNumber(localStorage.getItem('adminNumber') || '+917707978068');
       setExotelSubdomain(localStorage.getItem('exotelSubdomain') || '');
-      setProvider(localStorage.getItem('telephonyProvider') || 'plivo');
+      setProvider(localStorage.getItem('telephonyProvider') || 'exotel');
       setAccountSid(localStorage.getItem('accountSid') || '');
       setAuthToken(localStorage.getItem('authToken') || '');
       setPhoneNumber(localStorage.getItem('phoneNumber') || '+91');
@@ -49,7 +49,7 @@ export default function SettingsPage() {
       if (error) throw error;
 
       if (data) {
-        setProvider(data.provider || 'plivo');
+        setProvider(data.provider || 'exotel');
         setAccountSid(data.account_sid || '');
         setAuthToken(data.auth_token || '');
         setPhoneNumber(data.phone_number || '+91');
@@ -107,7 +107,7 @@ export default function SettingsPage() {
         }
       }
 
-      setStatus({ type: 'success', message: '🎉 Telephony Credentials & WhatsApp Alert Settings Saved Successfully!' });
+      setStatus({ type: 'success', message: '🎉 Exotel India Telephony & WhatsApp Settings Saved Successfully!' });
     } catch (err) {
       setStatus({ type: 'error', message: `❌ Error: ${err.message}` });
     } finally {
@@ -129,25 +129,25 @@ export default function SettingsPage() {
 
   // Dynamic Provider Specific Labels
   const getSidLabel = () => {
+    if (provider === 'exotel') return 'Exotel API Key';
     if (provider === 'plivo') return 'Plivo Auth ID';
     if (provider === 'twilio') return 'Twilio Account SID';
-    if (provider === 'exotel') return 'Exotel Account SID / Subdomain';
     if (provider === 'sarvam_vobiz') return 'Sarvam API Key';
     return 'Account SID / API Key';
   };
 
   const getAuthLabel = () => {
+    if (provider === 'exotel') return 'Exotel Auth Token / API Secret';
     if (provider === 'plivo') return 'Plivo Auth Token';
     if (provider === 'twilio') return 'Twilio Auth Token';
-    if (provider === 'exotel') return 'Exotel Auth Token / API Secret';
     if (provider === 'sarvam_vobiz') return 'Sarvam Secret Token';
     return 'Auth Token / API Secret';
   };
 
   const getPhoneLabel = () => {
+    if (provider === 'exotel') return 'Exotel Virtual Number (+91...)';
     if (provider === 'plivo') return 'Plivo Indian Virtual Number (+91...)';
     if (provider === 'twilio') return 'Twilio Phone Number (+17372212163)';
-    if (provider === 'exotel') return 'Exotel Virtual Number (+91...)';
     if (provider === 'sarvam_vobiz') return 'Sarvam Active Number (+917965854130)';
     return 'Caller Phone Number';
   };
@@ -157,7 +157,7 @@ export default function SettingsPage() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1>⚙️ Telephony & WhatsApp Settings</h1>
-          <p className="subtitle">Connect your calling provider and configure instant WhatsApp Hot Lead alerts</p>
+          <p className="subtitle">Connect your preferred calling provider and configure instant WhatsApp Hot Lead alerts</p>
         </div>
       </div>
 
@@ -183,10 +183,10 @@ export default function SettingsPage() {
             <div className="form-group">
               <label>Select Telephony Provider</label>
               <select className="form-control" value={provider} onChange={e => setProvider(e.target.value)}>
+                <option value="exotel">🇮🇳 Exotel India (+91 Commercial SaaS Telephony - Recommended)</option>
                 <option value="plivo">⚡ Plivo Telephony (Low-Cost Indian +91 Calling)</option>
                 <option value="twilio">🇺🇸 Twilio (Real Outbound Calls via +17372212163)</option>
                 <option value="sarvam_vobiz">🇮🇳 Sarvam Vobiz (+917965854130 Real Indian Calling)</option>
-                <option value="exotel">🇮🇳 Exotel India (+91 Enterprise Calling)</option>
                 <option value="webphone">🌐 Built-in Free Browser Webphone (Testing Mode)</option>
               </select>
             </div>
@@ -195,13 +195,14 @@ export default function SettingsPage() {
               <>
                 {provider === 'exotel' && (
                   <div className="form-group">
-                    <label>Exotel Subdomain / Account ID</label>
+                    <label>Exotel Subdomain (e.g. mycompany.exotel.com)</label>
                     <input 
+                      required
                       type="text" 
                       className="form-control" 
                       value={exotelSubdomain} 
                       onChange={e => setExotelSubdomain(e.target.value)} 
-                      placeholder="e.g. mycompany.exotel.com" 
+                      placeholder="e.g. suvidha.exotel.com" 
                     />
                   </div>
                 )}
@@ -214,7 +215,7 @@ export default function SettingsPage() {
                     className="form-control" 
                     value={accountSid} 
                     onChange={e => setAccountSid(e.target.value)} 
-                    placeholder={provider === 'plivo' ? 'MAXXXXXXXXXXXXXXXXXX' : 'Enter Account SID...'} 
+                    placeholder={provider === 'exotel' ? 'Enter Exotel API Key...' : 'Enter Account SID...'} 
                   />
                 </div>
 
@@ -226,7 +227,7 @@ export default function SettingsPage() {
                     className="form-control" 
                     value={authToken} 
                     onChange={e => setAuthToken(e.target.value)} 
-                    placeholder={provider === 'plivo' ? 'Enter Plivo Auth Token...' : 'Enter Auth Token...'} 
+                    placeholder={provider === 'exotel' ? 'Enter Exotel Auth Token...' : 'Enter Auth Token...'} 
                   />
                 </div>
 
@@ -238,7 +239,7 @@ export default function SettingsPage() {
                     className="form-control" 
                     value={phoneNumber} 
                     onChange={e => setPhoneNumber(e.target.value)} 
-                    placeholder="+919876543210" 
+                    placeholder="+91..." 
                   />
                 </div>
               </>
@@ -250,7 +251,7 @@ export default function SettingsPage() {
           </form>
         </div>
 
-        {/* WhatsApp Hot Lead Alerts Setup (Pure & Focused) */}
+        {/* WhatsApp Hot Lead Alerts Setup */}
         <div className="card" style={{ padding: '2rem' }}>
           <h2 style={{ marginTop: 0, fontSize: '1.25rem' }}>📱 WhatsApp Hot Lead Alerts</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
