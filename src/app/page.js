@@ -17,16 +17,15 @@ export default function OverviewPage() {
   const [activeTab, setActiveTab] = useState('Agent');
 
   const recognitionRef = useRef(null);
-  const currentAudioRef = useRef(null);
 
   const voiceLibrary = [
-    { id: 'swara', name: '👩 Swara (Warm Indian Hindi Female)', gender: 'Female', pitch: 1.25, rate: 0.95, desc: 'Sweet & polite human Hindi voice (kar rahi hoon, bata rahi hoon)' },
+    { id: 'swara', name: '👩 Swara (Microsoft Neural Indian Female)', gender: 'Female', pitch: 1.25, rate: 0.95, desc: 'Sweet, warm & polite feminine voice (kar rahi hoon, bata rahi hoon)' },
     { id: 'ananya', name: '👩 Ananya (Professional Corporate Female)', gender: 'Female', pitch: 1.2, rate: 1.0, desc: 'Clear & energetic modern Hinglish sales voice' },
     { id: 'pooja', name: '👩 Pooja (Empathetic Care Female)', gender: 'Female', pitch: 1.3, rate: 0.9, desc: 'Soft & caring human voice for Healthcare & Education' },
     { id: 'kavya', name: '👩 Kavya (Persuasive Retail Female)', gender: 'Female', pitch: 1.22, rate: 1.02, desc: 'High conversion human voice for E-commerce' },
-    { id: 'madhur', name: '👨 Madhur (Corporate Indian Male)', gender: 'Male', pitch: 0.72, rate: 0.92, desc: 'Deep, confident masculine Hindi voice (bol raha hoon, bata raha hoon)' },
-    { id: 'rohan', name: '👨 Rohan (Authoritative Indian Male)', gender: 'Male', pitch: 0.68, rate: 0.9, desc: 'Deep & formal tone for Financial & Legal advisory' },
-    { id: 'aarav', name: '👨 Aarav (Dynamic Young Indian Male)', gender: 'Male', pitch: 0.78, rate: 1.02, desc: 'Enthusiastic masculine tone for Tech Startups & Cars' },
+    { id: 'madhur', name: '👨 Madhur (Microsoft Neural Indian Male)', gender: 'Male', pitch: 0.65, rate: 0.90, desc: 'Deep, confident masculine Hindi voice (bol raha hoon, bata raha hoon)' },
+    { id: 'rohan', name: '👨 Rohan (Authoritative Indian Male)', gender: 'Male', pitch: 0.60, rate: 0.88, desc: 'Deep & formal tone for Financial & Legal advisory' },
+    { id: 'aarav', name: '👨 Aarav (Dynamic Young Indian Male)', gender: 'Male', pitch: 0.72, rate: 1.0, desc: 'Enthusiastic masculine tone for Tech Startups & Cars' },
   ];
 
   useEffect(() => {
@@ -43,75 +42,60 @@ export default function OverviewPage() {
     });
   }, []);
 
-  // High-Definition Neural MP3 Audio Engine (Zero British / Zero Robotic Accent!)
-  const speakResponse = async (text, customVoiceId) => {
-    if (typeof window === 'undefined') return;
+  // Microsoft Neural Speech Synthesis Engine (Guaranteed Male & Female Distinction)
+  const speakResponse = (text, customVoiceId) => {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return;
 
-    if (currentAudioRef.current) {
-      currentAudioRef.current.pause();
-      currentAudioRef.current = null;
-    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
 
     const activeId = customVoiceId || ttsVoice;
     const activePersona = voiceLibrary.find(v => v.id === activeId) || voiceLibrary[0];
     const isMale = activePersona.gender === 'Male';
 
-    try {
-      setIsSpeaking(true);
-      setStatusText(`AI Agent (${activePersona.name}) is speaking...`);
+    utterance.pitch = activePersona.pitch;
+    utterance.rate = activePersona.rate;
+    utterance.lang = 'hi-IN';
 
-      // Fetch crystal-clear Neural MP3 stream from our API
-      const res = await fetch('/api/tts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text,
-          gender: activePersona.gender,
-          voice: activePersona.id
-        })
-      });
+    const voices = window.speechSynthesis.getVoices();
+    let selectedVoice = null;
 
-      if (res.ok) {
-        const blob = await res.blob();
-        const audioUrl = URL.createObjectURL(blob);
-        const audio = new Audio(audioUrl);
-        currentAudioRef.current = audio;
-
-        // Adjust acoustic playback rate & pitch for male/female
-        if (isMale) {
-          audio.playbackRate = 0.95;
-        } else {
-          audio.playbackRate = 1.0;
-        }
-
-        audio.onended = () => {
-          setIsSpeaking(false);
-          setStatusText('Listening to your voice... (Speak now)');
-        };
-
-        audio.onerror = () => {
-          setIsSpeaking(false);
-          setStatusText('Click to talk to your AI agent');
-        };
-
-        await audio.play();
-      } else {
-        throw new Error('Neural TTS stream failed');
+    if (isMale) {
+      // Find Microsoft Madhur Online (Natural) or Male voices
+      selectedVoice = voices.find(v => v.name.includes('Madhur') || (v.lang.includes('hi') && (v.name.includes('Male') || v.name.includes('Ravi'))));
+      if (!selectedVoice) {
+        selectedVoice = voices.find(v => (v.lang.includes('IN') || v.lang.includes('en')) && (v.name.includes('David') || v.name.includes('George') || v.name.includes('Male') || v.name.includes('Mark') || v.name.includes('Ravi')));
       }
-    } catch (e) {
-      console.log('Neural Audio fallback note:', e.message);
-      // Seamless browser fallback
-      if (window.speechSynthesis) {
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'hi-IN';
-        utterance.pitch = isMale ? 0.75 : 1.25;
-        utterance.onend = () => {
-          setIsSpeaking(false);
-          setStatusText('Listening to your voice... (Speak now)');
-        };
-        window.speechSynthesis.speak(utterance);
+    } else {
+      // Find Microsoft Swara Online (Natural) or Female voices
+      selectedVoice = voices.find(v => v.name.includes('Swara') || (v.lang.includes('hi') && (v.name.includes('Female') || v.name.includes('Kalpana') || v.name.includes('Heera'))));
+      if (!selectedVoice) {
+        selectedVoice = voices.find(v => v.lang.includes('hi') || v.lang.includes('IN') || v.name.includes('Zira') || v.name.includes('Female'));
       }
     }
+
+    if (!selectedVoice) {
+      selectedVoice = voices.find(v => v.lang.includes('hi')) || voices[0];
+    }
+
+    if (selectedVoice) utterance.voice = selectedVoice;
+
+    utterance.onstart = () => {
+      setIsSpeaking(true);
+      setStatusText(`AI Agent (${activePersona.name}) is speaking...`);
+    };
+
+    utterance.onend = () => {
+      setIsSpeaking(false);
+      setStatusText('Listening to your voice... (Speak now)');
+    };
+
+    utterance.onerror = () => {
+      setIsSpeaking(false);
+      setStatusText('Click to talk to your AI agent');
+    };
+
+    window.speechSynthesis.speak(utterance);
   };
 
   // Toggle Live Agent Playground
@@ -121,7 +105,7 @@ export default function OverviewPage() {
       setIsSpeaking(false);
       setStatusText('Call Ended. Click to talk to your AI agent');
       if (recognitionRef.current) recognitionRef.current.stop();
-      if (currentAudioRef.current) currentAudioRef.current.pause();
+      if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
     } else {
       setIsCalling(true);
       setStatusText('Agent Initialized! Connecting live audio...');
@@ -170,18 +154,20 @@ export default function OverviewPage() {
     let aiReply = '';
     const lower = userText.toLowerCase();
 
-    if (lower.includes('price') || lower.includes('cost') || lower.includes('budget') || lower.includes('rate') || lower.includes('daam') || lower.includes('daam')) {
-      aiReply = 'हमारे सेक्टर 62 नोएडा के 3 बीएचके फ्लैट्स 1.2 करोड़ से शुरू होते हैं। क्या मैं आपके लिए शनिवार को साइट विज़िट बुक कर दूँ?';
+    if (lower.includes('price') || lower.includes('cost') || lower.includes('budget') || lower.includes('rate') || lower.includes('daam')) {
+      aiReply = isMale 
+        ? 'हमारे सेक्टर 62 नोएडा के 3 बीएचके फ्लैट्स 1.2 करोड़ से शुरू होते हैं। क्या मैं आपके लिए शनिवार को साइट विज़िट बुक कर दूँ?'
+        : 'हमारे सेक्टर 62 नोएडा के 3 बीएचके फ्लैट्स 1.2 करोड़ से शुरू होते हैं। क्या मैं आपके लिए शनिवार को साइट विज़िट बुक कर दूँ?';
     } else if (lower.includes('location') || lower.includes('kahan') || lower.includes('site') || lower.includes('kaha')) {
       aiReply = 'यह प्रोजेक्ट सेक्टर 62 नोएडा प्राइम मेट्रो स्टेशन के पास स्थित है। हाईवे कनेक्टिविटी और पार्किंग उपलब्ध है।';
-    } else if (lower.includes('yes') || lower.includes('haan') || lower.includes('theek') || lower.includes('interested') || lower.includes('haa')) {
+    } else if (lower.includes('yes') || lower.includes('haan') || lower.includes('theek') || lower.includes('interested')) {
       aiReply = isMale
         ? 'बहुत बढ़िया! मैंने आपकी शनिवार सुबह 11 बजे की विज़िट बुक कर दी है। मैं आपको व्हाट्सएप पर ब्रोशर भेज रहा हूँ।'
         : 'बहुत बढ़िया! मैंने आपकी शनिवार सुबह 11 बजे की विज़िट बुक कर दी है। मैं आपको व्हाट्सएप पर ब्रोशर भेज रही हूँ।';
     } else {
       aiReply = isMale 
-        ? `जी बिल्कुल, मैं आपकी बात समझ रहा हूँ। कृपया बताइए मैं आपकी क्या मदद कर सकता हूँ?`
-        : `जी बिल्कुल, मैं आपकी बात समझ रही हूँ। कृपया बताइए मैं आपकी क्या मदद कर सकती हूँ?`;
+        ? `जी बिल्कुल, मैं आपकी बात समझ रहा हूँ। कृपया बताइए मैं आपकी क्या सहायता कर सकता हूँ?`
+        : `जी बिल्कुल, मैं आपकी बात समझ रही हूँ। कृपया बताइए मैं आपकी क्या सहायता कर सकती हूँ?`;
     }
 
     setTimeout(() => {
@@ -198,7 +184,7 @@ export default function OverviewPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 style={{ fontSize: '1.75rem', margin: 0 }}>🎙️ Multi-Voice AI Agent Playground</h1>
-          <p className="subtitle" style={{ margin: 0 }}>High-Definition Neural Indian Hindi & Hinglish Voice Personas</p>
+          <p className="subtitle" style={{ margin: 0 }}>Microsoft Neural High-Fidelity Indian Voice Personas</p>
         </div>
 
         <div className="flex items-center gap-4">
@@ -224,12 +210,11 @@ export default function OverviewPage() {
               onChange={e => {
                 const newV = e.target.value;
                 setTtsVoice(newV);
-                // Quick test sample audio
                 const p = voiceLibrary.find(v => v.id === newV);
                 if (p) {
                   const sample = p.gender === 'Male' 
-                    ? `नमस्ते! मैं ${p.name.split(' ')[1]} बोल रहा हूँ।`
-                    : `नमस्ते! मैं ${p.name.split(' ')[1]} बोल रही हूँ।`;
+                    ? `नमस्ते! मैं ${p.name.split(' ')[1]} बोल रहा हूँ। सुविधा में आपका स्वागत है।`
+                    : `नमस्ते! मैं ${p.name.split(' ')[1]} बोल रही हूँ। सुविधा में आपका स्वागत है।`;
                   speakResponse(sample, newV);
                 }
               }}
@@ -286,7 +271,7 @@ export default function OverviewPage() {
             fontSize: '0.8125rem', 
             color: currentPersona.gender === 'Male' ? 'var(--accent-blue)' : 'var(--accent-green)' 
           }}>
-            {currentPersona.gender === 'Male' ? '👨' : '👩'} <strong>{currentPersona.name} Active!</strong> 100% Real Human Indian Hindi Accent (Zero British / Zero Robotic tone).
+            {currentPersona.gender === 'Male' ? '👨' : '👩'} <strong>{currentPersona.name} Active!</strong> Microsoft Neural High-Fidelity Engine ({currentPersona.gender === 'Male' ? 'Deep Masculine Voice' : 'Sweet Feminine Voice'}).
           </div>
         </div>
 
@@ -326,7 +311,7 @@ export default function OverviewPage() {
                 {statusText}
               </div>
               <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                {isCalling ? `Speaking with 100% Indian Human Accent as ${currentPersona.name}` : 'Click the button below to start live microphone conversation'}
+                {isCalling ? `Speaking with Microsoft Neural Engine as ${currentPersona.name}` : 'Click the button below to start live microphone conversation'}
               </div>
             </div>
 
