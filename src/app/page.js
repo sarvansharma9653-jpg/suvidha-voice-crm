@@ -5,37 +5,37 @@ import { store } from '@/lib/store';
 export default function OverviewPage() {
   const [stats, setStats] = useState({ totalCalls: 0, completed: 0, hotLeads: 0, totalMinutes: 0 });
   const [language, setLanguage] = useState('Hindi');
-  const [useCase, setUseCase] = useState('Real Estate');
+  const [useCase, setUseCase] = useState('Design Suvidha Marketing');
   const [ttsVoice, setTtsVoice] = useState('madhur');
   const [llmModel, setLlmModel] = useState('Google Gemini 2.0 Flash Lite');
   
-  // Custom Introduction Script Editable by User
-  const [customIntroScript, setCustomIntroScript] = useState('नमस्ते सर! मैं सुविधा वॉइस सी आर एम से बात कर रहा हूँ। बताइए, आज मैं आपकी क्या सहायता कर सकता हूँ?');
+  // Custom Introduction Script for Design Suvidha
+  const [customIntroScript, setCustomIntroScript] = useState('नमस्ते सर! मैं Design Suvidha से बात कर रहा हूँ। हम आपके बिजनेस की ऑनलाइन ग्रोथ के लिए Meta Ads, SEO, वेबसाइट डेवलपमेंट और सोशल मीडिया मार्केटिंग सर्विसेज प्रोवाइड करते हैं। क्या आप अपने बिजनेस की सेल्स और विजिबिलिटी बढ़ाना चाहते हैं?');
 
   // Audio Ring & Speech State
   const [isCalling, setIsCalling] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [statusText, setStatusText] = useState('Click to talk to your AI agent');
+  const [statusText, setStatusText] = useState('Click to talk to your Design Suvidha AI Agent');
   const [transcriptHistory, setTranscriptHistory] = useState([]);
   const [activeTab, setActiveTab] = useState('Agent');
 
   const recognitionRef = useRef(null);
 
   const voiceLibrary = [
-    { id: 'madhur', name: '👨 Madhur (Corporate Indian Male)', gender: 'Male', pitch: 0.65, rate: 0.90, desc: 'Deep, masculine Indian Hindi sales consultant (बोल रहा हूँ)' },
-    { id: 'rohan', name: '👨 Rohan (Executive & Financial Male)', gender: 'Male', pitch: 0.58, rate: 0.88, desc: 'Deep, authoritative masculine voice for Loans & Legal' },
-    { id: 'aarav', name: '👨 Aarav (Dynamic Young Indian Male)', gender: 'Male', pitch: 0.70, rate: 0.98, desc: 'Enthusiastic masculine tone for Tech & Startups' },
-    { id: 'swara', name: '👩 Swara (Warm Real Estate Female)', gender: 'Female', pitch: 1.25, rate: 0.96, desc: 'Sweet, natural & polite Indian female executive (बोल रही हूँ)' },
-    { id: 'ananya', name: '👩 Ananya (Corporate Customer Care Female)', gender: 'Female', pitch: 1.2, rate: 1.0, desc: 'Clear, modern & energetic conversational sales voice' },
-    { id: 'pooja', name: '👩 Pooja (Empathetic Healthcare Female)', gender: 'Female', pitch: 1.28, rate: 0.92, desc: 'Soft & caring human cadence for Clinics & Care' },
-    { id: 'kavya', name: '👩 Kavya (Persuasive Retail & Deals Female)', gender: 'Female', pitch: 1.22, rate: 1.02, desc: 'High conversion human conversational tone' },
+    { id: 'madhur', name: '👨 Madhur (Design Suvidha Senior Growth Consultant)', gender: 'Male', pitch: 0.65, rate: 0.92, desc: 'Deep, confident corporate masculine consultant (बोल रहा हूँ)' },
+    { id: 'rohan', name: '👨 Rohan (Executive Business Development Lead)', gender: 'Male', pitch: 0.58, rate: 0.88, desc: 'Deep, authoritative tone for B2B Digital Marketing' },
+    { id: 'aarav', name: '👨 Aarav (Dynamic Tech & Ads Specialist)', gender: 'Male', pitch: 0.70, rate: 0.98, desc: 'Young & energetic masculine tone for Startups & E-commerce' },
+    { id: 'swara', name: '👩 Swara (Creative Strategy Lead)', gender: 'Female', pitch: 1.25, rate: 0.96, desc: 'Sweet, polite & persuasive female marketing expert (बोल रही हूँ)' },
+    { id: 'ananya', name: '👩 Ananya (Client Growth Manager)', gender: 'Female', pitch: 1.2, rate: 1.0, desc: 'Clear, modern & energetic Hinglish sales voice' },
+    { id: 'pooja', name: '👩 Pooja (Brand Success Advisor)', gender: 'Female', pitch: 1.28, rate: 0.92, desc: 'Soft & caring human cadence for Small Businesses' },
+    { id: 'kavya', name: '👩 Kavya (Social Media & Video Specialist)', gender: 'Female', pitch: 1.22, rate: 1.02, desc: 'High conversion human conversational tone' },
   ];
 
   const scriptTemplates = [
-    { label: '🏢 CRM General', text: 'नमस्ते सर! मैं सुविधा वॉइस सी आर एम से बात कर रहा हूँ। बताइए, आज मैं आपकी क्या सहायता कर सकता हूँ?' },
-    { label: '🏠 Real Estate Sales', text: 'नमस्ते सर! मैं सुविधा रियल एस्टेट से बात कर रहा हूँ। क्या आप नोएडा में प्रीमियम 3 बीएचके फ्लैट्स में इंटरेस्टेड हैं?' },
-    { label: '💰 Pre-Approved Loan', text: 'नमस्ते सर! मैं सुविधा फाइनेंस से बोल रहा हूँ। आपका 5 लाख तक का प्री-अप्रूव्ड लोन रेडी है, क्या मैं डिटेल्स बताऊँ?' },
-    { label: '📞 Customer Support', text: 'नमस्ते! सुविधा कस्टमर केयर में आपका स्वागत है। बताइए, मैं आपकी किस समस्या में मदद करूँ?' }
+    { label: '🎨 Design Suvidha (Growth Pitch)', text: 'नमस्ते सर! मैं Design Suvidha से बात कर रहा हूँ। हम आपके बिजनेस की ऑनलाइन ग्रोथ के लिए Meta Ads, SEO, वेबसाइट डेवलपमेंट और सोशल मीडिया मार्केटिंग सर्विसेज प्रोवाइड करते हैं। क्या आप अपने बिजनेस की सेल्स और विजिबिलिटी बढ़ाना चाहते हैं?' },
+    { label: '📈 Meta & Google Ads', text: 'नमस्ते सर! मैं Design Suvidha से बोल रहा हूँ। क्या आप अपने बिजनेस के लिए हाई-कन्वर्टिंग Facebook और Google Ads से डेली 20-30 क्वालिफाइड लीड्स चाहते हैं?' },
+    { label: '🌐 Website & Landing Page', text: 'नमस्ते सर! Design Suvidha से बात कर रहा हूँ। क्या आप अपने बिजनेस के लिए फास्ट, मॉडर्न वेबसाइट या हाई-कन्वर्टिंग लैंडिंग पेज बनवाना चाहते हैं?' },
+    { label: '📍 SEO & Google Profile', text: 'नमस्ते सर! मैं Design Suvidha से बात कर रहा हूँ। हम Google Business Profile ऑप्टिमाइज़ करते हैं ताकि आपके एरिया में कस्टमर्स आपको सबसे पहले ढूंढ सकें।' }
   ];
 
   useEffect(() => {
@@ -59,7 +59,6 @@ export default function OverviewPage() {
     setTtsVoice(newVoiceId);
     const p = voiceLibrary.find(v => v.id === newVoiceId) || voiceLibrary[0];
     const isMale = p.gender === 'Male';
-    const personaName = p.name.split(' ')[1];
 
     let current = customIntroScript;
     if (isMale && current.includes('रही हूँ')) {
@@ -104,7 +103,7 @@ export default function OverviewPage() {
 
     utterance.onstart = () => {
       setIsSpeaking(true);
-      setStatusText(`AI (${activePersona.name}) is speaking...`);
+      setStatusText(`Design Suvidha AI (${activePersona.name}) is speaking...`);
     };
 
     utterance.onend = () => {
@@ -129,11 +128,13 @@ export default function OverviewPage() {
       if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
     } else {
       setIsCalling(true);
-      setStatusText('Agent Initialized! Connecting live audio...');
+      setStatusText('Connecting with Design Suvidha AI...');
       
-      const welcomeText = customIntroScript.trim() || 'नमस्ते सर! मैं सुविधा से बात कर रहा हूँ। बताइए, आज मैं आपकी क्या सहायता कर सकता हूँ?';
+      const welcomeText = customIntroScript.trim() || (isCurrentMale 
+        ? 'नमस्ते सर! मैं Design Suvidha से बात कर रहा हूँ। हम आपके बिजनेस की ऑनलाइन ग्रोथ के लिए Meta Ads, SEO, और वेबसाइट डेवलपमेंट प्रोवाइड करते हैं। बताइए, आज आपकी क्या सहायता कर सकता हूँ?'
+        : 'नमस्ते सर! मैं Design Suvidha से बात कर रही हूँ। हम आपके बिजनेस की ऑनलाइन ग्रोथ के लिए Meta Ads, SEO, और वेबसाइट डेवलपमेंट प्रोवाइड करते हैं। बताइए, आज आपकी क्या सहायता कर सकती हूँ?');
 
-      setTranscriptHistory([{ sender: `AI Executive (${currentPersona.name.split(' ')[1]})`, text: welcomeText }]);
+      setTranscriptHistory([{ sender: `Design Suvidha AI (${currentPersona.name.split(' ')[1]})`, text: welcomeText }]);
       speakResponse(welcomeText, ttsVoice);
 
       if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
@@ -158,29 +159,34 @@ export default function OverviewPage() {
     }
   };
 
+  // Design Suvidha Intelligent Knowledge Engine
   const handleAgentAIResponse = (userText) => {
     const personaName = currentPersona.name.split(' ')[1];
     let aiReply = '';
     const lower = userText.toLowerCase();
 
-    if (lower.includes('price') || lower.includes('cost') || lower.includes('budget') || lower.includes('rate') || lower.includes('daam') || lower.includes('kitna')) {
-      aiReply = isCurrentMale 
-        ? 'हाँ जी बिल्कुल सर! हमारे सेक्टर 62 नोएडा वाले 3 बीएचके फ्लैट्स सिर्फ 1.2 करोड़ से शुरू हो रहे हैं। क्या मैं आपके लिए इस शनिवार की साइट विज़िट बुक कर दूँ सर?'
-        : 'हाँ जी बिल्कुल सर! हमारे सेक्टर 62 नोएडा वाले 3 बीएचके फ्लैट्स सिर्फ 1.2 करोड़ से शुरू हो रहे हैं। क्या मैं आपके लिए इस शनिवार की साइट विज़िट बुक कर दूँ सर?';
-    } else if (lower.includes('location') || lower.includes('kahan') || lower.includes('site') || lower.includes('kaha') || lower.includes('kidhar')) {
-      aiReply = 'जी, यह प्रोजेक्ट सेक्टर 62 नोएडा में बिल्कुल प्राइम मेट्रो स्टेशन के पास है। हाईवे से सीधी कनेक्टिविटी है और क्लब हाउस भी है।';
-    } else if (lower.includes('yes') || lower.includes('haan') || lower.includes('theek') || lower.includes('interested') || lower.includes('kar do')) {
+    if (lower.includes('meta') || lower.includes('facebook') || lower.includes('insta') || lower.includes('ads') || lower.includes('ad')) {
+      aiReply = 'जी बिल्कुल! Design Suvidha आपके बिजनेस के लिए हाई-कन्वर्टिंग Meta और Instagram Ads रन करता है, जिससे आपको डेली क्वालिफाइड कस्टमर लीड्स मिलती हैं। क्या आप अपने बिजनेस के लिए फ्री ऑडिट चाहते हैं?';
+    } else if (lower.includes('website') || lower.includes('landing page') || lower.includes('web') || lower.includes('site')) {
+      aiReply = 'Design Suvidha अल्ट्रा-फास्ट, मॉडर्न और मोबाइल-फ्रेंडली वेबसाइट्स और लैंडिंग पेज बनाता है जो विजिटर्स को डायरेक्ट कस्टमर्स में कन्वर्ट करते हैं।';
+    } else if (lower.includes('seo') || lower.includes('google') || lower.includes('ranking') || lower.includes('gmb')) {
+      aiReply = 'हम Google Business Profile और लोकल SEO ऑप्टिमाइजेशन करते हैं ताकि आपके एरिया में जब भी कोई आपकी सर्विस सर्च करे, आपकी कंपनी टॉप पर रैंक करे।';
+    } else if (lower.includes('price') || lower.includes('cost') || lower.includes('budget') || lower.includes('rate') || lower.includes('charge') || lower.includes('charges')) {
       aiReply = isCurrentMale
-        ? 'अरे बहुत ही बढ़िया सर! मैंने शनिवार सुबह 11 बजे का टाइम आपके नाम पर लॉक कर दिया है। मैं तुरंत आपको व्हाट्सएप पर ब्रोशर भेज रहा हूँ!'
-        : 'अरे बहुत ही बढ़िया सर! मैंने शनिवार सुबह 11 बजे का टाइम आपके नाम पर लॉक कर दिया है। मैं तुरंत आपको व्हाट्सएप पर ब्रोशर भेज रही हूँ!';
+        ? 'हमारे डिजिटल मार्केटिंग और क्रिएटिव पैकेजेस बहुत ही अफोर्डेबल हैं और बिजनेस के कस्टमाइज्ड गोल पर डिपेंड करते हैं। क्या मैं आपके साथ 10 मिनट का फ्री कंसल्टेशन कॉल बुक कर दूँ?'
+        : 'हमारे डिजिटल मार्केटिंग और क्रिएटिव पैकेजेस बहुत ही अफोर्डेबल हैं और बिजनेस के कस्टमाइज्ड गोल पर डिपेंड करते हैं। क्या मैं आपके साथ 10 मिनट का फ्री कंसल्टेशन कॉल बुक कर दूँ?';
+    } else if (lower.includes('yes') || lower.includes('haan') || lower.includes('theek') || lower.includes('interested') || lower.includes('book')) {
+      aiReply = isCurrentMale
+        ? 'बहुत बढ़िया सर! मैंने Design Suvidha के सीनियर डिजिटल स्ट्रैटेजिस्ट के साथ आपका फ्री कंसल्टेशन शेड्यूल कर दिया है। मैं तुरंत आपको व्हाट्सएप पर हमारी कंपनी प्रोफाइल और केस स्टडीज भेज रहा हूँ!'
+        : 'बहुत बढ़िया सर! मैंने Design Suvidha के सीनियर डिजिटल स्ट्रैटेजिस्ट के साथ आपका फ्री कंसल्टेशन शेड्यूल कर दिया है। मैं तुरंत आपको व्हाट्सएप पर हमारी कंपनी प्रोफाइल और केस स्टडीज भेज रही हूँ!';
     } else {
       aiReply = isCurrentMale 
-        ? `जी बिल्कुल, मैं आपकी बात पूरी तरह समझ रहा हूँ। आप बेझिझक बताइए, आपकी किस प्रकार सहायता कर सकता हूँ?`
-        : `जी बिल्कुल, मैं आपकी बात पूरी तरह समझ रही हूँ। आप बेझिझक बताइए, आपकी किस प्रकार सहायता कर सकती हूँ?`;
+        ? `जी बिल्कुल, मैं आपकी बात समझ रहा हूँ। Design Suvidha सोशल मीडिया मार्केटिंग, SEO, वेबसाइट्स, और वीडियो कंटेंट से बिजनेस ग्रो करने में हेल्प करता है। बताइए, आप अपने बिजनेस में कौन सी सर्विस एक्सप्लोर करना चाहते हैं?`
+        : `जी बिल्कुल, मैं आपकी बात समझ रही हूँ। Design Suvidha सोशल मीडिया मार्केटिंग, SEO, वेबसाइट्स, और वीडियो कंटेंट से बिजनेस ग्रो करने में हेल्प करता है। बताइए, आप अपने बिजनेस में कौन सी सर्विस एक्सप्लोर करना चाहते हैं?`;
     }
 
     setTimeout(() => {
-      setTranscriptHistory(prev => [...prev, { sender: `AI Executive (${personaName})`, text: aiReply }]);
+      setTranscriptHistory(prev => [...prev, { sender: `Design Suvidha AI (${personaName})`, text: aiReply }]);
       speakResponse(aiReply, ttsVoice);
     }, 300);
   };
@@ -190,8 +196,8 @@ export default function OverviewPage() {
       {/* Top Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 style={{ fontSize: '1.75rem', margin: 0 }}>🎙️ Conversational AI Agent Studio</h1>
-          <p className="subtitle" style={{ margin: 0 }}>Customize Introduction Script, Voice Personas (Male/Female), and Test Live</p>
+          <h1 style={{ fontSize: '1.75rem', margin: 0 }}>🎨 Design Suvidha AI Voice Assistant Studio</h1>
+          <p className="subtitle" style={{ margin: 0 }}>Digital Marketing & Creative Solutions AI Calling Agent</p>
         </div>
 
         <div className="flex items-center gap-4">
@@ -201,12 +207,12 @@ export default function OverviewPage() {
       </div>
 
       {/* Main Grid: Left Config, Right Deepgram Glowing Ring Console */}
-      <div style={{ display: 'grid', gridTemplateColumns: '440px 1fr', gap: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '460px 1fr', gap: '2rem' }}>
         
         {/* Left Column: Voice Persona & Custom Script */}
         <div className="card" style={{ padding: '1.75rem', background: '#0c0c12' }}>
           <h2 style={{ fontSize: '1.1rem', marginTop: 0, marginBottom: '1.25rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem' }}>
-            ⚙️ AI Voice & Script Configuration
+            ⚙️ Design Suvidha Voice & Pitch Config
           </h2>
 
           <div className="form-group mb-4">
@@ -229,9 +235,7 @@ export default function OverviewPage() {
 
           {/* Editable Custom Introduction Script */}
           <div className="form-group mb-4">
-            <div className="flex justify-between items-center mb-1">
-              <label style={{ fontSize: '0.8125rem', fontWeight: '600' }}>📝 Custom Introduction Script</label>
-            </div>
+            <label style={{ fontSize: '0.8125rem', fontWeight: '600' }}>📝 Design Suvidha Introduction Script (Live)</label>
             <textarea 
               rows="3"
               className="form-control"
@@ -264,23 +268,15 @@ export default function OverviewPage() {
           </div>
 
           <div className="form-group mb-4">
-            <label style={{ fontSize: '0.8125rem', fontWeight: '600' }}>Language Mode</label>
-            <select className="form-control" value={language} onChange={e => setLanguage(e.target.value)}>
-              <option value="Hindi">🇮🇳 Pure Conversational Hindi / Hinglish</option>
-              <option value="English">🇺🇸 English</option>
-            </select>
-          </div>
-
-          <div className="form-group mb-4">
-            <label style={{ fontSize: '0.8125rem', fontWeight: '600' }}>Business Use Case Script</label>
+            <label style={{ fontSize: '0.8125rem', fontWeight: '600' }}>Business Core Services</label>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-              {['General', 'Real Estate', 'Customer Support', 'Sales Discovery'].map(uc => (
+              {['Design Suvidha Marketing', 'Meta & Insta Ads', 'SEO & GMB', 'Websites & Videos'].map(uc => (
                 <button 
                   key={uc}
                   type="button"
                   onClick={() => setUseCase(uc)}
                   className={`btn ${useCase === uc ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ fontSize: '0.75rem', padding: '0.4rem 0.5rem', textAlign: 'center' }}
+                  style={{ fontSize: '0.72rem', padding: '0.4rem 0.5rem', textAlign: 'center' }}
                 >
                   {uc}
                 </button>
@@ -304,7 +300,7 @@ export default function OverviewPage() {
             fontSize: '0.8125rem', 
             color: isCurrentMale ? 'var(--accent-blue)' : 'var(--accent-green)' 
           }}>
-            {isCurrentMale ? '👨' : '👩'} <strong>{currentPersona.name} Active!</strong> {isCurrentMale ? 'Deep Masculine Voice (बोल रहा हूँ)' : 'Sweet Feminine Voice (बोल रही हूँ)'}.
+            {isCurrentMale ? '👨' : '👩'} <strong>Design Suvidha AI Active!</strong> Powered with full knowledge of Meta Ads, SEO, Web Development, Graphic Design & Video Content.
           </div>
         </div>
 
@@ -316,7 +312,7 @@ export default function OverviewPage() {
               onClick={() => setActiveTab('Agent')}
               style={{ background: 'none', border: 'none', borderBottom: activeTab === 'Agent' ? '2px solid var(--accent-green)' : 'none', color: activeTab === 'Agent' ? '#fff' : 'var(--text-secondary)', paddingBottom: '0.5rem', cursor: 'pointer', fontWeight: '600', fontSize: '0.875rem' }}
             >
-              Agent Console ({isCurrentMale ? '👨' : '👩'} {currentPersona.name.split(' ')[1]})
+              Design Suvidha Console ({isCurrentMale ? '👨' : '👩'} {currentPersona.name.split(' ')[1]})
             </button>
             <button 
               onClick={() => setActiveTab('Developer')}
@@ -333,7 +329,7 @@ export default function OverviewPage() {
               <div className={`ring-circle ring-middle ${isCalling ? 'active' : ''} ${isSpeaking ? 'speaking' : ''}`}></div>
               <div className={`ring-circle ring-inner ${isCalling ? 'active' : ''} ${isSpeaking ? 'speaking' : ''}`}>
                 <span style={{ fontSize: '2.5rem' }}>
-                  {isSpeaking ? '🔊' : isCalling ? (isCurrentMale ? '👨‍💼' : '👩‍💼') : '🎧'}
+                  {isSpeaking ? '🔊' : isCalling ? (isCurrentMale ? '👨‍💼' : '👩‍💼') : '🎨'}
                 </span>
               </div>
             </div>
@@ -344,7 +340,7 @@ export default function OverviewPage() {
                 {statusText}
               </div>
               <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                {isCalling ? `Speaking naturally as ${currentPersona.name}` : 'Click the button below to start live microphone conversation'}
+                {isCalling ? `Speaking on behalf of Design Suvidha as ${currentPersona.name}` : 'Click the button below to start live microphone conversation'}
               </div>
             </div>
 
@@ -354,7 +350,7 @@ export default function OverviewPage() {
                 onClick={toggleAgent} 
                 className={`talk-agent-btn ${isCalling ? 'listening' : ''}`}
               >
-                {isCalling ? '⏹️ End Voice Conversation' : `🎙️ Talk With ${currentPersona.name.split(' ')[1]}`}
+                {isCalling ? '⏹️ End Voice Conversation' : `🎙️ Talk With Design Suvidha AI`}
               </button>
             </div>
 
@@ -362,10 +358,10 @@ export default function OverviewPage() {
             {transcriptHistory.length > 0 && (
               <div style={{ background: '#0a0a0f', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)', maxHeight: '180px', overflowY: 'auto', textAlign: 'left' }}>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', fontWeight: '600' }}>
-                  💬 LIVE CONVERSATION TRANSCRIPT:
+                  💬 LIVE DESIGN SUVIDHA SALES TRANSCRIPT:
                 </div>
                 {transcriptHistory.map((t, i) => (
-                  <div key={i} style={{ fontSize: '0.85rem', marginBottom: '0.4rem', color: t.sender.includes('AI') ? 'var(--accent-green)' : 'var(--accent-blue)' }}>
+                  <div key={i} style={{ fontSize: '0.85rem', marginBottom: '0.4rem', color: t.sender.includes('Design Suvidha') ? 'var(--accent-green)' : 'var(--accent-blue)' }}>
                     <strong>{t.sender}:</strong> {t.text}
                   </div>
                 ))}
