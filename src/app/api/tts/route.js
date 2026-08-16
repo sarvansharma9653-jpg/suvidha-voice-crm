@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+const AWS_TTS_SERVER = process.env.AWS_TTS_SERVER || 'http://16.170.166.247:8000/tts';
+
 function toHindiScript(text, gender) {
   const dictionary = {
     'namaste': 'नमस्ते',
@@ -67,15 +69,45 @@ function toHindiScript(text, gender) {
 
 export async function POST(req) {
   try {
-    const { text, gender, voice } = await req.json();
+    const { text, gender, voice, engine } = await req.json();
     if (!text) {
       return NextResponse.json({ error: 'Text required' }, { status: 400 });
     }
 
     const hindiText = toHindiScript(text, gender);
+
+    // 1. Try AWS Self-Hosted ChatTTS / XTTS Engine if online
+    try {
+      const awsRes = await fetch(AWS_TTS_SERVER, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: hindiText,
+          engine: engine || 'chat_tts',
+          gender: gender?.toLowerCase() || 'female',
+          language: 'hi',
+          format: 'wav'
+        }),
+        signal: AbortSignal.timeout(3000)
+      });
+
+      if (awsRes.ok) {
+        const audioBuffer = await awsRes.arrayBuffer();
+        return new Response(audioBuffer, {
+          status: 200,
+          headers: {
+            'Content-Type': 'audio/wav',
+            'Cache-Control': 'public, max-age=86400',
+            'X-Source': 'AWS-ChatTTS'
+          }
+        });
+      }
+    } catch (awsErr) {
+      // Fallback to high-speed Neural stream
+    }
+
+    // 2. High-Speed Neural Speech Stream Fallback
     const encodedText = encodeURIComponent(hindiText);
-    
-    // Choose appropriate voice speed & lang
     const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=hi&client=tw-ob`;
 
     const audioRes = await fetch(ttsUrl, {

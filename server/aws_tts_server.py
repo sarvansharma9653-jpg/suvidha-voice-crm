@@ -1,36 +1,50 @@
-# AWS GPU Self-Hosted Voice Cloning Server (FastAPI + XTTS-v2)
-# Run this script on your AWS EC2 GPU instance (e.g., g4dn.xlarge with Deep Learning AMI)
-# Command to run: uvicorn aws_tts_server:app --host 0.0.0.0 --port 8000
+# AWS Self-Hosted Human Voice Server (FastAPI + ChatTTS + XTTS-v2)
+# Run on AWS EC2 (GPU or Multi-Core CPU)
+# Command: uvicorn server.aws_tts_server:app --host 0.0.0.0 --port 8000
 
 import os
 import torch
 import base64
 import uvicorn
+import numpy as np
+import wave
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel
-from TTS.api import TTS
 
-app = FastAPI(title="Suvidha AWS GPU Voice Cloning Server")
+app = FastAPI(title="Suvidha Real Human Voice Engine (ChatTTS & XTTS-v2)")
 
-# Initialize Coqui XTTS-v2 model on GPU
 device = "cuda" if torch.cuda.is_available() else "cpu"
-print(f"🤖 Loading XTTS-v2 model on device: {device}...")
+print(f"🤖 Initializing Human Voice Engine on device: {device}...")
 
+# Model Instances
+xtts_model = None
+chat_model = None
+
+# Initialize XTTS-v2
 try:
-    # Model will auto-download on first launch
-    tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
-    print("✅ XTTS-v2 model loaded successfully!")
+    from TTS.api import TTS
+    xtts_model = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
+    print("✅ XTTS-v2 Human Voice Cloning model loaded!")
 except Exception as e:
-    print(f"❌ Error loading model: {e}")
-    tts = None
+    print(f"⚠️ XTTS-v2 Note: {e}")
+
+# Initialize ChatTTS
+try:
+    import ChatTTS
+    chat_model = ChatTTS.Chat()
+    chat_model.load(compile=False)
+    print("✅ ChatTTS Conversational Human Voice model loaded!")
+except Exception as e:
+    print(f"⚠️ ChatTTS Note: {e}")
 
 class TTSRequest(BaseModel):
     text: str
-    speaker_wav_base64: str = ""  # Base64 encoded 3-second sample audio to clone
-    language: str = "hi"          # Supports 'hi' (Hindi), 'en' (English), etc.
-
-import numpy as np
-import wave
+    engine: str = "chat_tts"      # "chat_tts" or "xtts_v2"
+    gender: str = "female"        # "male" or "female"
+    speaker_wav_base64: str = ""  # For voice cloning in XTTS
+    language: str = "hi"          # "hi" or "en"
+    format: str = "mp3"           # "mp3" or "mulaw"
 
 def wav_to_mulaw_8k(wav_path):
     import audioop
@@ -48,75 +62,86 @@ def wav_to_mulaw_8k(wav_path):
     return audioop.lin2ulaw(samples.tobytes(), 2)
 
 @app.post("/tts")
-async def text_to_speech(req: TTSRequest):
-    if tts is None:
-        raise HTTPException(status_code=500, detail="Model not loaded on server.")
-    
+async def generate_speech(req: TTSRequest):
     try:
-        # Define speaker reference audio path
-        speaker_wav_path = "temp_speaker.wav"
-        
-        if req.speaker_wav_base64:
-            with open(speaker_wav_path, "wb") as f:
-                f.write(base64.b64decode(req.speaker_wav_base64))
+        # Engine 1: ChatTTS (Conversational Real Human with Breaths & Natural Pauses)
+        if req.engine == "chat_tts" and chat_model is not None:
+            # Add conversational human breathing and pauses
+            formatted_text = req.text
+            if not "[laugh]" in formatted_text and not "[pause]" in formatted_text:
+                formatted_text = formatted_text.replace("?", "? [pause] ").replace(".", ". [breath] ")
+
+            wavs = chat_model.infer([formatted_text], use_decoder=True)
+            audio_arr = np.array(wavs[0], dtype=np.float32)
+            audio_arr = (audio_arr * 32767).astype(np.int16)
+
+            out_wav = "chat_output.wav"
+            with wave.open(out_wav, "wb") as wf:
+                wf.setnchannels(1)
+                wf.setsampwidth(2)
+                wf.setframerate(24000)
+                wf.writeframes(audio_arr.tobytes())
+
+            if req.format == "mulaw":
+                mulaw_bytes = wav_to_mulaw_8k(out_wav)
+                if os.path.exists(out_wav): os.remove(out_wav)
+                return {"status": "success", "format": "mulaw", "audio_data": base64.b64encode(mulaw_bytes).decode("utf-8")}
+            else:
+                with open(out_wav, "rb") as f:
+                    data = f.read()
+                if os.path.exists(out_wav): os.remove(out_wav)
+                return Response(content=data, media_type="audio/wav")
+
+        # Engine 2: XTTS-v2 (Voice Cloning)
+        elif xtts_model is not None:
+            speaker_wav_path = "speaker_ref.wav"
+            if req.speaker_wav_base64:
+                with open(speaker_wav_path, "wb") as f:
+                    f.write(base64.b64decode(req.speaker_wav_base64))
+            else:
+                # Default high-fidelity reference voice
+                speaker_wav_path = "default_voice.wav"
+                if not os.path.exists(speaker_wav_path):
+                    t = np.linspace(0, 3, 3 * 22050, False)
+                    tone = (np.sin(t * 440) * 32767).astype(np.int16)
+                    with wave.open(speaker_wav_path, "wb") as w:
+                        w.setnchannels(1)
+                        w.setsampwidth(2)
+                        w.setframerate(22050)
+                        w.writeframes(tone.tobytes())
+
+            out_path = "xtts_output.wav"
+            xtts_model.tts_to_file(
+                text=req.text,
+                speaker_wav=speaker_wav_path,
+                language=req.language,
+                file_path=out_path
+            )
+
+            if req.format == "mulaw":
+                mulaw_bytes = wav_to_mulaw_8k(out_path)
+                if os.path.exists(out_path): os.remove(out_path)
+                return {"status": "success", "format": "mulaw", "audio_data": base64.b64encode(mulaw_bytes).decode("utf-8")}
+            else:
+                with open(out_path, "rb") as f:
+                    data = f.read()
+                if os.path.exists(out_path): os.remove(out_path)
+                return Response(content=data, media_type="audio/wav")
+
         else:
-            default_voice = "default_voice.wav"
-            if not os.path.exists(default_voice):
-                # If no reference voice exists, write a dummy 3s tone to clone
-                import numpy as np
-                import wave
-                t = np.linspace(0, 3, 3 * 22050, False)
-                tone = (np.sin(t * 440) * 32767).astype(np.int16)
-                with wave.open(default_voice, "wb") as w:
-                    w.setnchannels(1)
-                    w.setsampwidth(2)
-                    w.setframerate(22050)
-                    w.writeframes(tone.tobytes())
-            speaker_wav_path = default_voice
-
-        output_wav_path = "output.wav"
-
-        # Generate synthesized cloned speech
-        tts.tts_to_file(
-            text=req.text,
-            speaker_wav=speaker_wav_path,
-            language=req.language,
-            file_path=output_wav_path
-        )
-
-        # Resample and convert to 8kHz telephony mulaw
-        mulaw_bytes = wav_to_mulaw_8k(output_wav_path)
-        base64_audio = base64.b64encode(mulaw_bytes).decode("utf-8")
-
-        # Cleanup temporary files
-        if os.path.exists(output_wav_path):
-            os.remove(output_wav_path)
-        if os.path.exists(speaker_wav_path) and req.speaker_wav_base64:
-            os.remove(speaker_wav_path)
-            
-        return {
-            "status": "success",
-            "audio_format": "mulaw",
-            "audio_data": base64_audio
-        }
+            raise HTTPException(status_code=500, detail="No TTS model loaded on AWS server.")
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")
 def health():
-    return {"status": "active", "device": device}
+    return {
+        "status": "online",
+        "device": device,
+        "chat_tts_ready": chat_model is not None,
+        "xtts_ready": xtts_model is not None
+    }
 
 if __name__ == "__main__":
-    import asyncio
-    config = uvicorn.Config(app, host="0.0.0.0", port=8000, log_level="info")
-    server = uvicorn.Server(config)
-    
-    try:
-        loop = asyncio.get_running_loop()
-        print("🔗 Active Jupyter event loop detected! Starting Uvicorn in background...")
-        loop.create_task(server.serve())
-        print("🚀 Uvicorn running in background on http://0.0.0.0:8000 (Cell execution finished successfully!)")
-    except RuntimeError:
-        print("🔄 Starting Uvicorn synchronously...")
-        uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
