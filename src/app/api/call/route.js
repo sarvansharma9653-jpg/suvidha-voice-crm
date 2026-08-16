@@ -6,29 +6,30 @@ export async function POST(req) {
 
     const sarvamApiKey = process.env.SARVAM_API_KEY || 'sk_samvaad_zqem37no_0nBPIELyiA5OEXRXerKOyaBN';
     const callerNumber = process.env.SARVAM_CALLER_NUMBER || '+917965854130';
+    const sarvamAgentId = 'Conversatio-021ca317-dcb3';
 
-    console.log(`📞 Outbound Call Triggered via Sarvam Vobiz (+917965854130) to ${contactName || 'Lead'} (${phoneNumber})...`);
+    console.log(`📞 Dispatching Sarvam AI Agent (${sarvamAgentId}) Call from ${callerNumber} to ${contactName || 'Lead'} (${phoneNumber})...`);
 
-    // Dispatch Outbound Call Payload via Sarvam Vobiz / Webhook Engine
+    // Trigger Sarvam Samvaad AI Agent Call
     let sarvamResult = null;
     try {
-      const res = await fetch('https://api.sarvam.ai/v1/calls', {
+      const res = await fetch('https://api.sarvam.ai/samvaad/v1/calls', {
         method: 'POST',
         headers: {
           'api-subscription-key': sarvamApiKey,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          from: callerNumber,
-          to: phoneNumber,
-          prompt: systemPrompt || 'You are a polite Hindi female AI assistant for Suvidha.'
+          agent_id: sarvamAgentId,
+          from_phone_number: callerNumber,
+          to_phone_number: phoneNumber
         })
       });
       if (res.ok) {
         sarvamResult = await res.json();
       }
     } catch (e) {
-      console.warn('Sarvam REST dispatch note:', e.message);
+      console.warn('Sarvam Agent Dispatch Note:', e.message);
     }
 
     const callSid = sarvamResult?.id || 'sarvam_' + Date.now();
@@ -39,8 +40,9 @@ export async function POST(req) {
       contactName: contactName || 'Lead',
       phoneNumber: phoneNumber,
       callerNumber: callerNumber,
-      provider: 'Sarvam Vobiz (+91)',
-      message: `AI Outbound Call successfully initiated from +917965854130 to ${contactName || phoneNumber}!`,
+      agentId: sarvamAgentId,
+      provider: 'Sarvam AI Samvaad (+91)',
+      message: `Sarvam AI Agent call successfully dispatched from ${callerNumber} to ${contactName || phoneNumber}!`,
       date: new Date().toISOString()
     }, { status: 200 });
 
