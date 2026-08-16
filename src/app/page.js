@@ -9,8 +9,8 @@ export default function OverviewPage() {
   const [ttsVoice, setTtsVoice] = useState('madhur');
   const [llmModel, setLlmModel] = useState('Google Gemini 2.0 Flash Lite');
   
-  // Custom Introduction Script Editable by User!
-  const [customIntroScript, setCustomIntroScript] = useState('अरे नमस्ते जी! मैं सुविधा रियल एस्टेट से बात कर रहा हूँ। बताइए ना, आपकी क्या सहायता कर सकता हूँ आज?');
+  // Custom Introduction Script Editable by User
+  const [customIntroScript, setCustomIntroScript] = useState('नमस्ते सर! मैं सुविधा वॉइस सी आर एम से बात कर रहा हूँ। बताइए, आज मैं आपकी क्या सहायता कर सकता हूँ?');
 
   // Audio Ring & Speech State
   const [isCalling, setIsCalling] = useState(false);
@@ -20,7 +20,6 @@ export default function OverviewPage() {
   const [activeTab, setActiveTab] = useState('Agent');
 
   const recognitionRef = useRef(null);
-  const audioRef = useRef(null);
 
   const voiceLibrary = [
     { id: 'madhur', name: '👨 Madhur (Corporate Indian Male)', gender: 'Male', pitch: 0.65, rate: 0.90, desc: 'Deep, masculine Indian Hindi sales consultant (बोल रहा हूँ)' },
@@ -30,6 +29,13 @@ export default function OverviewPage() {
     { id: 'ananya', name: '👩 Ananya (Corporate Customer Care Female)', gender: 'Female', pitch: 1.2, rate: 1.0, desc: 'Clear, modern & energetic conversational sales voice' },
     { id: 'pooja', name: '👩 Pooja (Empathetic Healthcare Female)', gender: 'Female', pitch: 1.28, rate: 0.92, desc: 'Soft & caring human cadence for Clinics & Care' },
     { id: 'kavya', name: '👩 Kavya (Persuasive Retail & Deals Female)', gender: 'Female', pitch: 1.22, rate: 1.02, desc: 'High conversion human conversational tone' },
+  ];
+
+  const scriptTemplates = [
+    { label: '🏢 CRM General', text: 'नमस्ते सर! मैं सुविधा वॉइस सी आर एम से बात कर रहा हूँ। बताइए, आज मैं आपकी क्या सहायता कर सकता हूँ?' },
+    { label: '🏠 Real Estate Sales', text: 'नमस्ते सर! मैं सुविधा रियल एस्टेट से बात कर रहा हूँ। क्या आप नोएडा में प्रीमियम 3 बीएचके फ्लैट्स में इंटरेस्टेड हैं?' },
+    { label: '💰 Pre-Approved Loan', text: 'नमस्ते सर! मैं सुविधा फाइनेंस से बोल रहा हूँ। आपका 5 लाख तक का प्री-अप्रूव्ड लोन रेडी है, क्या मैं डिटेल्स बताऊँ?' },
+    { label: '📞 Customer Support', text: 'नमस्ते! सुविधा कस्टमर केयर में आपका स्वागत है। बताइए, मैं आपकी किस समस्या में मदद करूँ?' }
   ];
 
   useEffect(() => {
@@ -49,22 +55,24 @@ export default function OverviewPage() {
   const currentPersona = voiceLibrary.find(v => v.id === ttsVoice) || voiceLibrary[0];
   const isCurrentMale = currentPersona.gender === 'Male';
 
-  // Dynamic Greeting Generator based on Voice selection
   const updateVoiceSelection = (newVoiceId) => {
     setTtsVoice(newVoiceId);
     const p = voiceLibrary.find(v => v.id === newVoiceId) || voiceLibrary[0];
     const isMale = p.gender === 'Male';
     const personaName = p.name.split(' ')[1];
 
-    const newIntro = isMale
-      ? `अरे नमस्ते जी! मैं ${personaName} बात कर रहा हूँ सुविधा से। बताइए ना, आपकी क्या सहायता कर सकता हूँ आज?`
-      : `अरे नमस्ते जी! मैं ${personaName} बात कर रही हूँ सुविधा से। बताइए ना, आपकी क्या सहायता कर सकती हूँ आज?`;
-    
-    setCustomIntroScript(newIntro);
-    speakResponse(newIntro, newVoiceId);
+    let current = customIntroScript;
+    if (isMale && current.includes('रही हूँ')) {
+      current = current.replace('रही हूँ', 'रहा हूँ').replace('सकती हूँ', 'सकता हूँ');
+      setCustomIntroScript(current);
+    } else if (!isMale && current.includes('रहा हूँ')) {
+      current = current.replace('रहा हूँ', 'रही हूँ').replace('सकता हूँ', 'सकती हूँ');
+      setCustomIntroScript(current);
+    }
+
+    speakResponse(current, newVoiceId);
   };
 
-  // Robust Male vs Female Speech Output Engine
   const speakResponse = (text, customVoiceId) => {
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
 
@@ -83,10 +91,8 @@ export default function OverviewPage() {
     let selectedVoice = null;
 
     if (isMale) {
-      // Find explicitly Male voice
-      selectedVoice = voices.find(v => (v.name.toLowerCase().includes('male') || v.name.includes('Madhur') || v.name.includes('Ravi') || v.name.includes('David') || v.name.includes('George') || v.name.includes('Guy')) && !v.name.toLowerCase().includes('female'));
+      selectedVoice = voices.find(v => (v.name.toLowerCase().includes('male') || v.name.includes('Madhur') || v.name.includes('Ravi') || v.name.includes('David') || v.name.includes('George')) && !v.name.toLowerCase().includes('female'));
     } else {
-      // Find explicitly Female voice
       selectedVoice = voices.find(v => v.name.toLowerCase().includes('female') || v.name.includes('Swara') || v.name.includes('Heera') || v.name.includes('Kalpana') || v.name.includes('Zira'));
     }
 
@@ -114,7 +120,6 @@ export default function OverviewPage() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Toggle Live Agent Playground
   const toggleAgent = () => {
     if (isCalling) {
       setIsCalling(false);
@@ -126,14 +131,11 @@ export default function OverviewPage() {
       setIsCalling(true);
       setStatusText('Agent Initialized! Connecting live audio...');
       
-      const welcomeText = customIntroScript.trim() || (isCurrentMale 
-        ? `अरे नमस्ते जी! मैं ${currentPersona.name.split(' ')[1]} बात कर रहा हूँ। बताइए ना, आपकी क्या सहायता कर सकता हूँ आज?`
-        : `अरे नमस्ते जी! मैं ${currentPersona.name.split(' ')[1]} बात कर रही हूँ। बताइए ना, आपकी क्या सहायता कर सकती हूँ आज?`);
+      const welcomeText = customIntroScript.trim() || 'नमस्ते सर! मैं सुविधा से बात कर रहा हूँ। बताइए, आज मैं आपकी क्या सहायता कर सकता हूँ?';
 
       setTranscriptHistory([{ sender: `AI Executive (${currentPersona.name.split(' ')[1]})`, text: welcomeText }]);
       speakResponse(welcomeText, ttsVoice);
 
-      // Start Browser Speech Recognition
       if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const recognition = new SpeechRecognition();
@@ -173,8 +175,8 @@ export default function OverviewPage() {
         : 'अरे बहुत ही बढ़िया सर! मैंने शनिवार सुबह 11 बजे का टाइम आपके नाम पर लॉक कर दिया है। मैं तुरंत आपको व्हाट्सएप पर ब्रोशर भेज रही हूँ!';
     } else {
       aiReply = isCurrentMale 
-        ? `जी बिल्कुल, मैं आपकी बात पूरी तरह समझ रहा हूँ। आप बेझिझक बताइए, आपको किस बजट या लोकेशन में प्रॉपर्टी देखनी है?`
-        : `जी बिल्कुल, मैं आपकी बात पूरी तरह समझ रही हूँ। आप बेझिझक बताइए, आपको किस बजट या लोकेशन में प्रॉपर्टी देखनी है?`;
+        ? `जी बिल्कुल, मैं आपकी बात पूरी तरह समझ रहा हूँ। आप बेझिझक बताइए, आपकी किस प्रकार सहायता कर सकता हूँ?`
+        : `जी बिल्कुल, मैं आपकी बात पूरी तरह समझ रही हूँ। आप बेझिझक बताइए, आपकी किस प्रकार सहायता कर सकती हूँ?`;
     }
 
     setTimeout(() => {
@@ -227,7 +229,9 @@ export default function OverviewPage() {
 
           {/* Editable Custom Introduction Script */}
           <div className="form-group mb-4">
-            <label style={{ fontSize: '0.8125rem', fontWeight: '600' }}>📝 Custom Introduction Script (Editable)</label>
+            <div className="flex justify-between items-center mb-1">
+              <label style={{ fontSize: '0.8125rem', fontWeight: '600' }}>📝 Custom Introduction Script</label>
+            </div>
             <textarea 
               rows="3"
               className="form-control"
@@ -236,9 +240,27 @@ export default function OverviewPage() {
               placeholder="Type custom introduction script..."
               style={{ fontSize: '0.85rem', lineHeight: '1.4' }}
             />
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '3px', display: 'block' }}>
-              Aap jo bhi script yahan likhenge, AI call start hote hi wahi bolegi!
-            </span>
+            
+            {/* Quick 1-Click Script Preset Chips */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginTop: '0.5rem' }}>
+              {scriptTemplates.map((t, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => {
+                    let text = t.text;
+                    if (!isCurrentMale) {
+                      text = text.replace('रहा हूँ', 'रही हूँ').replace('सकता हूँ', 'सकती हूँ');
+                    }
+                    setCustomIntroScript(text);
+                  }}
+                  className="btn btn-secondary"
+                  style={{ fontSize: '0.7rem', padding: '0.2rem 0.5rem', background: '#181824' }}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="form-group mb-4">
@@ -282,7 +304,7 @@ export default function OverviewPage() {
             fontSize: '0.8125rem', 
             color: isCurrentMale ? 'var(--accent-blue)' : 'var(--accent-green)' 
           }}>
-            {isCurrentMale ? '👨' : '👩'} <strong>{currentPersona.name} Active!</strong> {isCurrentMale ? 'Deep Masculine Male Voice (bol raha hoon)' : 'Sweet Feminine Female Voice (bol rahi hoon)'}.
+            {isCurrentMale ? '👨' : '👩'} <strong>{currentPersona.name} Active!</strong> {isCurrentMale ? 'Deep Masculine Voice (बोल रहा हूँ)' : 'Sweet Feminine Voice (बोल रही हूँ)'}.
           </div>
         </div>
 
