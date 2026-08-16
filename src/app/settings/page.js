@@ -15,7 +15,7 @@ export default function SettingsPage() {
   const [adminNumber, setAdminNumber] = useState('+917707978068');
 
   // Sarvam AI API Key Credentials
-  const [sarvamApiKey, setSarvamApiKey] = useState('sk_samvaad_zqem37no_0nBPIELyiA5OEXRXerKOyaBN');
+  const [sarvamApiKey, setSarvamApiKey] = useState('');
 
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -27,7 +27,7 @@ export default function SettingsPage() {
       setMetaAccessToken(localStorage.getItem('metaAccessToken') || '');
       setMetaPhoneNumberId(localStorage.getItem('metaPhoneNumberId') || '');
       setAdminNumber(localStorage.getItem('adminNumber') || '+917707978068');
-      setSarvamApiKey(localStorage.getItem('sarvamApiKey') || 'sk_samvaad_zqem37no_0nBPIELyiA5OEXRXerKOyaBN');
+      setSarvamApiKey(localStorage.getItem('sarvamApiKey') || '');
       setExotelSubdomain(localStorage.getItem('exotelSubdomain') || '');
       setProvider(localStorage.getItem('telephonyProvider') || 'twilio');
       setAccountSid(localStorage.getItem('accountSid') || '');
@@ -243,36 +243,37 @@ export default function SettingsPage() {
           </form>
         </div>
 
-        {/* Sarvam AI & WhatsApp Alerts config */}
+        {/* WhatsApp & Optional Keys */}
         <div className="card" style={{ padding: '2rem' }}>
-          <h2 style={{ marginTop: 0, fontSize: '1.25rem' }}>📱 WhatsApp Lead Alerts & AI Keys</h2>
+          <h2 style={{ marginTop: 0, fontSize: '1.25rem' }}>📱 WhatsApp Lead Alerts & Options</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-            Set your mobile number to receive real-time WhatsApp alerts when a Hot Lead is identified!
+            Enter your WhatsApp mobile number to receive instant notifications when a Hot Lead is identified!
           </p>
 
           <form onSubmit={handleSave}>
             <div className="form-group mb-4">
-              <label>Admin Mobile Number for Hot Lead WhatsApp Alerts</label>
+              <label>Admin Mobile Number for WhatsApp Alerts (Required)</label>
               <input 
+                required
                 type="tel" 
                 className="form-control" 
                 value={adminNumber} 
                 onChange={e => setAdminNumber(e.target.value)} 
                 placeholder="+917707978068" 
               />
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
-                Instant WhatsApp message will be sent to this number whenever a call qualifies a 🔥 Hot Lead!
+              <span style={{ fontSize: '0.75rem', color: 'var(--accent-green)', marginTop: '4px', display: 'block' }}>
+                ✅ Hot Lead alerts will be sent to this WhatsApp mobile number!
               </span>
             </div>
 
             <div className="form-group mb-4">
-              <label>Sarvam AI Subscription Key</label>
+              <label>Sarvam AI Key (Optional - Leave blank for Free Built-in Voice Engine)</label>
               <input 
                 type="password" 
                 className="form-control" 
                 value={sarvamApiKey} 
                 onChange={e => setSarvamApiKey(e.target.value)} 
-                placeholder="sk_samvaad_..." 
+                placeholder="Optional (sk_samvaad_...)" 
               />
             </div>
 
@@ -283,12 +284,12 @@ export default function SettingsPage() {
                 className="form-control" 
                 value={metaAccessToken} 
                 onChange={e => setMetaAccessToken(e.target.value)} 
-                placeholder="EAAG..." 
+                placeholder="Optional (EAAG...)" 
               />
             </div>
 
             <button type="submit" className="btn btn-success" style={{ width: '100%' }} disabled={loading}>
-              💾 Save WhatsApp & AI Keys
+              💾 Save Alert Number & Keys
             </button>
           </form>
         </div>
