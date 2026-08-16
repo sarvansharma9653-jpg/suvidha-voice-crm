@@ -6,6 +6,7 @@ export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState([]);
   const [contacts, setContacts] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [activeCallerNumber, setActiveCallerNumber] = useState('08047280901');
   
   // Wizard Form
   const [formData, setFormData] = useState({ 
@@ -13,7 +14,7 @@ export default function CampaignsPage() {
     template: 'real-estate',
     script: 'You are a polite female AI voice real estate assistant for Suvidha. Qualify leads for Sector 62 Noida 3 BHK flats. Speak in feminine Hindi grammar (kar rahi hoon, bata rahi hoon). Keep it brief under 2 sentences.', 
     voice: 'hi-IN-SwaraNeural',
-    callerNumber: '+917965854130',
+    callerNumber: '08047280901',
     selectedLeadId: 'all'
   });
 
@@ -24,6 +25,11 @@ export default function CampaignsPage() {
   useEffect(() => {
     setCampaigns(store.getCampaigns());
     setContacts(store.getContacts());
+    if (typeof window !== 'undefined') {
+      const savedNumber = localStorage.getItem('phoneNumber') || '08047280901';
+      setActiveCallerNumber(savedNumber);
+      setFormData(prev => ({ ...prev, callerNumber: savedNumber }));
+    }
   }, []);
 
   const handleTemplateChange = (tmpl) => {
@@ -85,6 +91,11 @@ export default function CampaignsPage() {
     setActiveDialer(campaign.id);
     setDialerProgress({ current: 0, total: leadList.length, activeName: leadList[0].name });
 
+    const accountSid = typeof window !== 'undefined' ? localStorage.getItem('accountSid') : '';
+    const authToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : '';
+    const exotelSubdomain = typeof window !== 'undefined' ? localStorage.getItem('exotelSubdomain') : '';
+    const provider = typeof window !== 'undefined' ? localStorage.getItem('telephonyProvider') : 'exotel';
+
     // Trigger API call for first lead immediately
     try {
       await fetch('/api/call', {
@@ -94,7 +105,12 @@ export default function CampaignsPage() {
           phoneNumber: leadList[0].phone,
           contactName: leadList[0].name,
           campaignId: campaign.id,
-          systemPrompt: campaign.script
+          systemPrompt: campaign.script,
+          provider,
+          accountSid,
+          authToken,
+          exotelSubdomain,
+          callerNumber: campaign.callerNumber || activeCallerNumber
         })
       });
     } catch (e) {
@@ -115,7 +131,7 @@ export default function CampaignsPage() {
           status: 'Completed'
         });
         setCampaigns(store.getCampaigns());
-        alert(`🎉 Campaign "${campaign.name}" auto-dialer completed calling ${leadList.length} leads from ${campaign.callerNumber || '+917965854130'}!`);
+        alert(`🎉 Campaign "${campaign.name}" auto-dialer completed calling ${leadList.length} leads!`);
       } else {
         const currentLead = leadList[index];
         setDialerProgress({ current: index, total: leadList.length, activeName: currentLead.name });
@@ -129,7 +145,12 @@ export default function CampaignsPage() {
               phoneNumber: currentLead.phone,
               contactName: currentLead.name,
               campaignId: campaign.id,
-              systemPrompt: campaign.script
+              systemPrompt: campaign.script,
+              provider,
+              accountSid,
+              authToken,
+              exotelSubdomain,
+              callerNumber: campaign.callerNumber || activeCallerNumber
             })
           });
         } catch (e) {
@@ -147,13 +168,13 @@ export default function CampaignsPage() {
           contactId: currentLead.id,
           contactName: currentLead.name,
           phone: currentLead.phone,
-          callerNumber: campaign.callerNumber || '+917965854130',
+          callerNumber: campaign.callerNumber || activeCallerNumber,
           campaignId: campaign.id,
           duration: 45,
           status: 'Completed',
           sentiment: '🔥 Hot Lead',
           stage: 'Qualified',
-          summary: `Sarvam Vobiz AI call triggered for ${currentLead.name} (${currentLead.phone}) from ${campaign.callerNumber || '+917965854130'}. Lead qualified.`,
+          summary: `Exotel AI call triggered for ${currentLead.name} (${currentLead.phone}) from ${campaign.callerNumber || activeCallerNumber}. Lead qualified.`,
           transcript: `Agent: Namaste ${currentLead.name}ji! Main Suvidha AI Assistant bol rahi hoon.\nLead: Haan ji bataiye.`
         });
       }
@@ -186,7 +207,7 @@ export default function CampaignsPage() {
                 </span>
               </div>
             </div>
-            <span className="badge warning">Dialing via Sarvam Vobiz (+917965854130)</span>
+            <span className="badge warning">Dialing via Exotel ({activeCallerNumber})</span>
           </div>
 
           {/* Progress Bar */}
@@ -214,7 +235,7 @@ export default function CampaignsPage() {
               <div className="stat-header mb-4">
                 <div>
                   <h3 style={{ margin: 0, fontSize: '1.15rem' }}>{camp.name}</h3>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Caller: <strong>{camp.callerNumber || '+917965854130'}</strong></span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Caller: <strong>{camp.callerNumber || activeCallerNumber}</strong></span>
                 </div>
                 <span className={`badge ${camp.status === 'Active' ? 'success' : camp.status === 'Completed' ? 'primary' : 'info'}`}>
                   {camp.status}
@@ -275,7 +296,9 @@ export default function CampaignsPage() {
               <div className="form-group mb-4">
                 <label>2. Outbound Caller Phone Number</label>
                 <select className="form-control" value={formData.callerNumber} onChange={e => setFormData({...formData, callerNumber: e.target.value})}>
-                  <option value="+917965854130">🇮🇳 +917965854130 (Sarvam Vobiz - Active Indian Number)</option>
+                  <option value="08047280901">🇮🇳 08047280901 (Exotel India Virtual Number)</option>
+                  <option value="+17372212163">🇺🇸 +17372212163 (Twilio Trial Number)</option>
+                  <option value="+917965854130">🇮🇳 +917965854130 (Sarvam Vobiz Active Number)</option>
                   <option value="webphone">🌐 Built-in Free Webphone</option>
                 </select>
               </div>
