@@ -19,7 +19,23 @@ export async function POST(req) {
       const accountSid = body.exotelAccountSid || body.accountSid || process.env.EXOTEL_ACCOUNT_SID || 'designsuvidha1';
       const apiKey = body.exotelApiKey || body.accountSid || process.env.EXOTEL_API_KEY || '';
       const apiToken = body.exotelApiToken || body.authToken || process.env.EXOTEL_API_TOKEN || '';
-      const callerId = body.callerNumber || body.exotelVirtualNumber || process.env.EXOTEL_CALLER_ID || '08047280901';
+      
+      // Sanitize Exotel CallerId (ExoPhone format: e.g. 08047280901)
+      let rawCaller = body.callerNumber || body.exotelVirtualNumber || process.env.EXOTEL_CALLER_ID || '08047280901';
+      let cleanCallerId = rawCaller.replace(/[^0-9]/g, '');
+      if (cleanCallerId.startsWith('91') && cleanCallerId.length === 12) {
+        cleanCallerId = '0' + cleanCallerId.substring(2);
+      } else if (!cleanCallerId.startsWith('0') && cleanCallerId.length === 10) {
+        cleanCallerId = '0' + cleanCallerId;
+      }
+
+      // Sanitize Target Destination Number (Format: 07707978068 or 7707978068)
+      let cleanTarget = targetNumber.replace(/[^0-9]/g, '');
+      if (cleanTarget.startsWith('91') && cleanTarget.length === 12) {
+        cleanTarget = '0' + cleanTarget.substring(2);
+      } else if (!cleanTarget.startsWith('0') && cleanTarget.length === 10) {
+        cleanTarget = '0' + cleanTarget;
+      }
 
       // Auto-format hostname correctly
       let domainHost = rawSubdomain.includes('.') ? rawSubdomain : `${rawSubdomain}.exotel.com`;
@@ -30,7 +46,7 @@ export async function POST(req) {
           const authString = Buffer.from(`${apiKey}:${apiToken}`).toString('base64');
           const exotelUrl = `https://${domainHost}/v1/Accounts/${accountSid}/Calls/connect.json`;
 
-          console.log(`📡 Exotel Outbound Request to: ${exotelUrl} with Account SID: ${accountSid}`);
+          console.log(`📡 Exotel Outbound Request to: ${exotelUrl} with CallerId: ${cleanCallerId}, Target: ${cleanTarget}`);
 
           const exotelRes = await fetch(exotelUrl, {
             method: 'POST',
@@ -39,9 +55,9 @@ export async function POST(req) {
               'Content-Type': 'application/x-www-form-urlencoded',
             },
             body: new URLSearchParams({
-              From: targetNumber,
-              To: callerId,
-              CallerId: callerId,
+              From: cleanTarget,
+              To: cleanCallerId,
+              CallerId: cleanCallerId,
               Url: 'http://16.170.166.247:3001/exotel-passthru'
             })
           });
