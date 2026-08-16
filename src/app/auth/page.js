@@ -43,7 +43,7 @@ export default function AuthPage() {
         return;
       }
 
-      // 2. SIGN UP FLOW (WITH 2-ACCOUNT DEVICE LIMIT)
+      // 2. SIGN UP FLOW (WITH 2-ACCOUNT DEVICE LIMIT & SAFE METADATA STORAGE)
       if (authMode === 'signup') {
         if (signupCount >= MAX_SIGNUPS) {
           throw new Error(`🚫 Device Signup Limit Reached! A maximum of ${MAX_SIGNUPS} trial accounts can be created from this device. Please log in to your existing account.`);
@@ -68,22 +68,23 @@ export default function AuthPage() {
           if (typeof window !== 'undefined') {
             localStorage.setItem('suvidha_device_signup_count', newCount.toString());
             localStorage.setItem('suvidha_auth_user_id', data.user.id);
-          }
-
-          // Insert profile record if Supabase table is available
-          try {
-            await supabase
-              .from('profiles')
-              .insert([{ id: data.user.id, company_name: companyName }]);
-          } catch (e) {
-            console.log('Profile insert note:', e);
+            localStorage.setItem('suvidha_client_company', companyName || 'My Business Team');
           }
 
           setSuccessMsg('🎉 Account created successfully! Logging you in...');
-          setTimeout(() => {
-            router.push('/');
-            router.refresh();
-          }, 1000);
+          
+          // Auto sign-in if session was created
+          if (data.session) {
+            setTimeout(() => {
+              router.push('/');
+              router.refresh();
+            }, 800);
+          } else {
+            setSuccessMsg('🎉 Signup successful! If email verification is enabled, please check your inbox, or click Log In.');
+            setTimeout(() => {
+              setAuthMode('login');
+            }, 1500);
+          }
         }
       } 
       // 3. SIGN IN FLOW
@@ -97,6 +98,8 @@ export default function AuthPage() {
 
         if (data?.user && typeof window !== 'undefined') {
           localStorage.setItem('suvidha_auth_user_id', data.user.id);
+          const metaCompany = data.user.user_metadata?.company_name;
+          if (metaCompany) localStorage.setItem('suvidha_client_company', metaCompany);
         }
 
         // Redirect to dashboard
@@ -104,6 +107,7 @@ export default function AuthPage() {
         router.refresh();
       }
     } catch (err) {
+      console.error('Auth error:', err);
       setErrorMsg(err.message || 'An error occurred during authentication.');
     } finally {
       setLoading(false);
