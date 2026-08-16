@@ -18,12 +18,22 @@ export default function RootLayout({ children }) {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) {
+        store.setUserId(u.id);
+        if (typeof window !== 'undefined') localStorage.setItem('suvidha_auth_user_id', u.id);
+      }
       setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) {
+        store.setUserId(u.id);
+        if (typeof window !== 'undefined') localStorage.setItem('suvidha_auth_user_id', u.id);
+      }
       setLoading(false);
     });
 
@@ -32,8 +42,11 @@ export default function RootLayout({ children }) {
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    if (confirm('Are you sure you want to sign out from Suvidha CRM?')) {
+      await supabase.auth.signOut();
+      if (typeof window !== 'undefined') localStorage.removeItem('suvidha_auth_user_id');
+      setUser(null);
+    }
   };
 
   const handleToggleNotif = () => {
@@ -45,6 +58,7 @@ export default function RootLayout({ children }) {
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
+  const companyTitle = user?.user_metadata?.company_name || user?.email?.split('@')[0] || "Sarvan's Team";
 
   if (loading) {
     return (
@@ -81,7 +95,7 @@ export default function RootLayout({ children }) {
 
             {!isSidebarCollapsed && (
               <div style={{ padding: '0 1rem 1rem 1.25rem', borderBottom: '1px solid var(--border-light)', marginBottom: '1.25rem', fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                Team: <strong style={{ color: 'var(--text-primary)' }}>Sarvan's Team</strong>
+                Workspace: <strong style={{ color: 'var(--text-primary)' }}>{companyTitle}</strong>
               </div>
             )}
 
@@ -123,7 +137,7 @@ export default function RootLayout({ children }) {
                 </li>
                 <li>
                   <Link href="/followups" className="nav-item">
-                    <span>📅</span> {!isSidebarCollapsed && <span>AI Follow-up Queue</span>}
+                    <span>🗓️</span> {!isSidebarCollapsed && <span>AI Follow-up Queue</span>}
                   </Link>
                 </li>
               </ul>
@@ -137,77 +151,101 @@ export default function RootLayout({ children }) {
                 </li>
                 <li>
                   <Link href="/analytics" className="nav-item">
-                    <span>📊</span> {!isSidebarCollapsed && <span>Agent Analytics</span>}
+                    <span>📈</span> {!isSidebarCollapsed && <span>Analytics</span>}
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/guide" className="nav-item">
+                    <span>📖</span> {!isSidebarCollapsed && <span>Setup Guide</span>}
                   </Link>
                 </li>
               </ul>
-
-              <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid var(--border-light)' }}>
-                <button 
-                  onClick={handleLogout} 
-                  className="nav-item" 
-                  style={{ background: 'none', border: 'none', width: '100%', textAlign: 'left', cursor: 'pointer', color: 'var(--accent-red)' }}
-                >
-                  <span>🚪</span> {!isSidebarCollapsed && <span>Logout</span>}
-                </button>
-              </div>
             </nav>
-          </aside>
 
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-            {/* Top Bar with Sidebar Toggle & Real-Time Notifications */}
-            <header className={`top-header ${isSidebarCollapsed ? 'collapsed' : ''}`}>
-              <div className="flex items-center gap-4">
-                {/* Sidebar Collapse Toggle Button */}
-                <button 
-                  className="sidebar-toggle-btn" 
-                  onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                  title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-                >
-                  {isSidebarCollapsed ? '☰' : '◧'}
-                </button>
-
-                <div className="onboarding-steps flex items-center gap-3">
-                  <span className="step-pill active">🤖 Suvidha Voice v1.45</span>
-                  <span className="step-arrow">•</span>
-                  <span className="step-pill">🟢 AWS Swara Engine Online</span>
-                </div>
-              </div>
-
-              {/* Notification Bell */}
-              <div style={{ position: 'relative' }}>
-                <button className="notif-btn" onClick={handleToggleNotif}>
-                  🔔
-                  {unreadCount > 0 && <span className="notif-badge">{unreadCount}</span>}
-                </button>
-
-                {showNotifDropdown && (
-                  <div className="notif-dropdown">
-                    <div className="notif-dropdown-header">
-                      <span>🔥 Instant Hot Lead Alerts</span>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{notifications.length} alerts</span>
+            {/* User Profile & Sign Out Footer */}
+            <div style={{ borderTop: '1px solid var(--border-light)', padding: '1rem 0.75rem', marginTop: 'auto' }}>
+              <div className="flex justify-between items-center">
+                {!isSidebarCollapsed && (
+                  <div style={{ overflow: 'hidden', marginRight: '0.5rem' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: '600', color: '#fff', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                      {user?.email}
                     </div>
-                    <div className="notif-list">
-                      {notifications.length === 0 ? (
-                        <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                          No alerts yet
-                        </div>
-                      ) : (
-                        notifications.map(n => (
-                          <div key={n.id} className={`notif-item ${n.type === 'hot_lead' ? 'hot' : ''}`}>
-                            <div className="notif-item-title">{n.title}</div>
-                            <div className="notif-item-msg">{n.message}</div>
-                            <div className="notif-item-time">{n.time}</div>
-                          </div>
-                        ))
-                      )}
+                    <div style={{ fontSize: '0.7rem', color: 'var(--accent-green)' }}>
+                      🟢 Client Workspace Active
                     </div>
                   </div>
                 )}
+                <button 
+                  onClick={handleLogout}
+                  title="Sign Out"
+                  className="btn btn-secondary"
+                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', flexShrink: 0 }}
+                >
+                  🚪 {!isSidebarCollapsed && 'Sign Out'}
+                </button>
+              </div>
+            </div>
+          </aside>
+
+          {/* Main App Content Area */}
+          <div className="content-area">
+            {/* Top Navigation Bar */}
+            <header className="topbar">
+              <div className="topbar-left">
+                <button 
+                  className="sidebar-toggle-btn"
+                  onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                  title="Toggle Sidebar"
+                >
+                  ☰
+                </button>
+                <div className="topbar-chip">
+                  <span style={{ fontSize: '0.75rem' }}>🎙️ Suvidha Voice v1.45</span>
+                </div>
+                <div className="topbar-status">
+                  <span className="pulse-dot"></span>
+                  <span>AWS Swara Engine Online</span>
+                </div>
+              </div>
+
+              <div className="topbar-right">
+                {/* Notification Dropdown */}
+                <div style={{ position: 'relative' }}>
+                  <button 
+                    onClick={handleToggleNotif}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', fontSize: '1.25rem' }}
+                  >
+                    🔔
+                    {unreadCount > 0 && (
+                      <span style={{ position: 'absolute', top: '-4px', right: '-4px', background: 'var(--accent-red)', color: '#fff', fontSize: '0.65rem', padding: '1px 5px', borderRadius: '10px', fontWeight: 'bold' }}>
+                        {unreadCount}
+                      </span>
+                    )}
+                  </button>
+
+                  {showNotifDropdown && (
+                    <div className="card" style={{ position: 'absolute', right: 0, top: '40px', width: '320px', padding: '1rem', zIndex: 1000, boxShadow: '0 10px 25px rgba(0,0,0,0.5)', background: '#12121a' }}>
+                      <div className="flex justify-between items-center mb-3">
+                        <span style={{ fontWeight: 'bold', fontSize: '0.875rem' }}>Notifications</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Realtime Alerts</span>
+                      </div>
+                      <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                        {notifications.map(n => (
+                          <div key={n.id} style={{ padding: '0.5rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.8125rem' }}>
+                            <div style={{ fontWeight: '600', color: 'var(--accent-green)' }}>{n.title}</div>
+                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>{n.message}</div>
+                            <div style={{ color: 'var(--text-muted)', fontSize: '0.65rem', marginTop: '2px' }}>{n.time}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </header>
 
-            <main className={`main-content ${isSidebarCollapsed ? 'collapsed' : ''}`}>
+            {/* Page Router Body */}
+            <main className="main-content">
               {children}
             </main>
           </div>

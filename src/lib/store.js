@@ -2,33 +2,45 @@ import { mockContacts, mockCampaigns, mockCalls, mockFollowups, mockNotification
 
 const isBrowser = typeof window !== 'undefined';
 
-// Auto-configure Sarvam Vobiz credentials
-if (isBrowser) {
-  if (!localStorage.getItem('telephonyProvider')) {
-    localStorage.setItem('telephonyProvider', 'sarvam_vobiz');
-  }
-  if (!localStorage.getItem('phoneNumber')) {
-    localStorage.setItem('phoneNumber', '+917965854130');
-  }
-  if (!localStorage.getItem('sarvamApiKey')) {
-    localStorage.setItem('sarvamApiKey', 'sk_samvaad_zqem37no_0nBPIELyiA5OEXRXerKOyaBN');
-  }
-}
+let currentUserId = 'default';
 
 export const store = {
-  // Contacts
-  getContacts: () => {
-    if (!isBrowser) return [];
-    const contacts = localStorage.getItem('contacts');
-    if (!contacts) {
-      localStorage.setItem('contacts', JSON.stringify(mockContacts));
-      return mockContacts;
-    }
-    return JSON.parse(contacts);
+  // Set active tenant user ID
+  setUserId: (userId) => {
+    if (userId) currentUserId = userId;
   },
-  addContact: (contact) => {
+
+  getUserId: () => {
+    if (isBrowser) {
+      const savedUser = localStorage.getItem('suvidha_auth_user_id');
+      if (savedUser) return savedUser;
+    }
+    return currentUserId;
+  },
+
+  // 1. Contacts (Scoped by User ID)
+  getContacts: (userId) => {
+    if (!isBrowser) return [];
+    const uid = userId || store.getUserId();
+    const key = `contacts_${uid}`;
+    const data = localStorage.getItem(key);
+    
+    if (!data) {
+      // If default/first-time admin, load mock data, otherwise clean starter for new clients
+      const initial = uid === 'default' ? mockContacts : [
+        { id: '1', name: 'Sample Lead', phone: '+919876543210', email: 'lead@example.com', stage: 'New', status: 'New', lastCalled: null }
+      ];
+      localStorage.setItem(key, JSON.stringify(initial));
+      return initial;
+    }
+    return JSON.parse(data);
+  },
+
+  addContact: (contact, userId) => {
     if (!isBrowser) return;
-    const contacts = store.getContacts();
+    const uid = userId || store.getUserId();
+    const key = `contacts_${uid}`;
+    const contacts = store.getContacts(uid);
     const newContact = { 
       ...contact, 
       id: Date.now().toString(), 
@@ -36,35 +48,48 @@ export const store = {
       status: contact.status || 'New',
       lastCalled: null 
     };
-    localStorage.setItem('contacts', JSON.stringify([...contacts, newContact]));
+    localStorage.setItem(key, JSON.stringify([...contacts, newContact]));
     return newContact;
   },
-  updateContact: (id, updates) => {
+
+  updateContact: (id, updates, userId) => {
     if (!isBrowser) return;
-    const contacts = store.getContacts();
+    const uid = userId || store.getUserId();
+    const key = `contacts_${uid}`;
+    const contacts = store.getContacts(uid);
     const updated = contacts.map(c => c.id === id ? { ...c, ...updates } : c);
-    localStorage.setItem('contacts', JSON.stringify(updated));
-  },
-  deleteContact: (id) => {
-    if (!isBrowser) return;
-    const contacts = store.getContacts();
-    const filtered = contacts.filter(c => c.id !== id);
-    localStorage.setItem('contacts', JSON.stringify(filtered));
+    localStorage.setItem(key, JSON.stringify(updated));
   },
 
-  // Campaigns
-  getCampaigns: () => {
-    if (!isBrowser) return [];
-    const campaigns = localStorage.getItem('campaigns');
-    if (!campaigns) {
-      localStorage.setItem('campaigns', JSON.stringify(mockCampaigns));
-      return mockCampaigns;
-    }
-    return JSON.parse(campaigns);
-  },
-  addCampaign: (campaign) => {
+  deleteContact: (id, userId) => {
     if (!isBrowser) return;
-    const campaigns = store.getCampaigns();
+    const uid = userId || store.getUserId();
+    const key = `contacts_${uid}`;
+    const contacts = store.getContacts(uid);
+    const filtered = contacts.filter(c => c.id !== id);
+    localStorage.setItem(key, JSON.stringify(filtered));
+  },
+
+  // 2. Campaigns (Scoped by User ID)
+  getCampaigns: (userId) => {
+    if (!isBrowser) return [];
+    const uid = userId || store.getUserId();
+    const key = `campaigns_${uid}`;
+    const data = localStorage.getItem(key);
+    
+    if (!data) {
+      const initial = uid === 'default' ? mockCampaigns : [];
+      localStorage.setItem(key, JSON.stringify(initial));
+      return initial;
+    }
+    return JSON.parse(data);
+  },
+
+  addCampaign: (campaign, userId) => {
+    if (!isBrowser) return;
+    const uid = userId || store.getUserId();
+    const key = `campaigns_${uid}`;
+    const campaigns = store.getCampaigns(uid);
     const newCampaign = { 
       ...campaign, 
       id: 'c_' + Date.now(), 
@@ -73,104 +98,95 @@ export const store = {
       totalContacts: campaign.totalContacts || 0,
       successRate: 0 
     };
-    localStorage.setItem('campaigns', JSON.stringify([...campaigns, newCampaign]));
+    localStorage.setItem(key, JSON.stringify([...campaigns, newCampaign]));
     return newCampaign;
   },
-  updateCampaign: (id, updates) => {
+
+  updateCampaign: (id, updates, userId) => {
     if (!isBrowser) return;
-    const campaigns = store.getCampaigns();
+    const uid = userId || store.getUserId();
+    const key = `campaigns_${uid}`;
+    const campaigns = store.getCampaigns(uid);
     const updated = campaigns.map(c => c.id === id ? { ...c, ...updates } : c);
-    localStorage.setItem('campaigns', JSON.stringify(updated));
+    localStorage.setItem(key, JSON.stringify(updated));
   },
 
-  // Calls
-  getCalls: () => {
+  // 3. Calls & Transcripts (Scoped by User ID)
+  getCalls: (userId) => {
     if (!isBrowser) return [];
-    const calls = localStorage.getItem('calls');
-    if (!calls) {
-      localStorage.setItem('calls', JSON.stringify(mockCalls));
-      return mockCalls;
+    const uid = userId || store.getUserId();
+    const key = `calls_${uid}`;
+    const data = localStorage.getItem(key);
+    
+    if (!data) {
+      const initial = uid === 'default' ? mockCalls : [];
+      localStorage.setItem(key, JSON.stringify(initial));
+      return initial;
     }
-    return JSON.parse(calls);
+    return JSON.parse(data);
   },
-  addCall: (call) => {
+
+  addCall: (call, userId) => {
     if (!isBrowser) return;
-    const calls = store.getCalls();
+    const uid = userId || store.getUserId();
+    const key = `calls_${uid}`;
+    const calls = store.getCalls(uid);
     const newCall = { 
       ...call, 
       id: 'call_' + Date.now(), 
-      date: new Date().toISOString(),
-      callerNumber: '+917965854130' 
+      date: new Date().toISOString() 
     };
-    localStorage.setItem('calls', JSON.stringify([newCall, ...calls]));
-
-    // Trigger Hot Lead notification
-    if (newCall.sentiment && (newCall.sentiment.includes('Hot') || newCall.sentiment.includes('Interested'))) {
-      store.addNotification({
-        title: '🔥 HOT LEAD IDENTIFIED!',
-        message: `${newCall.contactName || 'Lead'} expressed interest during the call.`,
-        type: 'hot_lead',
-        contactId: newCall.contactId
-      });
-    }
-
+    localStorage.setItem(key, JSON.stringify([newCall, ...calls]));
     return newCall;
   },
 
-  // Follow-ups Queue
-  getFollowups: () => {
+  // 4. Follow-up Queue (Scoped by User ID)
+  getFollowups: (userId) => {
     if (!isBrowser) return [];
-    const followups = localStorage.getItem('followups');
-    if (!followups) {
-      localStorage.setItem('followups', JSON.stringify(mockFollowups));
-      return mockFollowups;
+    const uid = userId || store.getUserId();
+    const key = `followups_${uid}`;
+    const data = localStorage.getItem(key);
+    
+    if (!data) {
+      const initial = uid === 'default' ? mockFollowups : [];
+      localStorage.setItem(key, JSON.stringify(initial));
+      return initial;
     }
-    return JSON.parse(followups);
-  },
-  addFollowup: (followup) => {
-    if (!isBrowser) return;
-    const followups = store.getFollowups();
-    const newFollowup = { 
-      ...followup, 
-      id: 'f_' + Date.now(), 
-      status: 'Pending',
-      scheduledTime: followup.scheduledTime || 'In 30 Minutes' 
-    };
-    localStorage.setItem('followups', JSON.stringify([...newFollowup, ...followups]));
-    return newFollowup;
-  },
-  updateFollowup: (id, updates) => {
-    if (!isBrowser) return;
-    const followups = store.getFollowups();
-    const updated = followups.map(f => f.id === id ? { ...f, ...updates } : f);
-    localStorage.setItem('followups', JSON.stringify(updated));
+    return JSON.parse(data);
   },
 
-  // Notifications
-  getNotifications: () => {
+  addFollowup: (followup, userId) => {
+    if (!isBrowser) return;
+    const uid = userId || store.getUserId();
+    const key = `followups_${uid}`;
+    const followups = store.getFollowups(uid);
+    const newFollowup = { ...followup, id: 'f_' + Date.now() };
+    localStorage.setItem(key, JSON.stringify([...followups, newFollowup]));
+    return newFollowup;
+  },
+
+  // 5. Notifications (Scoped by User ID)
+  getNotifications: (userId) => {
     if (!isBrowser) return [];
-    const notifications = localStorage.getItem('notifications');
-    if (!notifications) {
-      localStorage.setItem('notifications', JSON.stringify(mockNotifications));
-      return mockNotifications;
+    const uid = userId || store.getUserId();
+    const key = `notifs_${uid}`;
+    const data = localStorage.getItem(key);
+    if (!data) {
+      const initial = uid === 'default' ? mockNotifications : [
+        { id: '1', title: 'Welcome to Suvidha CRM', message: 'Your AI Calling workspace is ready!', time: 'Just now', read: false }
+      ];
+      localStorage.setItem(key, JSON.stringify(initial));
+      return initial;
     }
-    return JSON.parse(notifications);
+    return JSON.parse(data);
   },
-  addNotification: (notif) => {
+
+  markNotificationsRead: (userId) => {
     if (!isBrowser) return;
-    const notifications = store.getNotifications();
-    const newNotif = { 
-      ...notif, 
-      id: 'n_' + Date.now(), 
-      time: 'Just now', 
-      read: false 
-    };
-    localStorage.setItem('notifications', JSON.stringify([newNotif, ...notifications]));
-  },
-  markNotificationsRead: () => {
-    if (!isBrowser) return;
-    const notifications = store.getNotifications();
-    const updated = notifications.map(n => ({ ...n, read: true }));
-    localStorage.setItem('notifications', JSON.stringify(updated));
+    const uid = userId || store.getUserId();
+    const key = `notifs_${uid}`;
+    const notifs = store.getNotifications(uid);
+    const updated = notifs.map(n => ({ ...n, read: true }));
+    localStorage.setItem(key, JSON.stringify(updated));
   }
 };
