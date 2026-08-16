@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 
-// Transliterate Romanized Hinglish to proper Hindi Devanagari so Neural TTS sounds 100% human Indian with 0 British accent!
 function toHindiScript(text, gender) {
   const dictionary = {
     'namaste': 'नमस्ते',
@@ -51,10 +50,8 @@ function toHindiScript(text, gender) {
   };
 
   let processed = text;
-  // If already Hindi script, return
   if (/[\u0900-\u097F]/.test(processed)) return processed;
 
-  // Replace common Hinglish words
   const words = processed.split(/\s+/);
   const converted = words.map(w => {
     const clean = w.toLowerCase().replace(/[^a-z]/g, '');
@@ -77,9 +74,11 @@ export async function POST(req) {
 
     const hindiText = toHindiScript(text, gender);
     const encodedText = encodeURIComponent(hindiText);
-    const googleTTSUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=hi&client=tw-ob`;
+    
+    // Choose appropriate voice speed & lang
+    const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=hi&client=tw-ob`;
 
-    const audioRes = await fetch(googleTTSUrl, {
+    const audioRes = await fetch(ttsUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
       }
@@ -95,7 +94,8 @@ export async function POST(req) {
       status: 200,
       headers: {
         'Content-Type': 'audio/mpeg',
-        'Cache-Control': 'public, max-age=86400'
+        'Cache-Control': 'public, max-age=86400',
+        'X-Voice-Gender': gender || 'Female'
       }
     });
 

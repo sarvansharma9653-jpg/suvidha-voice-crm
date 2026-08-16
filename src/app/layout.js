@@ -107,6 +107,11 @@ export default function RootLayout({ children }) {
                     <span>🏠</span> {!isSidebarCollapsed && <span>Overview & Playground</span>}
                   </Link>
                 </li>
+                <li>
+                  <Link href="/webcall" className="nav-item">
+                    <span>🌐</span> {!isSidebarCollapsed && <span>Instant Web Call (No SIM/Telephony)</span>}
+                  </Link>
+                </li>
               </ul>
 
               {!isSidebarCollapsed && <div className="nav-section-title" style={{ marginTop: '1.25rem' }}>BUILD</div>}
@@ -204,7 +209,7 @@ export default function RootLayout({ children }) {
                 </div>
                 <div className="topbar-status">
                   <span className="pulse-dot"></span>
-                  <span>AWS Swara Engine Online</span>
+                  <span>OmniDimension & Neural TTS Online</span>
                 </div>
               </div>
 
