@@ -15,16 +15,20 @@ export default function OverviewPage() {
   // Audio Ring & Speech State
   const [isCalling, setIsCalling] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [statusText, setStatusText] = useState('Click to talk to your Design Suvidha AI Agent');
-  const [transcriptHistory, setTranscriptHistory] = useState([]);
+  const [statusText, setStatusText] = useState('Click to talk or type in live chat');
+  const [transcriptHistory, setTranscriptHistory] = useState([
+    { sender: 'Design Suvidha AI', text: 'नमस्ते! मैं Design Suvidha का एआई असिस्टेंट हूँ। आप मुझसे बोलकर या टाइप करके चैट कर सकते हैं।' }
+  ]);
+  const [chatInput, setChatInput] = useState('');
   const [activeTab, setActiveTab] = useState('Agent');
 
   const recognitionRef = useRef(null);
+  const chatEndRef = useRef(null);
 
   const voiceLibrary = [
-    { id: 'madhur', name: '👨 Madhur (Design Suvidha Senior Growth Consultant)', gender: 'Male', pitch: 0.65, rate: 0.92, desc: 'Deep, confident corporate masculine consultant (बोल रहा हूँ)' },
-    { id: 'rohan', name: '👨 Rohan (Executive Business Development Lead)', gender: 'Male', pitch: 0.58, rate: 0.88, desc: 'Deep, authoritative tone for B2B Digital Marketing' },
-    { id: 'aarav', name: '👨 Aarav (Dynamic Tech & Ads Specialist)', gender: 'Male', pitch: 0.70, rate: 0.98, desc: 'Young & energetic masculine tone for Startups & E-commerce' },
+    { id: 'madhur', name: '👨 Madhur (Senior Growth Consultant)', gender: 'Male', pitch: 0.68, rate: 0.94, desc: 'Deep, confident corporate masculine consultant (बोल रहा हूँ)' },
+    { id: 'rohan', name: '👨 Rohan (Executive Business Development Lead)', gender: 'Male', pitch: 0.60, rate: 0.90, desc: 'Deep, authoritative tone for B2B Digital Marketing' },
+    { id: 'aarav', name: '👨 Aarav (Dynamic Tech & Ads Specialist)', gender: 'Male', pitch: 0.72, rate: 1.0, desc: 'Young & energetic masculine tone for Startups & E-commerce' },
     { id: 'swara', name: '👩 Swara (Creative Strategy Lead)', gender: 'Female', pitch: 1.25, rate: 0.96, desc: 'Sweet, polite & persuasive female marketing expert (बोल रही हूँ)' },
     { id: 'ananya', name: '👩 Ananya (Client Growth Manager)', gender: 'Female', pitch: 1.2, rate: 1.0, desc: 'Clear, modern & energetic Hinglish sales voice' },
     { id: 'pooja', name: '👩 Pooja (Brand Success Advisor)', gender: 'Female', pitch: 1.28, rate: 0.92, desc: 'Soft & caring human cadence for Small Businesses' },
@@ -52,6 +56,12 @@ export default function OverviewPage() {
     });
   }, []);
 
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [transcriptHistory]);
+
   const currentPersona = voiceLibrary.find(v => v.id === ttsVoice) || voiceLibrary[0];
   const isCurrentMale = currentPersona.gender === 'Male';
 
@@ -72,8 +82,14 @@ export default function OverviewPage() {
     speakResponse(current, newVoiceId);
   };
 
+  // Smooth, Stutter-Free Speech Engine
   const speakResponse = (text, customVoiceId) => {
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
+
+    // Temporarily pause mic to prevent audio loop feedback/stuttering
+    if (recognitionRef.current && isCalling) {
+      try { recognitionRef.current.stop(); } catch(e) {}
+    }
 
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
@@ -103,17 +119,22 @@ export default function OverviewPage() {
 
     utterance.onstart = () => {
       setIsSpeaking(true);
-      setStatusText(`Design Suvidha AI (${activePersona.name}) is speaking...`);
+      setStatusText(`Design Suvidha AI (${activePersona.name.split(' ')[1]}) is speaking...`);
     };
 
     utterance.onend = () => {
       setIsSpeaking(false);
-      setStatusText('Listening to your voice... (Speak now)');
+      setStatusText(isCalling ? 'Listening to your voice... (Speak now)' : 'Ready for conversation');
+      
+      // Resume mic cleanly after speaking finishes
+      if (isCalling && recognitionRef.current) {
+        try { recognitionRef.current.start(); } catch(e) {}
+      }
     };
 
     utterance.onerror = () => {
       setIsSpeaking(false);
-      setStatusText('Click to talk to your AI agent');
+      setStatusText('Ready for conversation');
     };
 
     window.speechSynthesis.speak(utterance);
@@ -123,8 +144,8 @@ export default function OverviewPage() {
     if (isCalling) {
       setIsCalling(false);
       setIsSpeaking(false);
-      setStatusText('Call Ended. Click to talk to your AI agent');
-      if (recognitionRef.current) recognitionRef.current.stop();
+      setStatusText('Call Ended. Click to talk or type in live chat');
+      if (recognitionRef.current) try { recognitionRef.current.stop(); } catch(e) {}
       if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
     } else {
       setIsCalling(true);
@@ -134,7 +155,7 @@ export default function OverviewPage() {
         ? 'नमस्ते सर! मैं Design Suvidha से बात कर रहा हूँ। हम आपके बिजनेस की ऑनलाइन ग्रोथ के लिए Meta Ads, SEO, और वेबसाइट डेवलपमेंट प्रोवाइड करते हैं। बताइए, आज आपकी क्या सहायता कर सकता हूँ?'
         : 'नमस्ते सर! मैं Design Suvidha से बात कर रही हूँ। हम आपके बिजनेस की ऑनलाइन ग्रोथ के लिए Meta Ads, SEO, और वेबसाइट डेवलपमेंट प्रोवाइड करते हैं। बताइए, आज आपकी क्या सहायता कर सकती हूँ?');
 
-      setTranscriptHistory([{ sender: `Design Suvidha AI (${currentPersona.name.split(' ')[1]})`, text: welcomeText }]);
+      setTranscriptHistory(prev => [...prev, { sender: `Design Suvidha AI (${currentPersona.name.split(' ')[1]})`, text: welcomeText }]);
       speakResponse(welcomeText, ttsVoice);
 
       if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
@@ -153,10 +174,21 @@ export default function OverviewPage() {
         };
 
         recognition.onerror = (e) => console.log('Speech recognition note:', e.error);
-        recognition.start();
+        try { recognition.start(); } catch(e) {}
         recognitionRef.current = recognition;
       }
     }
+  };
+
+  // Text Chat Submit Handler
+  const handleChatSubmit = (e) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+
+    const userText = chatInput.trim();
+    setTranscriptHistory(prev => [...prev, { sender: 'You (Chat)', text: userText }]);
+    setChatInput('');
+    handleAgentAIResponse(userText);
   };
 
   // Design Suvidha Intelligent Knowledge Engine
@@ -188,7 +220,7 @@ export default function OverviewPage() {
     setTimeout(() => {
       setTranscriptHistory(prev => [...prev, { sender: `Design Suvidha AI (${personaName})`, text: aiReply }]);
       speakResponse(aiReply, ttsVoice);
-    }, 300);
+    }, 200);
   };
 
   return (
@@ -196,8 +228,8 @@ export default function OverviewPage() {
       {/* Top Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 style={{ fontSize: '1.75rem', margin: 0 }}>🎨 Design Suvidha AI Voice Assistant Studio</h1>
-          <p className="subtitle" style={{ margin: 0 }}>Digital Marketing & Creative Solutions AI Calling Agent</p>
+          <h1 style={{ fontSize: '1.75rem', margin: 0 }}>🎨 Design Suvidha Voice & Chat AI Studio</h1>
+          <p className="subtitle" style={{ margin: 0 }}>Interactive Voice Calling & Real-Time Chat Assistant for Digital Marketing Services</p>
         </div>
 
         <div className="flex items-center gap-4">
@@ -206,8 +238,8 @@ export default function OverviewPage() {
         </div>
       </div>
 
-      {/* Main Grid: Left Config, Right Deepgram Glowing Ring Console */}
-      <div style={{ display: 'grid', gridTemplateColumns: '460px 1fr', gap: '2rem' }}>
+      {/* Main Grid: Left Config, Right Deepgram Glowing Ring & Interactive Chat Console */}
+      <div style={{ display: 'grid', gridTemplateColumns: '440px 1fr', gap: '2rem' }}>
         
         {/* Left Column: Voice Persona & Custom Script */}
         <div className="card" style={{ padding: '1.75rem', background: '#0c0c12' }}>
@@ -300,74 +332,102 @@ export default function OverviewPage() {
             fontSize: '0.8125rem', 
             color: isCurrentMale ? 'var(--accent-blue)' : 'var(--accent-green)' 
           }}>
-            {isCurrentMale ? '👨' : '👩'} <strong>Design Suvidha AI Active!</strong> Powered with full knowledge of Meta Ads, SEO, Web Development, Graphic Design & Video Content.
+            {isCurrentMale ? '👨' : '👩'} <strong>Design Suvidha AI Active!</strong> Stutter-free audio engine with simultaneous live voice calling and text chat.
           </div>
         </div>
 
-        {/* Right Column: Deepgram Glowing Pulsing Ring Console */}
-        <div className="deepgram-container">
+        {/* Right Column: Deepgram Glowing Ring & Interactive Chat Box */}
+        <div className="deepgram-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: '620px' }}>
+          
           {/* Tabs */}
-          <div style={{ display: 'flex', gap: '1.5rem', position: 'absolute', top: '1.5rem', left: '2rem', borderBottom: '1px solid var(--border-light)', width: 'calc(100% - 4rem)' }}>
-            <button 
-              onClick={() => setActiveTab('Agent')}
-              style={{ background: 'none', border: 'none', borderBottom: activeTab === 'Agent' ? '2px solid var(--accent-green)' : 'none', color: activeTab === 'Agent' ? '#fff' : 'var(--text-secondary)', paddingBottom: '0.5rem', cursor: 'pointer', fontWeight: '600', fontSize: '0.875rem' }}
-            >
-              Design Suvidha Console ({isCurrentMale ? '👨' : '👩'} {currentPersona.name.split(' ')[1]})
-            </button>
-            <button 
-              onClick={() => setActiveTab('Developer')}
-              style={{ background: 'none', border: 'none', borderBottom: activeTab === 'Developer' ? '2px solid var(--accent-green)' : 'none', color: activeTab === 'Developer' ? '#fff' : 'var(--text-secondary)', paddingBottom: '0.5rem', cursor: 'pointer', fontWeight: '600', fontSize: '0.875rem' }}
-            >
-              Developer Logs
-            </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', gap: '1.5rem' }}>
+              <button 
+                onClick={() => setActiveTab('Agent')}
+                style={{ background: 'none', border: 'none', borderBottom: activeTab === 'Agent' ? '2px solid var(--accent-green)' : 'none', color: activeTab === 'Agent' ? '#fff' : 'var(--text-secondary)', paddingBottom: '0.5rem', cursor: 'pointer', fontWeight: '600', fontSize: '0.875rem' }}
+              >
+                🎙️ Voice Console ({isCurrentMale ? '👨' : '👩'} {currentPersona.name.split(' ')[1]})
+              </button>
+              <button 
+                onClick={() => setActiveTab('Chat')}
+                style={{ background: 'none', border: 'none', borderBottom: activeTab === 'Chat' ? '2px solid var(--accent-green)' : 'none', color: activeTab === 'Chat' ? '#fff' : 'var(--text-secondary)', paddingBottom: '0.5rem', cursor: 'pointer', fontWeight: '600', fontSize: '0.875rem' }}
+              >
+                💬 Live Chat Room
+              </button>
+            </div>
+            <span style={{ fontSize: '0.75rem', color: isSpeaking ? 'var(--accent-green)' : 'var(--text-muted)' }}>
+              {isSpeaking ? '🔊 Audio Streaming...' : '🟢 Ready'}
+            </span>
           </div>
 
-          <div style={{ marginTop: '2.5rem' }}>
-            {/* Glowing Pulsing Ring Visualizer */}
-            <div className="ring-visualizer">
-              <div className={`ring-circle ring-outer ${isCalling ? 'active' : ''} ${isSpeaking ? 'speaking' : ''}`}></div>
-              <div className={`ring-circle ring-middle ${isCalling ? 'active' : ''} ${isSpeaking ? 'speaking' : ''}`}></div>
-              <div className={`ring-circle ring-inner ${isCalling ? 'active' : ''} ${isSpeaking ? 'speaking' : ''}`}>
-                <span style={{ fontSize: '2.5rem' }}>
+          {/* Voice Ring Section */}
+          <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+            <div className="ring-visualizer" style={{ height: '110px', margin: '0.5rem auto' }}>
+              <div className={`ring-circle ring-outer ${isCalling ? 'active' : ''} ${isSpeaking ? 'speaking' : ''}`} style={{ width: '100px', height: '100px' }}></div>
+              <div className={`ring-circle ring-middle ${isCalling ? 'active' : ''} ${isSpeaking ? 'speaking' : ''}`} style={{ width: '80px', height: '80px' }}></div>
+              <div className={`ring-circle ring-inner ${isCalling ? 'active' : ''} ${isSpeaking ? 'speaking' : ''}`} style={{ width: '60px', height: '60px' }}>
+                <span style={{ fontSize: '1.8rem' }}>
                   {isSpeaking ? '🔊' : isCalling ? (isCurrentMale ? '👨‍💼' : '👩‍💼') : '🎨'}
                 </span>
               </div>
             </div>
 
-            {/* Status & Subtitle */}
-            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-              <div style={{ fontSize: '1.1rem', fontWeight: '600', color: isSpeaking ? 'var(--accent-green)' : isCalling ? 'var(--accent-blue)' : '#fff', marginBottom: '0.25rem' }}>
-                {statusText}
-              </div>
-              <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
-                {isCalling ? `Speaking on behalf of Design Suvidha as ${currentPersona.name}` : 'Click the button below to start live microphone conversation'}
-              </div>
+            <div style={{ fontSize: '0.95rem', fontWeight: '600', color: isSpeaking ? 'var(--accent-green)' : isCalling ? 'var(--accent-blue)' : '#fff', marginTop: '0.5rem' }}>
+              {statusText}
             </div>
 
-            {/* Big Action Button */}
-            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+            <div style={{ marginTop: '0.75rem' }}>
               <button 
                 onClick={toggleAgent} 
                 className={`talk-agent-btn ${isCalling ? 'listening' : ''}`}
+                style={{ padding: '0.6rem 1.8rem', fontSize: '0.95rem' }}
               >
-                {isCalling ? '⏹️ End Voice Conversation' : `🎙️ Talk With Design Suvidha AI`}
+                {isCalling ? '⏹️ End Voice Conversation' : `🎙️ Start Voice Call With AI`}
               </button>
             </div>
-
-            {/* Live Conversation Transcript History */}
-            {transcriptHistory.length > 0 && (
-              <div style={{ background: '#0a0a0f', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)', maxHeight: '180px', overflowY: 'auto', textAlign: 'left' }}>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', fontWeight: '600' }}>
-                  💬 LIVE DESIGN SUVIDHA SALES TRANSCRIPT:
-                </div>
-                {transcriptHistory.map((t, i) => (
-                  <div key={i} style={{ fontSize: '0.85rem', marginBottom: '0.4rem', color: t.sender.includes('Design Suvidha') ? 'var(--accent-green)' : 'var(--accent-blue)' }}>
-                    <strong>{t.sender}:</strong> {t.text}
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
+
+          {/* Interactive Chat Messages Log */}
+          <div style={{ flex: 1, background: '#08080d', padding: '1rem', borderRadius: '10px', border: '1px solid var(--border-light)', overflowY: 'auto', maxHeight: '240px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            {transcriptHistory.map((t, idx) => {
+              const isUser = t.sender.includes('You');
+              return (
+                <div key={idx} style={{ alignSelf: isUser ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '2px', textAlign: isUser ? 'right' : 'left' }}>
+                    {t.sender}
+                  </div>
+                  <div style={{ 
+                    background: isUser ? 'linear-gradient(135deg, #1d4ed8, #2563eb)' : '#161622', 
+                    color: '#fff', 
+                    padding: '0.55rem 0.85rem', 
+                    borderRadius: isUser ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
+                    fontSize: '0.825rem',
+                    lineHeight: '1.4',
+                    border: isUser ? 'none' : '1px solid rgba(255,255,255,0.06)'
+                  }}>
+                    {t.text}
+                  </div>
+                </div>
+              );
+            })}
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Text Chat Input Bar */}
+          <form onSubmit={handleChatSubmit} style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+            <input 
+              type="text" 
+              className="form-control"
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              placeholder="Type your question or message here (e.g. Website price kya hai?)..."
+              style={{ fontSize: '0.85rem', padding: '0.6rem 0.85rem', background: '#0a0a10', flex: 1 }}
+            />
+            <button type="submit" className="btn btn-primary" style={{ padding: '0.6rem 1.25rem', fontSize: '0.85rem', flexShrink: 0 }}>
+              💬 Send
+            </button>
+          </form>
+
         </div>
       </div>
     </div>
