@@ -4,10 +4,18 @@ import { supabase } from '@/lib/supabase';
 
 export default function SettingsPage() {
   const [provider, setProvider] = useState('exotel');
+  
+  // Exotel Exact Fields
+  const [exotelAccountSid, setExotelAccountSid] = useState('designsuvidha1');
+  const [exotelSubdomain, setExotelSubdomain] = useState('api.exotel.com');
+  const [exotelApiKey, setExotelApiKey] = useState('');
+  const [exotelApiToken, setExotelApiToken] = useState('');
+  const [exotelVirtualNumber, setExotelVirtualNumber] = useState('08047280901');
+
+  // Generic / Twilio / Plivo Fields
   const [accountSid, setAccountSid] = useState('');
   const [authToken, setAuthToken] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('+91');
-  const [exotelSubdomain, setExotelSubdomain] = useState('');
   
   // WhatsApp Meta Cloud API Credentials
   const [metaAccessToken, setMetaAccessToken] = useState('');
@@ -24,11 +32,20 @@ export default function SettingsPage() {
       setMetaAccessToken(localStorage.getItem('metaAccessToken') || '');
       setMetaPhoneNumberId(localStorage.getItem('metaPhoneNumberId') || '');
       setAdminNumber(localStorage.getItem('adminNumber') || '+917707978068');
-      setExotelSubdomain(localStorage.getItem('exotelSubdomain') || '');
+      
       setProvider(localStorage.getItem('telephonyProvider') || 'exotel');
+      
+      // Exotel specific
+      setExotelAccountSid(localStorage.getItem('exotelAccountSid') || 'designsuvidha1');
+      setExotelSubdomain(localStorage.getItem('exotelSubdomain') || 'api.exotel.com');
+      setExotelApiKey(localStorage.getItem('exotelApiKey') || '');
+      setExotelApiToken(localStorage.getItem('exotelApiToken') || '');
+      setExotelVirtualNumber(localStorage.getItem('exotelVirtualNumber') || '08047280901');
+
+      // Generic / Other
       setAccountSid(localStorage.getItem('accountSid') || '');
       setAuthToken(localStorage.getItem('authToken') || '');
-      setPhoneNumber(localStorage.getItem('phoneNumber') || '+91');
+      setPhoneNumber(localStorage.getItem('phoneNumber') || '08047280901');
     }
   }, []);
 
@@ -52,7 +69,7 @@ export default function SettingsPage() {
         setProvider(data.provider || 'exotel');
         setAccountSid(data.account_sid || '');
         setAuthToken(data.auth_token || '');
-        setPhoneNumber(data.phone_number || '+91');
+        setPhoneNumber(data.phone_number || '08047280901');
       }
     } catch (err) {
       console.error('Error fetching credentials:', err);
@@ -68,10 +85,19 @@ export default function SettingsPage() {
 
     try {
       localStorage.setItem('telephonyProvider', provider);
-      localStorage.setItem('accountSid', accountSid);
-      localStorage.setItem('authToken', authToken);
-      localStorage.setItem('phoneNumber', phoneNumber);
+
+      // Save Exotel fields
+      localStorage.setItem('exotelAccountSid', exotelAccountSid);
       localStorage.setItem('exotelSubdomain', exotelSubdomain);
+      localStorage.setItem('exotelApiKey', exotelApiKey);
+      localStorage.setItem('exotelApiToken', exotelApiToken);
+      localStorage.setItem('exotelVirtualNumber', exotelVirtualNumber);
+
+      // Generic fallbacks
+      localStorage.setItem('accountSid', provider === 'exotel' ? exotelApiKey : accountSid);
+      localStorage.setItem('authToken', provider === 'exotel' ? exotelApiToken : authToken);
+      localStorage.setItem('phoneNumber', provider === 'exotel' ? exotelVirtualNumber : phoneNumber);
+
       localStorage.setItem('metaAccessToken', metaAccessToken);
       localStorage.setItem('metaPhoneNumberId', metaPhoneNumberId);
       localStorage.setItem('adminNumber', adminNumber);
@@ -84,26 +110,23 @@ export default function SettingsPage() {
           .eq('user_id', user.id)
           .maybeSingle();
 
+        const credPayload = {
+          user_id: user.id,
+          provider,
+          account_sid: provider === 'exotel' ? exotelApiKey : accountSid,
+          auth_token: provider === 'exotel' ? exotelApiToken : authToken,
+          phone_number: provider === 'exotel' ? exotelVirtualNumber : phoneNumber
+        };
+
         if (existing) {
           await supabase
             .from('credentials')
-            .update({
-              provider,
-              account_sid: accountSid,
-              auth_token: authToken,
-              phone_number: phoneNumber
-            })
+            .update(credPayload)
             .eq('user_id', user.id);
         } else {
           await supabase
             .from('credentials')
-            .insert([{
-              user_id: user.id,
-              provider,
-              account_sid: accountSid,
-              auth_token: authToken,
-              phone_number: phoneNumber
-            }]);
+            .insert([credPayload]);
         }
       }
 
@@ -126,31 +149,6 @@ export default function SettingsPage() {
   if (fetching) {
     return <div style={{ textAlign: 'center', padding: '3rem' }}>Loading Settings...</div>;
   }
-
-  // Dynamic Provider Specific Labels
-  const getSidLabel = () => {
-    if (provider === 'exotel') return 'Exotel API Key';
-    if (provider === 'plivo') return 'Plivo Auth ID';
-    if (provider === 'twilio') return 'Twilio Account SID';
-    if (provider === 'sarvam_vobiz') return 'Sarvam API Key';
-    return 'Account SID / API Key';
-  };
-
-  const getAuthLabel = () => {
-    if (provider === 'exotel') return 'Exotel Auth Token / API Secret';
-    if (provider === 'plivo') return 'Plivo Auth Token';
-    if (provider === 'twilio') return 'Twilio Auth Token';
-    if (provider === 'sarvam_vobiz') return 'Sarvam Secret Token';
-    return 'Auth Token / API Secret';
-  };
-
-  const getPhoneLabel = () => {
-    if (provider === 'exotel') return 'Exotel Virtual Number (+91...)';
-    if (provider === 'plivo') return 'Plivo Indian Virtual Number (+91...)';
-    if (provider === 'twilio') return 'Twilio Phone Number (+17372212163)';
-    if (provider === 'sarvam_vobiz') return 'Sarvam Active Number (+917965854130)';
-    return 'Caller Phone Number';
-  };
 
   return (
     <div style={{ maxWidth: '1000px' }}>
@@ -191,55 +189,120 @@ export default function SettingsPage() {
               </select>
             </div>
 
-            {provider !== 'webphone' && (
+            {provider === 'exotel' && (
               <>
-                {provider === 'exotel' && (
-                  <div className="form-group">
-                    <label>Exotel Subdomain (e.g. mycompany.exotel.com)</label>
-                    <input 
-                      required
-                      type="text" 
-                      className="form-control" 
-                      value={exotelSubdomain} 
-                      onChange={e => setExotelSubdomain(e.target.value)} 
-                      placeholder="e.g. suvidha.exotel.com" 
-                    />
-                  </div>
-                )}
+                <div className="form-group">
+                  <label>1. Exotel Account SID</label>
+                  <input 
+                    required 
+                    type="text" 
+                    className="form-control" 
+                    value={exotelAccountSid} 
+                    onChange={e => setExotelAccountSid(e.target.value)} 
+                    placeholder="e.g. designsuvidha1" 
+                  />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px', display: 'block' }}>
+                    Shown as <strong>Account SID</strong> on Exotel API Credentials page.
+                  </span>
+                </div>
 
                 <div className="form-group">
-                  <label>{getSidLabel()}</label>
+                  <label>2. Exotel Subdomain</label>
+                  <input 
+                    required
+                    type="text" 
+                    className="form-control" 
+                    value={exotelSubdomain} 
+                    onChange={e => setExotelSubdomain(e.target.value)} 
+                    placeholder="e.g. api.exotel.com" 
+                  />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px', display: 'block' }}>
+                    Shown as <strong>Subdomain</strong> on Exotel page (usually <code>api.exotel.com</code>).
+                  </span>
+                </div>
+
+                <div className="form-group">
+                  <label>3. Exotel API Key (Username)</label>
+                  <input 
+                    required 
+                    type="text" 
+                    className="form-control" 
+                    value={exotelApiKey} 
+                    onChange={e => setExotelApiKey(e.target.value)} 
+                    placeholder="e.g. 1a6170d37e88f2ee7d542fd54e8cb4bf..." 
+                  />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px', display: 'block' }}>
+                    Copy from <strong>API KEY (USERNAME)</strong> column on Exotel page.
+                  </span>
+                </div>
+
+                <div className="form-group">
+                  <label>4. Exotel API Token (Password)</label>
+                  <input 
+                    required 
+                    type="password" 
+                    className="form-control" 
+                    value={exotelApiToken} 
+                    onChange={e => setExotelApiToken(e.target.value)} 
+                    placeholder="Paste Exotel API Token (Password)..." 
+                  />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px', display: 'block' }}>
+                    Copy from <strong>API TOKEN (PASSWORD)</strong> column on Exotel page.
+                  </span>
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                  <label>5. Exotel ExoPhone (Virtual Number)</label>
+                  <input 
+                    required 
+                    type="tel" 
+                    className="form-control" 
+                    value={exotelVirtualNumber} 
+                    onChange={e => setExotelVirtualNumber(e.target.value)} 
+                    placeholder="08047280901 or +918047280901" 
+                  />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px', display: 'block' }}>
+                    Your assigned Indian Virtual Number (e.g. <code>08047280901</code>).
+                  </span>
+                </div>
+              </>
+            )}
+
+            {provider !== 'exotel' && provider !== 'webphone' && (
+              <>
+                <div className="form-group">
+                  <label>{provider === 'twilio' ? 'Twilio Account SID' : provider === 'plivo' ? 'Plivo Auth ID' : 'Sarvam API Key'}</label>
                   <input 
                     required 
                     type="text" 
                     className="form-control" 
                     value={accountSid} 
                     onChange={e => setAccountSid(e.target.value)} 
-                    placeholder={provider === 'exotel' ? 'Enter Exotel API Key...' : 'Enter Account SID...'} 
+                    placeholder="Enter Account SID / API Key..." 
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>{getAuthLabel()}</label>
+                  <label>{provider === 'twilio' ? 'Twilio Auth Token' : provider === 'plivo' ? 'Plivo Auth Token' : 'Sarvam Secret Token'}</label>
                   <input 
                     required 
                     type="password" 
                     className="form-control" 
                     value={authToken} 
                     onChange={e => setAuthToken(e.target.value)} 
-                    placeholder={provider === 'exotel' ? 'Enter Exotel Auth Token...' : 'Enter Auth Token...'} 
+                    placeholder="Enter Auth Token..." 
                   />
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                  <label>{getPhoneLabel()}</label>
+                  <label>Caller Phone Number</label>
                   <input 
                     required 
                     type="tel" 
                     className="form-control" 
                     value={phoneNumber} 
                     onChange={e => setPhoneNumber(e.target.value)} 
-                    placeholder="+91..." 
+                    placeholder="+91... or +1..." 
                   />
                 </div>
               </>

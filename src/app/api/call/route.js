@@ -16,20 +16,21 @@ export async function POST(req) {
     // 1. EXOTEL INDIA (+91) ENTERPRISE OUTBOUND DISPATCH
     if (selectedProvider === 'exotel') {
       const rawSubdomain = body.exotelSubdomain || process.env.EXOTEL_SUBDOMAIN || 'api.exotel.com';
-      const apiKey = body.accountSid || process.env.EXOTEL_API_KEY || '';
-      const apiToken = body.authToken || process.env.EXOTEL_API_TOKEN || '';
-      const callerId = body.callerNumber || process.env.EXOTEL_CALLER_ID || '08047280901';
+      const accountSid = body.exotelAccountSid || body.accountSid || process.env.EXOTEL_ACCOUNT_SID || 'designsuvidha1';
+      const apiKey = body.exotelApiKey || body.accountSid || process.env.EXOTEL_API_KEY || '';
+      const apiToken = body.exotelApiToken || body.authToken || process.env.EXOTEL_API_TOKEN || '';
+      const callerId = body.callerNumber || body.exotelVirtualNumber || process.env.EXOTEL_CALLER_ID || '08047280901';
 
       // Auto-format hostname correctly
       let domainHost = rawSubdomain.includes('.') ? rawSubdomain : `${rawSubdomain}.exotel.com`;
       if (!domainHost || domainHost === '.exotel.com') domainHost = 'api.exotel.com';
 
-      if (apiKey && apiToken) {
+      if (apiKey && apiToken && accountSid) {
         try {
           const authString = Buffer.from(`${apiKey}:${apiToken}`).toString('base64');
-          const exotelUrl = `https://${domainHost}/v1/Accounts/${apiKey}/Calls/connect.json`;
+          const exotelUrl = `https://${domainHost}/v1/Accounts/${accountSid}/Calls/connect.json`;
 
-          console.log(`📡 Exotel Outbound Request to: ${exotelUrl}`);
+          console.log(`📡 Exotel Outbound Request to: ${exotelUrl} with Account SID: ${accountSid}`);
 
           const exotelRes = await fetch(exotelUrl, {
             method: 'POST',
