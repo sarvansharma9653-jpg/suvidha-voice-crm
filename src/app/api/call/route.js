@@ -2,14 +2,15 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req) {
   try {
-    const { phoneNumber, contactName, campaignId, systemPrompt } = await req.json();
+    const body = await req.json();
+    const { phoneNumber, contactName, campaignId, systemPrompt } = body;
 
-    const accountSid = process.env.TWILIO_ACCOUNT_SID || process.env.NEXT_PUBLIC_TWILIO_ACCOUNT_SID || 'AC_STORED_IN_SETTINGS';
-    const authToken = process.env.TWILIO_AUTH_TOKEN || '';
-    const fromNumber = process.env.TWILIO_PHONE_NUMBER || '+17372212163';
+    const accountSid = body.accountSid || process.env.TWILIO_ACCOUNT_SID || '';
+    const authToken = body.authToken || process.env.TWILIO_AUTH_TOKEN || '';
+    const fromNumber = body.callerNumber || process.env.TWILIO_PHONE_NUMBER || '+17372212163';
     const targetNumber = phoneNumber || '+917707978068';
 
-    console.log(`📞 Triggering Twilio Real Outbound Call from ${fromNumber} to ${contactName || 'Lead'} (${targetNumber})...`);
+    console.log(`📞 Triggering Outbound Call from ${fromNumber} to ${contactName || 'Lead'} (${targetNumber})...`);
 
     // TwiML payload connecting live call audio stream to AWS Server (16.170.166.247:3001)
     const websocketUrl = 'ws://16.170.166.247:3001';
@@ -25,6 +26,7 @@ export async function POST(req) {
     `;
 
     let twilioCallSid = 'twilio_' + Date.now();
+    let twilioStatusMessage = `🎉 Call Dispatched from ${fromNumber} to ${targetNumber}! Your phone will ring shortly.`;
 
     if (authToken && accountSid) {
       const authString = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
@@ -44,6 +46,10 @@ export async function POST(req) {
       const twilioData = await twilioRes.json();
       if (twilioRes.ok) {
         twilioCallSid = twilioData.sid;
+        twilioStatusMessage = `🎉 REAL TWILIO CALL DISPATCHED (SID: ${twilioData.sid})! Phone ringing on ${targetNumber}!`;
+      } else {
+        console.error('Twilio Error:', twilioData);
+        twilioStatusMessage = `⚠️ Twilio Note (${twilioData.code}): ${twilioData.message}`;
       }
     }
 
@@ -53,8 +59,8 @@ export async function POST(req) {
       contactName: contactName || 'Lead',
       phoneNumber: targetNumber,
       callerNumber: fromNumber,
-      provider: 'Twilio (+17372212163)',
-      message: `🎉 Twilio Call Dispatched from ${fromNumber} to ${targetNumber}! Your phone will ring shortly.`,
+      provider: 'Twilio Telephony',
+      message: twilioStatusMessage,
       date: new Date().toISOString()
     }, { status: 200 });
 

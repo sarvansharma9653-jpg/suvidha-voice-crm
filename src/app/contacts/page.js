@@ -76,18 +76,25 @@ export default function ContactsPage() {
     setCallingId(contact.id);
     setCallResult(null);
     try {
+      const accountSid = typeof window !== 'undefined' ? localStorage.getItem('accountSid') : '';
+      const authToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : '';
+      const callerNumber = typeof window !== 'undefined' ? (localStorage.getItem('phoneNumber') || '+17372212163') : '+17372212163';
+
       const res = await fetch('/api/call', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phoneNumber: contact.phone,
           contactName: contact.name,
+          accountSid,
+          authToken,
+          callerNumber,
           systemPrompt: `You are a polite female AI voice assistant for Suvidha calling ${contact.name}. Speak in feminine Hindi grammar (kar rahi hoon, bata rahi hoon). Qualify the lead and ask if they are interested.`
         })
       });
       const data = await res.json();
       if (res.ok) {
-        const msg = `🎉 Sarvam AI Call Dispatched from +917965854130 to ${contact.name} (${contact.phone})!`;
+        const msg = data.message || `🎉 Call Dispatched to ${contact.name} (${contact.phone})!`;
         setCallResult({ type: 'success', message: msg });
         alert(msg);
 
@@ -99,13 +106,13 @@ export default function ContactsPage() {
           contactId: contact.id,
           contactName: contact.name,
           phone: contact.phone,
-          callerNumber: '+917965854130',
+          callerNumber: callerNumber,
           campaignId: 'manual',
           duration: 35,
           status: 'Completed',
           sentiment: '😊 Interested',
           stage: 'Qualified',
-          summary: `Sarvam AI Agent call placed from +917965854130 to ${contact.name} (${contact.phone}). Lead qualified.`,
+          summary: `Call placed from ${callerNumber} to ${contact.name} (${contact.phone}). Lead qualified.`,
           transcript: `Agent: Namaste ${contact.name}! Main Suvidha AI Assistant bol rahi hoon.\nUser: Haan, bataiye.`
         });
       } else {
@@ -150,7 +157,7 @@ export default function ContactsPage() {
       {/* CSV Sample Download Notice */}
       <div className="card mb-8" style={{ padding: '1rem 1.5rem', background: 'rgba(59, 130, 246, 0.05)', borderColor: 'rgba(59, 130, 246, 0.2)' }}>
         <div className="flex justify-between items-center" style={{ fontSize: '0.85rem' }}>
-          <span>💡 <strong>Sarvam Vobiz Active:</strong> Outbound caller number is set to <code>+917965854130</code>. Indian country code (+91) is auto-formatted!</span>
+          <span>💡 <strong>Outbound Calling Active:</strong> Active Caller Number is <code>+17372212163</code> / <code>+917965854130</code>. Indian country code (+91) is auto-formatted!</span>
           <button 
             onClick={() => {
               const sample = "Name,Phone,Email,Stage\nRahul Sharma,+919876543210,rahul@example.com,New\nPriya Patel,+919876543211,priya@example.com,New";
