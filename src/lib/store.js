@@ -2,6 +2,19 @@ import { mockContacts, mockCampaigns, mockCalls, mockFollowups, mockNotification
 
 const isBrowser = typeof window !== 'undefined';
 
+// Auto-configure Sarvam Vobiz credentials
+if (isBrowser) {
+  if (!localStorage.getItem('telephonyProvider')) {
+    localStorage.setItem('telephonyProvider', 'sarvam_vobiz');
+  }
+  if (!localStorage.getItem('phoneNumber')) {
+    localStorage.setItem('phoneNumber', '+917965854130');
+  }
+  if (!localStorage.getItem('sarvamApiKey')) {
+    localStorage.setItem('sarvamApiKey', 'sk_samvaad_zqem37no_0nBPIELyiA5OEXRXerKOyaBN');
+  }
+}
+
 export const store = {
   // Contacts
   getContacts: () => {
@@ -83,10 +96,15 @@ export const store = {
   addCall: (call) => {
     if (!isBrowser) return;
     const calls = store.getCalls();
-    const newCall = { ...call, id: 'call_' + Date.now(), date: new Date().toISOString() };
+    const newCall = { 
+      ...call, 
+      id: 'call_' + Date.now(), 
+      date: new Date().toISOString(),
+      callerNumber: '+917965854130' 
+    };
     localStorage.setItem('calls', JSON.stringify([newCall, ...calls]));
 
-    // If call sentiment is Hot Lead, trigger automatic notification!
+    // Trigger Hot Lead notification
     if (newCall.sentiment && (newCall.sentiment.includes('Hot') || newCall.sentiment.includes('Interested'))) {
       store.addNotification({
         title: '🔥 HOT LEAD IDENTIFIED!',
@@ -118,7 +136,7 @@ export const store = {
       status: 'Pending',
       scheduledTime: followup.scheduledTime || 'In 30 Minutes' 
     };
-    localStorage.setItem('followups', JSON.stringify([newFollowup, ...followups]));
+    localStorage.setItem('followups', JSON.stringify([...newFollowup, ...followups]));
     return newFollowup;
   },
   updateFollowup: (id, updates) => {
