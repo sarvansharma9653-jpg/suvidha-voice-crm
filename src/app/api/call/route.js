@@ -5,7 +5,7 @@ export async function POST(req) {
     const body = await req.json();
     const { phoneNumber, contactName, campaignId, systemPrompt, provider } = body;
 
-    const selectedProvider = provider || typeof window !== 'undefined' ? localStorage.getItem('telephonyProvider') : 'exotel';
+    const selectedProvider = provider || (typeof window !== 'undefined' ? localStorage.getItem('telephonyProvider') : 'exotel');
     const targetNumber = phoneNumber || '+917707978068';
 
     console.log(`📞 Dispatching Outbound Call via Provider: ${selectedProvider} to ${contactName || 'Lead'} (${targetNumber})...`);
@@ -15,15 +15,21 @@ export async function POST(req) {
 
     // 1. EXOTEL INDIA (+91) ENTERPRISE OUTBOUND DISPATCH
     if (selectedProvider === 'exotel') {
-      const exotelSubdomain = body.exotelSubdomain || process.env.EXOTEL_SUBDOMAIN || '';
+      const rawSubdomain = body.exotelSubdomain || process.env.EXOTEL_SUBDOMAIN || 'api.exotel.com';
       const apiKey = body.accountSid || process.env.EXOTEL_API_KEY || '';
       const apiToken = body.authToken || process.env.EXOTEL_API_TOKEN || '';
-      const callerId = body.callerNumber || process.env.EXOTEL_CALLER_ID || '+917965854130';
+      const callerId = body.callerNumber || process.env.EXOTEL_CALLER_ID || '08047280901';
 
-      if (apiKey && apiToken && exotelSubdomain) {
+      // Auto-format hostname correctly
+      let domainHost = rawSubdomain.includes('.') ? rawSubdomain : `${rawSubdomain}.exotel.com`;
+      if (!domainHost || domainHost === '.exotel.com') domainHost = 'api.exotel.com';
+
+      if (apiKey && apiToken) {
         try {
           const authString = Buffer.from(`${apiKey}:${apiToken}`).toString('base64');
-          const exotelUrl = `https://${exotelSubdomain}/v1/Accounts/${apiKey}/Calls/connect.json`;
+          const exotelUrl = `https://${domainHost}/v1/Accounts/${apiKey}/Calls/connect.json`;
+
+          console.log(`📡 Exotel Outbound Request to: ${exotelUrl}`);
 
           const exotelRes = await fetch(exotelUrl, {
             method: 'POST',
@@ -44,11 +50,12 @@ export async function POST(req) {
             callSid = exotelData.Call?.Sid || callSid;
             statusMessage = `🎉 REAL EXOTEL INDIA CALL DISPATCHED (SID: ${callSid})! Phone ringing on ${targetNumber}!`;
           } else {
-            console.error('Exotel API Error:', exotelData);
-            statusMessage = `⚠️ Exotel Dispatch Note: ${exotelData.RestException?.Message || 'Pending Exotel activation'}`;
+            console.error('Exotel API Response Error:', exotelData);
+            statusMessage = `⚠️ Exotel Response (${exotelRes.status}): ${exotelData.RestException?.Message || 'Check API credentials'}`;
           }
         } catch (e) {
-          console.error('Exotel fetch error:', e);
+          console.error('Exotel fetch exception:', e);
+          statusMessage = `⚠️ Exotel Network Exception: ${e.message}`;
         }
       }
     } 
