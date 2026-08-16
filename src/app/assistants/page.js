@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 export default function VoiceAgentStudioPage() {
   const [agents, setAgents] = useState([]);
@@ -11,16 +11,18 @@ export default function VoiceAgentStudioPage() {
   const [activityDescription, setActivityDescription] = useState('Qualify real estate leads for Sector 62 Noida 3 BHK flats. Speak in polite feminine Hindi grammar (kar rahi hoon, bata rahi hoon). Check budget and site visit availability.');
   const [agentName, setAgentName] = useState('Swara - Real Estate Lead Qualifier');
   const [selectedVoice, setSelectedVoice] = useState('swara');
+  const [playingVoiceId, setPlayingVoiceId] = useState(null);
 
   const [status, setStatus] = useState(null);
+  const sampleAudioRef = useRef(null);
 
   const voiceLibrary = [
-    { id: 'swara', name: '👩 Swara (Warm Indian Hindi Female)', gender: 'Female', desc: 'Sweet & polite, best for Real Estate & Customer Sales' },
+    { id: 'swara', name: '👩 Swara (Warm Indian Hindi Female)', gender: 'Female', desc: 'Sweet, warm & polite Hindi voice for Real Estate & Customer Support' },
     { id: 'ananya', name: '👩 Ananya (Professional Corporate Female)', gender: 'Female', desc: 'Clear, modern & energetic Hinglish sales agent' },
-    { id: 'pooja', name: '👩 Pooja (Empathetic Care Female)', gender: 'Female', desc: 'Soft & caring, best for Healthcare & Education' },
-    { id: 'kavya', name: '👩 Kavya (Persuasive Retail Female)', gender: 'Female', desc: 'High conversion for E-commerce & Festive offers' },
-    { id: 'madhur', name: '👨 Madhur (Corporate Indian Male)', gender: 'Male', desc: 'Confident & trustworthy for Financial Loans & Banking' },
-    { id: 'rohan', name: '👨 Rohan (Authoritative Indian Male)', gender: 'Male', desc: 'Deep & formal for Legal, B2B & Executive support' },
+    { id: 'pooja', name: '👩 Pooja (Empathetic Care Female)', gender: 'Female', desc: 'Soft & caring voice for Healthcare, Clinics & Education' },
+    { id: 'kavya', name: '👩 Kavya (Persuasive Retail Female)', gender: 'Female', desc: 'High conversion tone for E-commerce & Festive sales' },
+    { id: 'madhur', name: '👨 Madhur (Corporate Indian Male)', gender: 'Male', desc: 'Confident & trustworthy tone for Financial Loans & Banking' },
+    { id: 'rohan', name: '👨 Rohan (Authoritative Indian Male)', gender: 'Male', desc: 'Deep & formal tone for Legal, B2B & Executive support' },
     { id: 'aarav', name: '👨 Aarav (Dynamic Young Indian Male)', gender: 'Male', desc: 'Young & enthusiastic for Tech Startups & Automobiles' },
   ];
 
@@ -60,24 +62,46 @@ export default function VoiceAgentStudioPage() {
     }
   }, []);
 
-  const playVoiceSample = (voiceId) => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    
+  const playVoiceSample = async (voiceId) => {
+    if (typeof window === 'undefined') return;
+
+    if (sampleAudioRef.current) {
+      sampleAudioRef.current.pause();
+      sampleAudioRef.current = null;
+    }
+
     const vObj = voiceLibrary.find(v => v.id === voiceId) || voiceLibrary[0];
-    const sampleText = vObj.gender === 'Female' 
-      ? `Namaste! Main ${vObj.name.split(' ')[1]} bol rahi hoon. Suvidha Voice CRM mein aapka swagat hai!`
-      : `Namaste! Main ${vObj.name.split(' ')[1]} bol raha hoon. Suvidha Voice CRM mein aapka swagat hai!`;
+    const isMale = vObj.gender === 'Male';
+    const sampleText = isMale 
+      ? `नमस्ते! मैं ${vObj.name.split(' ')[1]} बोल रहा हूँ। सुविधा वॉइस सी आर एम में आपका स्वागत है!`
+      : `नमस्ते! मैं ${vObj.name.split(' ')[1]} बोल रही हूँ। सुविधा वॉइस सी आर एम में आपका स्वागत है!`;
 
-    const utterance = new SpeechSynthesisUtterance(sampleText);
-    utterance.pitch = vObj.gender === 'Female' ? 1.2 : 0.88;
-    utterance.rate = 0.95;
+    setPlayingVoiceId(voiceId);
 
-    const voices = window.speechSynthesis.getVoices();
-    let match = voices.find(v => (v.lang.includes('hi') || v.lang.includes('IN')));
-    if (match) utterance.voice = match;
+    try {
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: sampleText,
+          gender: vObj.gender,
+          voice: vObj.id
+        })
+      });
 
-    window.speechSynthesis.speak(utterance);
+      if (res.ok) {
+        const blob = await res.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+        sampleAudioRef.current = audio;
+        audio.onended = () => setPlayingVoiceId(null);
+        audio.onerror = () => setPlayingVoiceId(null);
+        await audio.play();
+      }
+    } catch (e) {
+      console.log('Sample audio note:', e);
+      setPlayingVoiceId(null);
+    }
   };
 
   const handleCreateAgent = (e) => {
@@ -120,6 +144,8 @@ export default function VoiceAgentStudioPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
           {voiceLibrary.map(v => {
             const isSelected = selectedVoice === v.id;
+            const isPlaying = playingVoiceId === v.id;
+
             return (
               <div 
                 key={v.id} 
@@ -148,10 +174,10 @@ export default function VoiceAgentStudioPage() {
                   <button 
                     type="button"
                     onClick={(e) => { e.stopPropagation(); playVoiceSample(v.id); }}
-                    className="btn btn-secondary"
+                    className={`btn ${isPlaying ? 'btn-success' : 'btn-secondary'}`}
                     style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
                   >
-                    🔊 Listen Sample
+                    {isPlaying ? '🔊 Playing Sample...' : '🔊 Listen Sample'}
                   </button>
                   {isSelected && <span style={{ fontSize: '0.75rem', color: 'var(--accent-green)', fontWeight: 'bold' }}>✓ Selected</span>}
                 </div>
