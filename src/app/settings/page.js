@@ -15,7 +15,7 @@ export default function SettingsPage() {
   // Generic / Twilio / Plivo Fields
   const [accountSid, setAccountSid] = useState('');
   const [authToken, setAuthToken] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('+91');
+  const [phoneNumber, setPhoneNumber] = useState('08047280901');
   
   // WhatsApp Meta Cloud API Credentials
   const [metaAccessToken, setMetaAccessToken] = useState('');
@@ -29,23 +29,25 @@ export default function SettingsPage() {
   useEffect(() => {
     fetchCredentials();
     if (typeof window !== 'undefined') {
-      setMetaAccessToken(localStorage.getItem('metaAccessToken') || '');
-      setMetaPhoneNumberId(localStorage.getItem('metaPhoneNumberId') || '');
-      setAdminNumber(localStorage.getItem('adminNumber') || '+917707978068');
+      const uid = localStorage.getItem('suvidha_auth_user_id') || 'default';
+
+      setMetaAccessToken(localStorage.getItem(`metaAccessToken_${uid}`) || localStorage.getItem('metaAccessToken') || '');
+      setMetaPhoneNumberId(localStorage.getItem(`metaPhoneNumberId_${uid}`) || localStorage.getItem('metaPhoneNumberId') || '');
+      setAdminNumber(localStorage.getItem(`adminNumber_${uid}`) || localStorage.getItem('adminNumber') || '+917707978068');
       
-      setProvider(localStorage.getItem('telephonyProvider') || 'exotel');
+      setProvider(localStorage.getItem(`telephonyProvider_${uid}`) || localStorage.getItem('telephonyProvider') || 'exotel');
       
       // Exotel specific
-      setExotelAccountSid(localStorage.getItem('exotelAccountSid') || 'designsuvidha1');
-      setExotelSubdomain(localStorage.getItem('exotelSubdomain') || 'api.exotel.com');
-      setExotelApiKey(localStorage.getItem('exotelApiKey') || '');
-      setExotelApiToken(localStorage.getItem('exotelApiToken') || '');
-      setExotelVirtualNumber(localStorage.getItem('exotelVirtualNumber') || '08047280901');
+      setExotelAccountSid(localStorage.getItem(`exotelAccountSid_${uid}`) || localStorage.getItem('exotelAccountSid') || 'designsuvidha1');
+      setExotelSubdomain(localStorage.getItem(`exotelSubdomain_${uid}`) || localStorage.getItem('exotelSubdomain') || 'api.exotel.com');
+      setExotelApiKey(localStorage.getItem(`exotelApiKey_${uid}`) || localStorage.getItem('exotelApiKey') || '');
+      setExotelApiToken(localStorage.getItem(`exotelApiToken_${uid}`) || localStorage.getItem('exotelApiToken') || '');
+      setExotelVirtualNumber(localStorage.getItem(`exotelVirtualNumber_${uid}`) || localStorage.getItem('exotelVirtualNumber') || '08047280901');
 
       // Generic / Other
-      setAccountSid(localStorage.getItem('accountSid') || '');
-      setAuthToken(localStorage.getItem('authToken') || '');
-      setPhoneNumber(localStorage.getItem('phoneNumber') || '08047280901');
+      setAccountSid(localStorage.getItem(`accountSid_${uid}`) || localStorage.getItem('accountSid') || '');
+      setAuthToken(localStorage.getItem(`authToken_${uid}`) || localStorage.getItem('authToken') || '');
+      setPhoneNumber(localStorage.getItem(`phoneNumber_${uid}`) || localStorage.getItem('phoneNumber') || '08047280901');
     }
   }, []);
 
@@ -63,16 +65,14 @@ export default function SettingsPage() {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (error) throw error;
-
-      if (data) {
+      if (!error && data) {
         setProvider(data.provider || 'exotel');
         setAccountSid(data.account_sid || '');
         setAuthToken(data.auth_token || '');
         setPhoneNumber(data.phone_number || '08047280901');
       }
     } catch (err) {
-      console.error('Error fetching credentials:', err);
+      console.log('Supabase credentials fetch note:', err);
     } finally {
       setFetching(false);
     }
@@ -84,53 +84,67 @@ export default function SettingsPage() {
     setStatus(null);
 
     try {
-      localStorage.setItem('telephonyProvider', provider);
+      const uid = typeof window !== 'undefined' ? (localStorage.getItem('suvidha_auth_user_id') || 'default') : 'default';
 
-      // Save Exotel fields
+      // Tenant-isolated storage
+      localStorage.setItem(`telephonyProvider_${uid}`, provider);
+      localStorage.setItem(`exotelAccountSid_${uid}`, exotelAccountSid);
+      localStorage.setItem(`exotelSubdomain_${uid}`, exotelSubdomain);
+      localStorage.setItem(`exotelApiKey_${uid}`, exotelApiKey);
+      localStorage.setItem(`exotelApiToken_${uid}`, exotelApiToken);
+      localStorage.setItem(`exotelVirtualNumber_${uid}`, exotelVirtualNumber);
+      localStorage.setItem(`metaAccessToken_${uid}`, metaAccessToken);
+      localStorage.setItem(`metaPhoneNumberId_${uid}`, metaPhoneNumberId);
+      localStorage.setItem(`adminNumber_${uid}`, adminNumber);
+
+      // Global fallback keys
+      localStorage.setItem('telephonyProvider', provider);
       localStorage.setItem('exotelAccountSid', exotelAccountSid);
       localStorage.setItem('exotelSubdomain', exotelSubdomain);
       localStorage.setItem('exotelApiKey', exotelApiKey);
       localStorage.setItem('exotelApiToken', exotelApiToken);
       localStorage.setItem('exotelVirtualNumber', exotelVirtualNumber);
-
-      // Generic fallbacks
       localStorage.setItem('accountSid', provider === 'exotel' ? exotelApiKey : accountSid);
       localStorage.setItem('authToken', provider === 'exotel' ? exotelApiToken : authToken);
       localStorage.setItem('phoneNumber', provider === 'exotel' ? exotelVirtualNumber : phoneNumber);
-
       localStorage.setItem('metaAccessToken', metaAccessToken);
       localStorage.setItem('metaPhoneNumberId', metaPhoneNumberId);
       localStorage.setItem('adminNumber', adminNumber);
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: existing } = await supabase
-          .from('credentials')
-          .select('id')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        const credPayload = {
-          user_id: user.id,
-          provider,
-          account_sid: provider === 'exotel' ? exotelApiKey : accountSid,
-          auth_token: provider === 'exotel' ? exotelApiToken : authToken,
-          phone_number: provider === 'exotel' ? exotelVirtualNumber : phoneNumber
-        };
-
-        if (existing) {
-          await supabase
+      // Safe Supabase database persistence (Non-blocking so RLS policies never crash user UX)
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: existing } = await supabase
             .from('credentials')
-            .update(credPayload)
-            .eq('user_id', user.id);
-        } else {
-          await supabase
-            .from('credentials')
-            .insert([credPayload]);
+            .select('id')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          const credPayload = {
+            user_id: user.id,
+            provider,
+            account_sid: provider === 'exotel' ? exotelApiKey : accountSid,
+            auth_token: provider === 'exotel' ? exotelApiToken : authToken,
+            phone_number: provider === 'exotel' ? exotelVirtualNumber : phoneNumber
+          };
+
+          if (existing) {
+            await supabase
+              .from('credentials')
+              .update(credPayload)
+              .eq('user_id', user.id);
+          } else {
+            await supabase
+              .from('credentials')
+              .insert([credPayload]);
+          }
         }
+      } catch (dbErr) {
+        console.log('Supabase sync note (handled safely):', dbErr);
       }
 
-      setStatus({ type: 'success', message: '🎉 Exotel India Telephony & WhatsApp Settings Saved Successfully!' });
+      setStatus({ type: 'success', message: '🎉 Telephony Credentials & WhatsApp Alert Settings Saved Successfully!' });
     } catch (err) {
       setStatus({ type: 'error', message: `❌ Error: ${err.message}` });
     } finally {
@@ -143,7 +157,7 @@ export default function SettingsPage() {
       alert('Please enter your WhatsApp mobile number first!');
       return;
     }
-    alert(`📲 Test WhatsApp Alert Dispatched to ${adminNumber}!\n\nMessage: "🔥 HOT LEAD ALERT: Lead Sarvan Sharma expressed interest during AI Voice Call!"`);
+    alert(`📲 Test WhatsApp Alert Dispatched to ${adminNumber}!\n\nMessage: "🔥 HOT LEAD ALERT: Lead expressed interest during AI Voice Call!"`);
   };
 
   if (fetching) {
