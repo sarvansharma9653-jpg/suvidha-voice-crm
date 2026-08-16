@@ -3,10 +3,10 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
 export default function SettingsPage() {
-  const [provider, setProvider] = useState('twilio');
+  const [provider, setProvider] = useState('plivo');
   const [accountSid, setAccountSid] = useState('');
   const [authToken, setAuthToken] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('+17372212163');
+  const [phoneNumber, setPhoneNumber] = useState('+91');
   const [exotelSubdomain, setExotelSubdomain] = useState('');
   
   // WhatsApp Meta Cloud API Credentials
@@ -25,10 +25,10 @@ export default function SettingsPage() {
       setMetaPhoneNumberId(localStorage.getItem('metaPhoneNumberId') || '');
       setAdminNumber(localStorage.getItem('adminNumber') || '+917707978068');
       setExotelSubdomain(localStorage.getItem('exotelSubdomain') || '');
-      setProvider(localStorage.getItem('telephonyProvider') || 'twilio');
+      setProvider(localStorage.getItem('telephonyProvider') || 'plivo');
       setAccountSid(localStorage.getItem('accountSid') || '');
       setAuthToken(localStorage.getItem('authToken') || '');
-      setPhoneNumber(localStorage.getItem('phoneNumber') || '+17372212163');
+      setPhoneNumber(localStorage.getItem('phoneNumber') || '+91');
     }
   }, []);
 
@@ -49,10 +49,10 @@ export default function SettingsPage() {
       if (error) throw error;
 
       if (data) {
-        setProvider(data.provider || 'twilio');
+        setProvider(data.provider || 'plivo');
         setAccountSid(data.account_sid || '');
         setAuthToken(data.auth_token || '');
-        setPhoneNumber(data.phone_number || '+17372212163');
+        setPhoneNumber(data.phone_number || '+91');
       }
     } catch (err) {
       console.error('Error fetching credentials:', err);
@@ -129,6 +129,7 @@ export default function SettingsPage() {
 
   // Dynamic Provider Specific Labels
   const getSidLabel = () => {
+    if (provider === 'plivo') return 'Plivo Auth ID';
     if (provider === 'twilio') return 'Twilio Account SID';
     if (provider === 'exotel') return 'Exotel Account SID / Subdomain';
     if (provider === 'sarvam_vobiz') return 'Sarvam API Key';
@@ -136,6 +137,7 @@ export default function SettingsPage() {
   };
 
   const getAuthLabel = () => {
+    if (provider === 'plivo') return 'Plivo Auth Token';
     if (provider === 'twilio') return 'Twilio Auth Token';
     if (provider === 'exotel') return 'Exotel Auth Token / API Secret';
     if (provider === 'sarvam_vobiz') return 'Sarvam Secret Token';
@@ -143,6 +145,7 @@ export default function SettingsPage() {
   };
 
   const getPhoneLabel = () => {
+    if (provider === 'plivo') return 'Plivo Indian Virtual Number (+91...)';
     if (provider === 'twilio') return 'Twilio Phone Number (+17372212163)';
     if (provider === 'exotel') return 'Exotel Virtual Number (+91...)';
     if (provider === 'sarvam_vobiz') return 'Sarvam Active Number (+917965854130)';
@@ -180,6 +183,7 @@ export default function SettingsPage() {
             <div className="form-group">
               <label>Select Telephony Provider</label>
               <select className="form-control" value={provider} onChange={e => setProvider(e.target.value)}>
+                <option value="plivo">⚡ Plivo Telephony (Low-Cost Indian +91 Calling)</option>
                 <option value="twilio">🇺🇸 Twilio (Real Outbound Calls via +17372212163)</option>
                 <option value="sarvam_vobiz">🇮🇳 Sarvam Vobiz (+917965854130 Real Indian Calling)</option>
                 <option value="exotel">🇮🇳 Exotel India (+91 Enterprise Calling)</option>
@@ -210,7 +214,7 @@ export default function SettingsPage() {
                     className="form-control" 
                     value={accountSid} 
                     onChange={e => setAccountSid(e.target.value)} 
-                    placeholder="Enter Account SID..." 
+                    placeholder={provider === 'plivo' ? 'MAXXXXXXXXXXXXXXXXXX' : 'Enter Account SID...'} 
                   />
                 </div>
 
@@ -222,7 +226,7 @@ export default function SettingsPage() {
                     className="form-control" 
                     value={authToken} 
                     onChange={e => setAuthToken(e.target.value)} 
-                    placeholder="Enter Auth Token..." 
+                    placeholder={provider === 'plivo' ? 'Enter Plivo Auth Token...' : 'Enter Auth Token...'} 
                   />
                 </div>
 
@@ -234,7 +238,7 @@ export default function SettingsPage() {
                     className="form-control" 
                     value={phoneNumber} 
                     onChange={e => setPhoneNumber(e.target.value)} 
-                    placeholder="+17372212163 or +91..." 
+                    placeholder="+919876543210" 
                   />
                 </div>
               </>
