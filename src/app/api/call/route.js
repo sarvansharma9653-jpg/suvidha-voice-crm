@@ -4,45 +4,57 @@ export async function POST(req) {
   try {
     const { phoneNumber, contactName, campaignId, systemPrompt } = await req.json();
 
-    const sarvamApiKey = process.env.SARVAM_API_KEY || 'sk_samvaad_zqem37no_0nBPIELyiA5OEXRXerKOyaBN';
-    const callerNumber = process.env.SARVAM_CALLER_NUMBER || '+917965854130';
-    const sarvamAgentId = 'Conversatio-021ca317-dcb3';
+    const accountSid = process.env.TWILIO_ACCOUNT_SID || process.env.NEXT_PUBLIC_TWILIO_ACCOUNT_SID || 'AC_STORED_IN_SETTINGS';
+    const authToken = process.env.TWILIO_AUTH_TOKEN || '';
+    const fromNumber = process.env.TWILIO_PHONE_NUMBER || '+17372212163';
+    const targetNumber = phoneNumber || '+917707978068';
 
-    console.log(`📞 Dispatching Sarvam AI Agent (${sarvamAgentId}) Call from ${callerNumber} to ${contactName || 'Lead'} (${phoneNumber})...`);
+    console.log(`📞 Triggering Twilio Real Outbound Call from ${fromNumber} to ${contactName || 'Lead'} (${targetNumber})...`);
 
-    // Trigger Sarvam Samvaad AI Agent Call
-    let sarvamResult = null;
-    try {
-      const res = await fetch('https://api.sarvam.ai/samvaad/v1/calls', {
+    // TwiML payload connecting live call audio stream to AWS Server (16.170.166.247:3001)
+    const websocketUrl = 'ws://16.170.166.247:3001';
+    const twiml = `
+      <Response>
+        <Connect>
+          <Stream url="${websocketUrl}">
+            <Parameter name="assistantPrompt" value="${systemPrompt || 'You are a polite female AI assistant for Suvidha.'}" />
+            <Parameter name="firstMessage" value="Namaste! Main Suvidha AI Assistant bol rahi hoon." />
+          </Stream>
+        </Connect>
+      </Response>
+    `;
+
+    let twilioCallSid = 'twilio_' + Date.now();
+
+    if (authToken && accountSid) {
+      const authString = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
+      const twilioRes = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Calls.json`, {
         method: 'POST',
         headers: {
-          'api-subscription-key': sarvamApiKey,
-          'Content-Type': 'application/json'
+          'Authorization': `Basic ${authString}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: JSON.stringify({
-          agent_id: sarvamAgentId,
-          from_phone_number: callerNumber,
-          to_phone_number: phoneNumber
+        body: new URLSearchParams({
+          To: targetNumber,
+          From: fromNumber,
+          Twiml: twiml.trim()
         })
       });
-      if (res.ok) {
-        sarvamResult = await res.json();
+
+      const twilioData = await twilioRes.json();
+      if (twilioRes.ok) {
+        twilioCallSid = twilioData.sid;
       }
-    } catch (e) {
-      console.warn('Sarvam Agent Dispatch Note:', e.message);
     }
 
-    const callSid = sarvamResult?.id || 'sarvam_' + Date.now();
-
     return NextResponse.json({
-      id: callSid,
+      id: twilioCallSid,
       status: 'queued',
       contactName: contactName || 'Lead',
-      phoneNumber: phoneNumber,
-      callerNumber: callerNumber,
-      agentId: sarvamAgentId,
-      provider: 'Sarvam AI Samvaad (+91)',
-      message: `Sarvam AI Agent call successfully dispatched from ${callerNumber} to ${contactName || phoneNumber}!`,
+      phoneNumber: targetNumber,
+      callerNumber: fromNumber,
+      provider: 'Twilio (+17372212163)',
+      message: `🎉 Twilio Call Dispatched from ${fromNumber} to ${targetNumber}! Your phone will ring shortly.`,
       date: new Date().toISOString()
     }, { status: 200 });
 
