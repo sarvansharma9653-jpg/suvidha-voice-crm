@@ -87,30 +87,39 @@ export default function ContactsPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        setCallResult({ type: 'success', message: `✅ AI Call initiated to ${contact.name} (${contact.phone})!` });
+        const msg = `🎉 Sarvam AI Call Dispatched from +917965854130 to ${contact.name} (${contact.phone})!`;
+        setCallResult({ type: 'success', message: msg });
+        alert(msg);
+
         store.updateContact(contact.id, { status: 'Called', stage: 'Called', lastCalled: new Date().toISOString().split('T')[0] });
         setContacts(store.getContacts());
         
-        // Record Call
+        // Record Call Log
         store.addCall({
           contactId: contact.id,
           contactName: contact.name,
           phone: contact.phone,
+          callerNumber: '+917965854130',
           campaignId: 'manual',
           duration: 35,
           status: 'Completed',
           sentiment: '😊 Interested',
           stage: 'Qualified',
-          summary: 'AI qualified customer intent. Expressed interest in services.',
+          summary: `Sarvam AI Agent call placed from +917965854130 to ${contact.name} (${contact.phone}). Lead qualified.`,
           transcript: `Agent: Namaste ${contact.name}! Main Suvidha AI Assistant bol rahi hoon.\nUser: Haan, bataiye.`
         });
       } else {
-        setCallResult({ type: 'error', message: `❌ ${data.error || 'Call failed'}` });
+        const err = `❌ Call error: ${data.error || 'Call failed'}`;
+        setCallResult({ type: 'error', message: err });
+        alert(err);
       }
     } catch (err) {
-      setCallResult({ type: 'error', message: `❌ Network error: ${err.message}` });
+      const netErr = `❌ Network error: ${err.message}`;
+      setCallResult({ type: 'error', message: netErr });
+      alert(netErr);
+    } finally {
+      setCallingId(null);
     }
-    setTimeout(() => { setCallingId(null); setCallResult(null); }, 4000);
   };
 
   const filtered = contacts.filter(c => {
@@ -141,7 +150,7 @@ export default function ContactsPage() {
       {/* CSV Sample Download Notice */}
       <div className="card mb-8" style={{ padding: '1rem 1.5rem', background: 'rgba(59, 130, 246, 0.05)', borderColor: 'rgba(59, 130, 246, 0.2)' }}>
         <div className="flex justify-between items-center" style={{ fontSize: '0.85rem' }}>
-          <span>💡 <strong>Beginner Tip:</strong> Upload any <code>.csv</code> spreadsheet with columns: <code>Name, Phone, Email, Stage</code>. +91 Indian country code will be auto-formatted!</span>
+          <span>💡 <strong>Sarvam Vobiz Active:</strong> Outbound caller number is set to <code>+917965854130</code>. Indian country code (+91) is auto-formatted!</span>
           <button 
             onClick={() => {
               const sample = "Name,Phone,Email,Stage\nRahul Sharma,+919876543210,rahul@example.com,New\nPriya Patel,+919876543211,priya@example.com,New";
@@ -161,7 +170,7 @@ export default function ContactsPage() {
       </div>
 
       {callResult && (
-        <div className="card mb-4" style={{ padding: '1rem', borderColor: callResult.type === 'success' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
+        <div className="card mb-4" style={{ padding: '1rem', borderColor: callResult.type === 'success' ? 'var(--accent-green)' : 'var(--accent-red)', background: callResult.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)' }}>
           {callResult.message}
         </div>
       )}
