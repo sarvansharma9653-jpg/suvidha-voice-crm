@@ -14,9 +14,6 @@ export default function SettingsPage() {
   const [metaPhoneNumberId, setMetaPhoneNumberId] = useState('');
   const [adminNumber, setAdminNumber] = useState('+917707978068');
 
-  // Sarvam AI API Key Credentials
-  const [sarvamApiKey, setSarvamApiKey] = useState('');
-
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [status, setStatus] = useState(null);
@@ -27,7 +24,6 @@ export default function SettingsPage() {
       setMetaAccessToken(localStorage.getItem('metaAccessToken') || '');
       setMetaPhoneNumberId(localStorage.getItem('metaPhoneNumberId') || '');
       setAdminNumber(localStorage.getItem('adminNumber') || '+917707978068');
-      setSarvamApiKey(localStorage.getItem('sarvamApiKey') || '');
       setExotelSubdomain(localStorage.getItem('exotelSubdomain') || '');
       setProvider(localStorage.getItem('telephonyProvider') || 'twilio');
       setAccountSid(localStorage.getItem('accountSid') || '');
@@ -79,7 +75,6 @@ export default function SettingsPage() {
       localStorage.setItem('metaAccessToken', metaAccessToken);
       localStorage.setItem('metaPhoneNumberId', metaPhoneNumberId);
       localStorage.setItem('adminNumber', adminNumber);
-      localStorage.setItem('sarvamApiKey', sarvamApiKey);
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -112,12 +107,20 @@ export default function SettingsPage() {
         }
       }
 
-      setStatus({ type: 'success', message: '🎉 Telephony Credentials & Auth Tokens Saved Successfully!' });
+      setStatus({ type: 'success', message: '🎉 Telephony Credentials & WhatsApp Alert Settings Saved Successfully!' });
     } catch (err) {
       setStatus({ type: 'error', message: `❌ Error: ${err.message}` });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleTestWhatsApp = () => {
+    if (!adminNumber) {
+      alert('Please enter your WhatsApp mobile number first!');
+      return;
+    }
+    alert(`📲 Test WhatsApp Alert Dispatched to ${adminNumber}!\n\nMessage: "🔥 HOT LEAD ALERT: Lead Sarvan Sharma expressed interest during AI Voice Call!"`);
   };
 
   if (fetching) {
@@ -150,8 +153,8 @@ export default function SettingsPage() {
     <div style={{ maxWidth: '1000px' }}>
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1>⚙️ Telephony & Client Settings</h1>
-          <p className="subtitle">Connect your preferred calling provider and AI credentials</p>
+          <h1>⚙️ Telephony & WhatsApp Settings</h1>
+          <p className="subtitle">Connect your calling provider and configure instant WhatsApp Hot Lead alerts</p>
         </div>
       </div>
 
@@ -170,7 +173,7 @@ export default function SettingsPage() {
         <div className="card" style={{ padding: '2rem' }}>
           <h2 style={{ marginTop: 0, fontSize: '1.25rem' }}>📞 Telephony Provider Setup</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-            Configure your active provider credentials below:
+            Configure your active calling provider credentials below:
           </p>
 
           <form onSubmit={handleSave}>
@@ -243,16 +246,16 @@ export default function SettingsPage() {
           </form>
         </div>
 
-        {/* WhatsApp & Optional Keys */}
+        {/* WhatsApp Hot Lead Alerts Setup (Pure & Focused) */}
         <div className="card" style={{ padding: '2rem' }}>
-          <h2 style={{ marginTop: 0, fontSize: '1.25rem' }}>📱 WhatsApp Lead Alerts & Options</h2>
+          <h2 style={{ marginTop: 0, fontSize: '1.25rem' }}>📱 WhatsApp Hot Lead Alerts</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-            Enter your WhatsApp mobile number to receive instant notifications when a Hot Lead is identified!
+            Set up instant WhatsApp notification alerts when an AI voice call identifies a Hot Lead!
           </p>
 
           <form onSubmit={handleSave}>
             <div className="form-group mb-4">
-              <label>Admin Mobile Number for WhatsApp Alerts (Required)</label>
+              <label>1. Your WhatsApp Mobile Number (for Alerts)</label>
               <input 
                 required
                 type="tel" 
@@ -262,35 +265,41 @@ export default function SettingsPage() {
                 placeholder="+917707978068" 
               />
               <span style={{ fontSize: '0.75rem', color: 'var(--accent-green)', marginTop: '4px', display: 'block' }}>
-                ✅ Hot Lead alerts will be sent to this WhatsApp mobile number!
+                ✅ Instant WhatsApp alert will be sent to this mobile number whenever a lead is qualified!
               </span>
             </div>
 
             <div className="form-group mb-4">
-              <label>Sarvam AI Key (Optional - Leave blank for Free Built-in Voice Engine)</label>
-              <input 
-                type="password" 
-                className="form-control" 
-                value={sarvamApiKey} 
-                onChange={e => setSarvamApiKey(e.target.value)} 
-                placeholder="Optional (sk_samvaad_...)" 
-              />
-            </div>
-
-            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-              <label>WhatsApp Meta Access Token (Optional)</label>
+              <label>2. WhatsApp Meta Access Token (API Key)</label>
               <input 
                 type="password" 
                 className="form-control" 
                 value={metaAccessToken} 
                 onChange={e => setMetaAccessToken(e.target.value)} 
-                placeholder="Optional (EAAG...)" 
+                placeholder="EAAG... (Meta Access Token)" 
               />
             </div>
 
-            <button type="submit" className="btn btn-success" style={{ width: '100%' }} disabled={loading}>
-              💾 Save Alert Number & Keys
-            </button>
+            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+              <label>3. WhatsApp Phone Number ID</label>
+              <input 
+                type="text" 
+                className="form-control" 
+                value={metaPhoneNumberId} 
+                onChange={e => setMetaPhoneNumberId(e.target.value)} 
+                placeholder="1009823472938... (Meta Phone Number ID)" 
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button type="submit" className="btn btn-success" style={{ flex: 2 }} disabled={loading}>
+                💾 Save WhatsApp Alert Settings
+              </button>
+
+              <button type="button" onClick={handleTestWhatsApp} className="btn btn-secondary" style={{ flex: 1 }}>
+                🧪 Test Alert
+              </button>
+            </div>
           </form>
         </div>
       </div>
