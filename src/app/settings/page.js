@@ -3,16 +3,16 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
 export default function SettingsPage() {
-  const [provider, setProvider] = useState('sarvam_vobiz');
-  const [accountSid, setAccountSid] = useState('sk_samvaad_zqem37no_0nBPIELyiA5OEXRXerKOyaBN');
-  const [authToken, setAuthToken] = useState('sk_samvaad_zqem37no_0nBPIELyiA5OEXRXerKOyaBN');
-  const [phoneNumber, setPhoneNumber] = useState('+917965854130');
+  const [provider, setProvider] = useState('twilio');
+  const [accountSid, setAccountSid] = useState('');
+  const [authToken, setAuthToken] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('+17372212163');
   const [exotelSubdomain, setExotelSubdomain] = useState('');
   
   // WhatsApp Meta Cloud API Credentials
   const [metaAccessToken, setMetaAccessToken] = useState('');
   const [metaPhoneNumberId, setMetaPhoneNumberId] = useState('');
-  const [adminNumber, setAdminNumber] = useState('');
+  const [adminNumber, setAdminNumber] = useState('+917707978068');
 
   // Sarvam AI API Key Credentials
   const [sarvamApiKey, setSarvamApiKey] = useState('sk_samvaad_zqem37no_0nBPIELyiA5OEXRXerKOyaBN');
@@ -26,13 +26,13 @@ export default function SettingsPage() {
     if (typeof window !== 'undefined') {
       setMetaAccessToken(localStorage.getItem('metaAccessToken') || '');
       setMetaPhoneNumberId(localStorage.getItem('metaPhoneNumberId') || '');
-      setAdminNumber(localStorage.getItem('adminNumber') || '');
+      setAdminNumber(localStorage.getItem('adminNumber') || '+917707978068');
       setSarvamApiKey(localStorage.getItem('sarvamApiKey') || 'sk_samvaad_zqem37no_0nBPIELyiA5OEXRXerKOyaBN');
       setExotelSubdomain(localStorage.getItem('exotelSubdomain') || '');
-      setProvider(localStorage.getItem('telephonyProvider') || 'sarvam_vobiz');
-      setAccountSid(localStorage.getItem('accountSid') || 'sk_samvaad_zqem37no_0nBPIELyiA5OEXRXerKOyaBN');
-      setAuthToken(localStorage.getItem('authToken') || 'sk_samvaad_zqem37no_0nBPIELyiA5OEXRXerKOyaBN');
-      setPhoneNumber(localStorage.getItem('phoneNumber') || '+917965854130');
+      setProvider(localStorage.getItem('telephonyProvider') || 'twilio');
+      setAccountSid(localStorage.getItem('accountSid') || '');
+      setAuthToken(localStorage.getItem('authToken') || '');
+      setPhoneNumber(localStorage.getItem('phoneNumber') || '+17372212163');
     }
   }, []);
 
@@ -53,10 +53,10 @@ export default function SettingsPage() {
       if (error) throw error;
 
       if (data) {
-        setProvider(data.provider || 'sarvam_vobiz');
-        setAccountSid(data.account_sid || 'sk_samvaad_zqem37no_0nBPIELyiA5OEXRXerKOyaBN');
-        setAuthToken(data.auth_token || 'sk_samvaad_zqem37no_0nBPIELyiA5OEXRXerKOyaBN');
-        setPhoneNumber(data.phone_number || '+917965854130');
+        setProvider(data.provider || 'twilio');
+        setAccountSid(data.account_sid || '');
+        setAuthToken(data.auth_token || '');
+        setPhoneNumber(data.phone_number || '+17372212163');
       }
     } catch (err) {
       console.error('Error fetching credentials:', err);
@@ -112,7 +112,7 @@ export default function SettingsPage() {
         }
       }
 
-      setStatus({ type: 'success', message: '🎉 Telephony Provider & Sarvam Vobiz Credentials Saved Successfully!' });
+      setStatus({ type: 'success', message: '🎉 Telephony Credentials & Auth Tokens Saved Successfully!' });
     } catch (err) {
       setStatus({ type: 'error', message: `❌ Error: ${err.message}` });
     } finally {
@@ -123,6 +123,28 @@ export default function SettingsPage() {
   if (fetching) {
     return <div style={{ textAlign: 'center', padding: '3rem' }}>Loading Settings...</div>;
   }
+
+  // Dynamic Provider Specific Labels
+  const getSidLabel = () => {
+    if (provider === 'twilio') return 'Twilio Account SID';
+    if (provider === 'exotel') return 'Exotel Account SID / Subdomain';
+    if (provider === 'sarvam_vobiz') return 'Sarvam API Key';
+    return 'Account SID / API Key';
+  };
+
+  const getAuthLabel = () => {
+    if (provider === 'twilio') return 'Twilio Auth Token';
+    if (provider === 'exotel') return 'Exotel Auth Token / API Secret';
+    if (provider === 'sarvam_vobiz') return 'Sarvam Secret Token';
+    return 'Auth Token / API Secret';
+  };
+
+  const getPhoneLabel = () => {
+    if (provider === 'twilio') return 'Twilio Phone Number (+17372212163)';
+    if (provider === 'exotel') return 'Exotel Virtual Number (+91...)';
+    if (provider === 'sarvam_vobiz') return 'Sarvam Active Number (+917965854130)';
+    return 'Caller Phone Number';
+  };
 
   return (
     <div style={{ maxWidth: '1000px' }}>
@@ -148,18 +170,17 @@ export default function SettingsPage() {
         <div className="card" style={{ padding: '2rem' }}>
           <h2 style={{ marginTop: 0, fontSize: '1.25rem' }}>📞 Telephony Provider Setup</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-            Choose your calling provider. Select <strong>Sarvam Vobiz</strong> for your active Indian number +917965854130!
+            Configure your active provider credentials below:
           </p>
 
           <form onSubmit={handleSave}>
             <div className="form-group">
               <label>Select Telephony Provider</label>
               <select className="form-control" value={provider} onChange={e => setProvider(e.target.value)}>
-                <option value="sarvam_vobiz">🇮🇳 Sarvam Vobiz (+917965854130 Real Indian Mobile Calling)</option>
-                <option value="webphone">🌐 Built-in Free Browser Webphone (No API Key Required)</option>
-                <option value="exotel">🇮🇳 Exotel India (+91 Real Mobile Calling)</option>
-                <option value="twilio">🇺🇸 Twilio (Global Calling & SMS)</option>
-                <option value="plivo">⚡ Plivo Telephony</option>
+                <option value="twilio">🇺🇸 Twilio (Real Outbound Calls via +17372212163)</option>
+                <option value="sarvam_vobiz">🇮🇳 Sarvam Vobiz (+917965854130 Real Indian Calling)</option>
+                <option value="exotel">🇮🇳 Exotel India (+91 Enterprise Calling)</option>
+                <option value="webphone">🌐 Built-in Free Browser Webphone (Testing Mode)</option>
               </select>
             </div>
 
@@ -167,7 +188,7 @@ export default function SettingsPage() {
               <>
                 {provider === 'exotel' && (
                   <div className="form-group">
-                    <label>Exotel Account Subdomain / SID</label>
+                    <label>Exotel Subdomain / Account ID</label>
                     <input 
                       type="text" 
                       className="form-control" 
@@ -179,38 +200,38 @@ export default function SettingsPage() {
                 )}
 
                 <div className="form-group">
-                  <label>{provider === 'sarvam_vobiz' ? 'Sarvam API Key' : provider === 'twilio' ? 'Twilio Account SID' : 'Account SID / API Key'}</label>
+                  <label>{getSidLabel()}</label>
                   <input 
                     required 
                     type="text" 
                     className="form-control" 
                     value={accountSid} 
                     onChange={e => setAccountSid(e.target.value)} 
-                    placeholder="sk_samvaad_..." 
+                    placeholder="Enter Account SID..." 
                   />
                 </div>
 
                 <div className="form-group">
-                  <label>{provider === 'sarvam_vobiz' ? 'Sarvam Secret / Auth Token' : 'Auth Token / API Secret'}</label>
+                  <label>{getAuthLabel()}</label>
                   <input 
                     required 
                     type="password" 
                     className="form-control" 
                     value={authToken} 
                     onChange={e => setAuthToken(e.target.value)} 
-                    placeholder="••••••••••••" 
+                    placeholder="Enter Auth Token..." 
                   />
                 </div>
 
                 <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                  <label>Caller Phone Number (Your Active Indian Number)</label>
+                  <label>{getPhoneLabel()}</label>
                   <input 
                     required 
                     type="tel" 
                     className="form-control" 
                     value={phoneNumber} 
                     onChange={e => setPhoneNumber(e.target.value)} 
-                    placeholder="+917965854130" 
+                    placeholder="+17372212163 or +91..." 
                   />
                 </div>
               </>
@@ -222,15 +243,29 @@ export default function SettingsPage() {
           </form>
         </div>
 
-        {/* Sarvam AI & WhatsApp config */}
+        {/* Sarvam AI & WhatsApp Alerts config */}
         <div className="card" style={{ padding: '2rem' }}>
-          <h2 style={{ marginTop: 0, fontSize: '1.25rem' }}>🇮🇳 Sarvam AI & WhatsApp Alerts</h2>
+          <h2 style={{ marginTop: 0, fontSize: '1.25rem' }}>📱 WhatsApp Lead Alerts & AI Keys</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-            Configure premium Hindi voices and WhatsApp Hot Lead notifications.
+            Set your mobile number to receive real-time WhatsApp alerts when a Hot Lead is identified!
           </p>
 
           <form onSubmit={handleSave}>
-            <div className="form-group">
+            <div className="form-group mb-4">
+              <label>Admin Mobile Number for Hot Lead WhatsApp Alerts</label>
+              <input 
+                type="tel" 
+                className="form-control" 
+                value={adminNumber} 
+                onChange={e => setAdminNumber(e.target.value)} 
+                placeholder="+917707978068" 
+              />
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                Instant WhatsApp message will be sent to this number whenever a call qualifies a 🔥 Hot Lead!
+              </span>
+            </div>
+
+            <div className="form-group mb-4">
               <label>Sarvam AI Subscription Key</label>
               <input 
                 type="password" 
@@ -241,8 +276,8 @@ export default function SettingsPage() {
               />
             </div>
 
-            <div className="form-group">
-              <label>WhatsApp Meta Access Token</label>
+            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+              <label>WhatsApp Meta Access Token (Optional)</label>
               <input 
                 type="password" 
                 className="form-control" 
@@ -252,19 +287,8 @@ export default function SettingsPage() {
               />
             </div>
 
-            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-              <label>Admin Mobile Number for Hot Lead WhatsApp Alerts</label>
-              <input 
-                type="tel" 
-                className="form-control" 
-                value={adminNumber} 
-                onChange={e => setAdminNumber(e.target.value)} 
-                placeholder="+917707978068" 
-              />
-            </div>
-
             <button type="submit" className="btn btn-success" style={{ width: '100%' }} disabled={loading}>
-              💾 Save AI & Notification Keys
+              💾 Save WhatsApp & AI Keys
             </button>
           </form>
         </div>

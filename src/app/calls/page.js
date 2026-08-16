@@ -7,6 +7,7 @@ export default function CallsPage() {
   const [expandedCall, setExpandedCall] = useState(null);
   const [filter, setFilter] = useState('All');
   const [sentimentFilter, setSentimentFilter] = useState('All');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     setCalls(store.getCalls());
@@ -33,30 +34,84 @@ export default function CallsPage() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `suvidha_call_logs_${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `suvidha_call_executive_summaries_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
   };
 
   const filteredCalls = calls.filter(call => {
     const matchesStatus = filter === 'All' || call.status === filter;
     const matchesSentiment = sentimentFilter === 'All' || (call.sentiment && call.sentiment.includes(sentimentFilter));
-    return matchesStatus && matchesSentiment;
+    const matchesSearch = (call.contactName || '').toLowerCase().includes(searchTerm.toLowerCase()) || (call.phone || '').includes(searchTerm);
+    return matchesStatus && matchesSentiment && matchesSearch;
   });
+
+  const latestCall = calls.length > 0 ? calls[0] : null;
 
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1>📞 Call Transcripts & Executive Summaries</h1>
-          <p className="subtitle">Inspect full dialogue transcripts, AI summaries, and lead quality scores</p>
+          <h1>📊 Call Executive Summaries & Dialogue Logs</h1>
+          <p className="subtitle">Review AI call summaries, key customer intent, sentiment tags, and full dialogue transcripts</p>
         </div>
         <button className="btn btn-secondary" onClick={handleExportCSV}>
-          📥 Export Call Report (CSV)
+          📥 Export Executive Summaries (CSV)
         </button>
       </div>
 
-      {/* Filters */}
+      {/* Featured Executive Summary Highlight Card */}
+      {latestCall && (
+        <div className="card mb-8" style={{ padding: '1.75rem', borderColor: 'var(--accent-purple)', background: 'rgba(139, 92, 246, 0.05)' }}>
+          <div className="flex justify-between items-center mb-4">
+            <div className="flex items-center gap-3">
+              <span className="badge danger">🔥 Latest Call Summary</span>
+              <h3 style={{ margin: 0, fontSize: '1.15rem' }}>{latestCall.contactName} ({latestCall.phone || '+91...'})</h3>
+            </div>
+            <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+              📅 {new Date(latestCall.date).toLocaleString()}
+            </span>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.5rem' }}>
+            {/* AI Summary */}
+            <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--accent-blue)', fontWeight: '700', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                🤖 Executive AI Call Summary & Key Takeaways
+              </div>
+              <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-primary)', lineHeight: '1.6' }}>
+                {latestCall.summary || 'AI call completed. Customer qualified intent and agreed to follow-up details.'}
+              </p>
+              <div className="flex gap-3 mt-4" style={{ fontSize: '0.75rem' }}>
+                <span className="badge success">Sentiment: {latestCall.sentiment || '😊 Interested'}</span>
+                <span className="badge primary">Stage: {latestCall.stage || 'Qualified'}</span>
+                <span className="badge info">Caller: {latestCall.callerNumber || '+17372212163'}</span>
+              </div>
+            </div>
+
+            {/* Conversation Snippet */}
+            <div style={{ background: 'rgba(0, 0, 0, 0.4)', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--accent-purple)', fontWeight: '700', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                💬 Conversation Dialogue Preview
+              </div>
+              <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: '1.6', maxHeight: '100px', overflowY: 'auto', whiteSpace: 'pre-wrap' }}>
+                {latestCall.transcript || 'Agent: Namaste! Main Suvidha AI Assistant bol rahi hoon.\nUser: Haan, bataiye.'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Search & Filters */}
       <div className="flex justify-between items-center mb-6 gap-4" style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+        <input 
+          type="text" 
+          className="form-control" 
+          placeholder="🔍 Search call logs by client name or phone number..." 
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          style={{ width: '300px', fontSize: '0.85rem' }}
+        />
+
         <div className="flex gap-2">
           {['All', 'Completed', 'No Answer', 'Failed'].map(f => (
             <button 
@@ -148,7 +203,7 @@ export default function CallsPage() {
                             {/* Left: AI Summary & Details */}
                             <div>
                               <h3 style={{ fontSize: '0.95rem', marginBottom: '0.75rem', color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                🤖 AI Executive Summary
+                                🤖 AI Executive Summary & Key Takeaways
                               </h3>
                               <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-light)', marginBottom: '1rem', fontSize: '0.85rem', color: 'var(--text-primary)', lineHeight: '1.5' }}>
                                 {call.summary}
