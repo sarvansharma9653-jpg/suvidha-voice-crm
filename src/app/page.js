@@ -19,13 +19,13 @@ export default function OverviewPage() {
   const recognitionRef = useRef(null);
 
   const voiceLibrary = [
-    { id: 'swara', name: '👩 Swara (Warm Indian Hindi Female)', gender: 'Female', pitch: 1.2, rate: 0.95, desc: 'Sweet & polite, best for Real Estate & Customer Sales' },
-    { id: 'ananya', name: '👩 Ananya (Professional Corporate Female)', gender: 'Female', pitch: 1.15, rate: 1.0, desc: 'Clear, modern & energetic Hinglish sales agent' },
-    { id: 'pooja', name: '👩 Pooja (Empathetic Care Female)', gender: 'Female', pitch: 1.25, rate: 0.9, desc: 'Soft & caring, best for Healthcare & Education' },
-    { id: 'kavya', name: '👩 Kavya (Persuasive Retail Female)', gender: 'Female', pitch: 1.18, rate: 1.02, desc: 'High conversion for E-commerce & Festive offers' },
-    { id: 'madhur', name: '👨 Madhur (Corporate Indian Male)', gender: 'Male', pitch: 0.88, rate: 0.95, desc: 'Confident & trustworthy for Financial Loans & Banking' },
-    { id: 'rohan', name: '👨 Rohan (Authoritative Indian Male)', gender: 'Male', pitch: 0.82, rate: 0.92, desc: 'Deep & formal for Legal, B2B & Executive support' },
-    { id: 'aarav', name: '👨 Aarav (Dynamic Young Indian Male)', gender: 'Male', pitch: 0.95, rate: 1.05, desc: 'Young & enthusiastic for Tech Startups & Automobiles' },
+    { id: 'swara', name: '👩 Swara (Warm Indian Hindi Female)', gender: 'Female', pitch: 1.25, rate: 0.95, desc: 'Sweet & polite feminine voice (kar rahi hoon, bata rahi hoon)' },
+    { id: 'ananya', name: '👩 Ananya (Professional Corporate Female)', gender: 'Female', pitch: 1.2, rate: 1.0, desc: 'Clear & energetic modern Hinglish sales voice' },
+    { id: 'pooja', name: '👩 Pooja (Empathetic Care Female)', gender: 'Female', pitch: 1.3, rate: 0.9, desc: 'Soft & caring, best for Healthcare & Education' },
+    { id: 'kavya', name: '👩 Kavya (Persuasive Retail Female)', gender: 'Female', pitch: 1.22, rate: 1.02, desc: 'High conversion for E-commerce & Festive offers' },
+    { id: 'madhur', name: '👨 Madhur (Corporate Indian Male)', gender: 'Male', pitch: 0.72, rate: 0.92, desc: 'Deep, confident masculine Hindi voice (bol raha hoon, bata raha hoon)' },
+    { id: 'rohan', name: '👨 Rohan (Authoritative Indian Male)', gender: 'Male', pitch: 0.68, rate: 0.9, desc: 'Deep & formal tone for Financial & Legal advisory' },
+    { id: 'aarav', name: '👨 Aarav (Dynamic Young Indian Male)', gender: 'Male', pitch: 0.78, rate: 1.02, desc: 'Enthusiastic masculine tone for Tech Startups & Cars' },
   ];
 
   useEffect(() => {
@@ -42,24 +42,34 @@ export default function OverviewPage() {
     });
   }, []);
 
-  // Web Speech Audio Output Engine
-  const speakResponse = (text) => {
+  // Web Speech Audio Output Engine (Multi-Gender Neural Voice Switcher)
+  const speakResponse = (text, customVoiceId) => {
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
 
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
 
-    const activePersona = voiceLibrary.find(v => v.id === ttsVoice) || voiceLibrary[0];
+    const activeId = customVoiceId || ttsVoice;
+    const activePersona = voiceLibrary.find(v => v.id === activeId) || voiceLibrary[0];
+    
     utterance.pitch = activePersona.pitch;
     utterance.rate = activePersona.rate;
 
     const voices = window.speechSynthesis.getVoices();
     let selectedVoice = null;
 
-    if (activePersona.gender === 'Female') {
-      selectedVoice = voices.find(v => (v.lang.includes('hi') || v.lang.includes('IN')) && (v.name.includes('Swara') || v.name.includes('Female') || v.name.includes('Kalpana') || v.name.includes('Zira')));
+    if (activePersona.gender === 'Male') {
+      // Find explicitly male Indian or English voice
+      selectedVoice = voices.find(v => (v.lang.includes('hi') || v.lang.includes('IN')) && (v.name.includes('Madhur') || v.name.includes('Ravi') || v.name.includes('Male') || v.name.includes('David') || v.name.includes('George')));
+      if (!selectedVoice) {
+        selectedVoice = voices.find(v => v.name.includes('Male') || v.name.includes('David') || v.name.includes('Mark') || v.name.includes('Guy'));
+      }
     } else {
-      selectedVoice = voices.find(v => (v.lang.includes('hi') || v.lang.includes('IN')) && (v.name.includes('Madhur') || v.name.includes('Male') || v.name.includes('David') || v.name.includes('Ravi')));
+      // Find female Indian voice
+      selectedVoice = voices.find(v => (v.lang.includes('hi') || v.lang.includes('IN')) && (v.name.includes('Swara') || v.name.includes('Kalpana') || v.name.includes('Heera') || v.name.includes('Female') || v.name.includes('Zira')));
+      if (!selectedVoice) {
+        selectedVoice = voices.find(v => v.name.includes('Female') || v.name.includes('Zira') || v.name.includes('Jenny'));
+      }
     }
 
     if (!selectedVoice) {
@@ -98,12 +108,18 @@ export default function OverviewPage() {
       setIsCalling(true);
       setStatusText('Agent Initialized! Connecting live audio...');
       
-      const welcomeText = language === 'Hindi'
-        ? `Namaste! Main Suvidha AI Assistant bol rahi hoon. Kripya bataiye main aapki kya madad kar sakti hoon?`
-        : `Hello! I am your Suvidha AI Assistant. How can I help you today?`;
+      const activePersona = voiceLibrary.find(v => v.id === ttsVoice) || voiceLibrary[0];
+      const isMale = activePersona.gender === 'Male';
+      const personaName = activePersona.name.split(' ')[1];
 
-      setTranscriptHistory([{ sender: 'AI Agent', text: welcomeText }]);
-      speakResponse(welcomeText);
+      const welcomeText = language === 'Hindi'
+        ? (isMale 
+            ? `Namaste! Main ${personaName} bol raha hoon. Kripya bataiye main aapki kya sahayata kar sakta hoon?`
+            : `Namaste! Main ${personaName} bol rahi hoon. Kripya bataiye main aapki kya sahayata kar sakti hoon?`)
+        : `Hello! I am your AI assistant ${personaName}. How can I assist you today?`;
+
+      setTranscriptHistory([{ sender: `AI Agent (${personaName})`, text: welcomeText }]);
+      speakResponse(welcomeText, ttsVoice);
 
       // Start Browser Speech Recognition
       if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
@@ -129,22 +145,32 @@ export default function OverviewPage() {
   };
 
   const handleAgentAIResponse = (userText) => {
+    const activePersona = voiceLibrary.find(v => v.id === ttsVoice) || voiceLibrary[0];
+    const isMale = activePersona.gender === 'Male';
+    const personaName = activePersona.name.split(' ')[1];
+
     let aiReply = '';
     const lower = userText.toLowerCase();
 
     if (lower.includes('price') || lower.includes('cost') || lower.includes('budget') || lower.includes('rate') || lower.includes('daam')) {
-      aiReply = 'Hamare Sector 62 Noida 3 BHK flats 1.2 Crore se start hote hain. Kya main aapke liye Saturday ko site visit arrange kar doon?';
+      aiReply = isMale 
+        ? 'Hamare Sector 62 Noida 3 BHK flats 1.2 Crore se start hote hain. Kya main aapke liye Saturday ko site visit arrange kar doon?'
+        : 'Hamare Sector 62 Noida 3 BHK flats 1.2 Crore se start hote hain. Kya main aapke liye Saturday ko site visit arrange kar doon?';
     } else if (lower.includes('location') || lower.includes('kahan') || lower.includes('site')) {
-      aiReply = 'Yeh project Sector 62 Noida prime metro station ke paas located hai. Highway access aur parking available hai.';
+      aiReply = 'Yeh project Sector 62 Noida prime metro station ke paas located hai. Highway connectivity aur car parking available hai.';
     } else if (lower.includes('yes') || lower.includes('haan') || lower.includes('theek') || lower.includes('interested')) {
-      aiReply = 'Bahut badhiya! Maine aapki Saturday 11 AM ki site visit schedule kar di hai. Hamare sales manager aapko call karenge.';
+      aiReply = isMale
+        ? 'Bahut badhiya! Maine aapki Saturday 11 AM ki site visit schedule kar di hai. Main aapko WhatsApp par brochure bhej raha hoon.'
+        : 'Bahut badhiya! Maine aapki Saturday 11 AM ki site visit schedule kar di hai. Main aapko WhatsApp par brochure bhej rahi hoon.';
     } else {
-      aiReply = 'Ji bilkul, main aapki baat samajh rahi hoon. Kripya bataiye main aapki kya sahayata kar sakti hoon?';
+      aiReply = isMale 
+        ? `Ji bilkul, main aapki baat samajh raha hoon. Kripya bataiye main aapki kya sahayata kar sakta hoon?`
+        : `Ji bilkul, main aapki baat samajh rahi hoon. Kripya bataiye main aapki kya sahayata kar sakti hoon?`;
     }
 
     setTimeout(() => {
-      setTranscriptHistory(prev => [...prev, { sender: 'AI Agent', text: aiReply }]);
-      speakResponse(aiReply);
+      setTranscriptHistory(prev => [...prev, { sender: `AI Agent (${personaName})`, text: aiReply }]);
+      speakResponse(aiReply, ttsVoice);
     }, 400);
   };
 
@@ -176,7 +202,22 @@ export default function OverviewPage() {
 
           <div className="form-group mb-4">
             <label style={{ fontSize: '0.8125rem', fontWeight: '600' }}>AI Voice Persona (7 Indian Voices)</label>
-            <select className="form-control" value={ttsVoice} onChange={e => setTtsVoice(e.target.value)}>
+            <select 
+              className="form-control" 
+              value={ttsVoice} 
+              onChange={e => {
+                const newV = e.target.value;
+                setTtsVoice(newV);
+                // Quick test sample audio
+                const p = voiceLibrary.find(v => v.id === newV);
+                if (p) {
+                  const sample = p.gender === 'Male' 
+                    ? `Namaste! Main ${p.name.split(' ')[1]} bol raha hoon.`
+                    : `Namaste! Main ${p.name.split(' ')[1]} bol rahi hoon.`;
+                  speakResponse(sample, newV);
+                }
+              }}
+            >
               {voiceLibrary.map(v => (
                 <option key={v.id} value={v.id}>
                   {v.name}
@@ -221,8 +262,15 @@ export default function OverviewPage() {
             </select>
           </div>
 
-          <div style={{ background: 'rgba(16, 185, 129, 0.08)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(16, 185, 129, 0.2)', fontSize: '0.8125rem', color: 'var(--accent-green)' }}>
-            🟢 <strong>{currentPersona.name} Active!</strong> {currentPersona.gender === 'Female' ? 'Feminine Hindi grammar (kar rahi hoon, bata rahi hoon)' : 'Professional masculine confidence'}.
+          <div style={{ 
+            background: currentPersona.gender === 'Male' ? 'rgba(59, 130, 246, 0.08)' : 'rgba(16, 185, 129, 0.08)', 
+            padding: '1rem', 
+            borderRadius: '8px', 
+            border: currentPersona.gender === 'Male' ? '1px solid rgba(59, 130, 246, 0.2)' : '1px solid rgba(16, 185, 129, 0.2)', 
+            fontSize: '0.8125rem', 
+            color: currentPersona.gender === 'Male' ? 'var(--accent-blue)' : 'var(--accent-green)' 
+          }}>
+            {currentPersona.gender === 'Male' ? '👨' : '👩'} <strong>{currentPersona.name} Active!</strong> {currentPersona.gender === 'Male' ? 'Masculine Hindi grammar (bol raha hoon, kar raha hoon)' : 'Feminine Hindi grammar (bol rahi hoon, kar rahi hoon)'}.
           </div>
         </div>
 
@@ -251,7 +299,7 @@ export default function OverviewPage() {
               <div className={`ring-circle ring-middle ${isCalling ? 'active' : ''} ${isSpeaking ? 'speaking' : ''}`}></div>
               <div className={`ring-circle ring-inner ${isCalling ? 'active' : ''} ${isSpeaking ? 'speaking' : ''}`}>
                 <span style={{ fontSize: '2.5rem' }}>
-                  {isSpeaking ? '🔊' : isCalling ? '🎙️' : '🎧'}
+                  {isSpeaking ? '🔊' : isCalling ? (currentPersona.gender === 'Male' ? '👨‍💼' : '👩‍💼') : '🎧'}
                 </span>
               </div>
             </div>
