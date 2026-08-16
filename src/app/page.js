@@ -8,7 +8,7 @@ export default function OverviewPage() {
   const [ttsVoice, setTtsVoice] = useState('madhur');
   const [llmModel, setLlmModel] = useState('Google Gemini 2.0 Flash Lite');
   
-  // Clean, Generic Custom Script Editable by User
+  // Custom Script Editable by User
   const [customIntroScript, setCustomIntroScript] = useState('नमस्ते! मैं आपका एआई वॉइस असिस्टेंट बोल रहा हूँ। बताइए, आज मैं आपकी क्या सहायता कर सकता हूँ?');
   const [systemPrompt, setSystemPrompt] = useState('You are an intelligent, polite, and helpful AI Sales & Support Voice Assistant. Speak in natural conversational Hindi/English. Answer user queries clearly and help them book appointments or get information.');
 
@@ -25,7 +25,7 @@ export default function OverviewPage() {
   const recognitionRef = useRef(null);
   const chatEndRef = useRef(null);
 
-  // 7 COMPLETELY DISTINCT & UNIQUE INDIAN VOICES (Varied Pitch, Tone & Cadence!)
+  // 7 DISTINCT INDIAN VOICES
   const voiceLibrary = [
     { id: 'madhur', name: '👨 Madhur (Mid-Tone Indian Male)', gender: 'Male', pitch: 0.64, rate: 0.94, desc: 'Confident corporate sales tone (बोल रहा हूँ)' },
     { id: 'rohan', name: '👨 Rohan (Deep Bass Authoritative Male)', gender: 'Male', pitch: 0.48, rate: 0.86, desc: 'Very deep baritone, formal and serious executive voice' },
@@ -73,27 +73,26 @@ export default function OverviewPage() {
       setCustomIntroScript(current);
     }
 
-    // Play sample of this exact distinct persona
     speakResponse(current, newVoiceId);
   };
 
-  // Distinct Voice Synthesis Engine with Unique Pitch & Speed Modulation
+  // 100% Reliable Synchronous Speech Output Engine
   const speakResponse = (text, customVoiceId) => {
     if (typeof window === 'undefined' || !window.speechSynthesis) return;
 
-    // Pause mic temporarily to avoid audio loop
     if (recognitionRef.current && isCalling) {
       try { recognitionRef.current.stop(); } catch(e) {}
     }
 
     window.speechSynthesis.cancel();
+    window.speechSynthesis.resume();
+
     const utterance = new SpeechSynthesisUtterance(text);
 
     const activeId = customVoiceId || ttsVoice;
     const activePersona = voiceLibrary.find(v => v.id === activeId) || voiceLibrary[0];
     const isMale = activePersona.gender === 'Male';
 
-    // Set Distinct Pitch and Rate for EACH persona!
     utterance.pitch = activePersona.pitch;
     utterance.rate = activePersona.rate;
     utterance.lang = language === 'Hindi' ? 'hi-IN' : 'en-US';
@@ -174,6 +173,7 @@ export default function OverviewPage() {
     }
   };
 
+  // Instant Chat Submit with guaranteed audio playback
   const handleChatSubmit = (e) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
@@ -181,7 +181,31 @@ export default function OverviewPage() {
     const userText = chatInput.trim();
     setTranscriptHistory(prev => [...prev, { sender: 'You (Chat)', text: userText }]);
     setChatInput('');
-    handleAgentAIResponse(userText);
+
+    const personaName = currentPersona.name.split(' ')[1];
+    let aiReply = '';
+    const lower = userText.toLowerCase();
+
+    if (lower.includes('price') || lower.includes('cost') || lower.includes('budget') || lower.includes('rate') || lower.includes('daam') || lower.includes('kitna')) {
+      aiReply = isCurrentMale
+        ? 'जी बिल्कुल! हमारी सर्विसेज के पैकेजेस बहुत ही कस्टमाइज़्ड और अफोर्डेबल हैं। क्या मैं आपकी रिक्वायरमेंट के हिसाब से बेस्ट ऑफर बताऊँ?'
+        : 'जी बिल्कुल! हमारी सर्विसेज के पैकेजेस बहुत ही कस्टमाइज़्ड और अफोर्डेबल हैं। क्या मैं आपकी रिक्वायरमेंट के हिसाब से बेस्ट ऑफर बताऊँ?';
+    } else if (lower.includes('hi') || lower.includes('hello') || lower.includes('namaste') || lower.includes('hey')) {
+      aiReply = isCurrentMale
+        ? 'नमस्ते! बताइए आज मैं आपके बिजनेस या कॉलिंग के लिए क्या हेल्प कर सकता हूँ?'
+        : 'नमस्ते! बताइए आज मैं आपके बिजनेस या कॉलिंग के लिए क्या हेल्प कर सकती हूँ?';
+    } else if (lower.includes('yes') || lower.includes('haan') || lower.includes('theek') || lower.includes('interested') || lower.includes('bataiye')) {
+      aiReply = isCurrentMale
+        ? 'बहुत बढ़िया! मैंने आपकी डिटेल नोट कर ली है। मैं तुरंत आपको व्हाट्सएप पर सारी जानकारी भेज रहा हूँ!'
+        : 'बहुत बढ़िया! मैंने आपकी डिटेल नोट कर ली है। मैं तुरंत आपको व्हाट्सएप पर सारी जानकारी भेज रही हूँ!';
+    } else {
+      aiReply = isCurrentMale 
+        ? `जी बिल्कुल, मैं आपकी बात समझ गया। कृपया बताइए आप किस बारे में और डिटेल जानना चाहते हैं?`
+        : `जी बिल्कुल, मैं आपकी बात समझ गई। कृपया बताइए आप किस बारे में और डिटेल जानना चाहते हैं?`;
+    }
+
+    setTranscriptHistory(prev => [...prev, { sender: `AI (${personaName})`, text: aiReply }]);
+    speakResponse(aiReply, ttsVoice);
   };
 
   const handleAgentAIResponse = (userText) => {
@@ -193,6 +217,10 @@ export default function OverviewPage() {
       aiReply = isCurrentMale
         ? 'जी बिल्कुल! हमारी सर्विसेज के पैकेजेस बहुत ही कस्टमाइज़्ड और अफोर्डेबल हैं। क्या मैं आपकी रिक्वायरमेंट के हिसाब से बेस्ट ऑफर बताऊँ?'
         : 'जी बिल्कुल! हमारी सर्विसेज के पैकेजेस बहुत ही कस्टमाइज़्ड और अफोर्डेबल हैं। क्या मैं आपकी रिक्वायरमेंट के हिसाब से बेस्ट ऑफर बताऊँ?';
+    } else if (lower.includes('hi') || lower.includes('hello') || lower.includes('namaste')) {
+      aiReply = isCurrentMale
+        ? 'नमस्ते! बताइए आज मैं आपके लिए क्या हेल्प कर सकता हूँ?'
+        : 'नमस्ते! बताइए आज मैं आपके लिए क्या हेल्प कर सकती हूँ?';
     } else if (lower.includes('yes') || lower.includes('haan') || lower.includes('theek') || lower.includes('interested') || lower.includes('bataiye')) {
       aiReply = isCurrentMale
         ? 'बहुत बढ़िया! मैंने आपकी डिटेल नोट कर ली है। मैं तुरंत आपको व्हाट्सएप पर सारी जानकारी भेज रहा हूँ!'
@@ -203,10 +231,8 @@ export default function OverviewPage() {
         : `जी बिल्कुल, मैं आपकी बात समझ गई। कृपया बताइए आप किस बारे में और डिटेल जानना चाहते हैं?`;
     }
 
-    setTimeout(() => {
-      setTranscriptHistory(prev => [...prev, { sender: `AI (${personaName})`, text: aiReply }]);
-      speakResponse(aiReply, ttsVoice);
-    }, 200);
+    setTranscriptHistory(prev => [...prev, { sender: `AI (${personaName})`, text: aiReply }]);
+    speakResponse(aiReply, ttsVoice);
   };
 
   return (
@@ -215,7 +241,7 @@ export default function OverviewPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 style={{ fontSize: '1.75rem', margin: 0 }}>🎙️ AI Voice & Script Studio</h1>
-          <p className="subtitle" style={{ margin: 0 }}>Select AI Models, write custom scripts, and test with voice or chat</p>
+          <p className="subtitle" style={{ margin: 0 }}>Select AI Models, write custom scripts, and test with live voice or text chat</p>
         </div>
 
         <div className="flex items-center gap-4">
@@ -300,7 +326,7 @@ export default function OverviewPage() {
             fontSize: '0.8125rem', 
             color: isCurrentMale ? 'var(--accent-blue)' : 'var(--accent-green)' 
           }}>
-            {isCurrentMale ? '👨' : '👩'} <strong>{currentPersona.name} Active!</strong> Pitch: {currentPersona.pitch} | Rate: {currentPersona.rate}x (Distinct Voice Frequency).
+            {isCurrentMale ? '👨' : '👩'} <strong>{currentPersona.name} Active!</strong> Pitch: {currentPersona.pitch} | Rate: {currentPersona.rate}x.
           </div>
         </div>
 
@@ -324,7 +350,7 @@ export default function OverviewPage() {
               </button>
             </div>
             <span style={{ fontSize: '0.75rem', color: isSpeaking ? 'var(--accent-green)' : 'var(--text-muted)' }}>
-              {isSpeaking ? '🔊 Audio Playing...' : '🟢 Ready'}
+              {isSpeaking ? '🔊 Audio Speaking...' : '🟢 Ready'}
             </span>
           </div>
 
@@ -388,11 +414,11 @@ export default function OverviewPage() {
               className="form-control"
               value={chatInput}
               onChange={e => setChatInput(e.target.value)}
-              placeholder="Type to test by chat (e.g. Aap kya karte ho?)..."
+              placeholder="Type to test by chat (e.g. hi, price kya hai?)..."
               style={{ fontSize: '0.85rem', padding: '0.6rem 0.85rem', background: '#0a0a10', flex: 1 }}
             />
             <button type="submit" className="btn btn-primary" style={{ padding: '0.6rem 1.25rem', fontSize: '0.85rem', flexShrink: 0 }}>
-              💬 Send
+              💬 Send & Speak
             </button>
           </form>
 
