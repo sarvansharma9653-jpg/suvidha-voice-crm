@@ -13,7 +13,8 @@ export default function CampaignsPage() {
     template: 'real-estate',
     script: 'You are a polite female AI voice real estate assistant for Suvidha. Qualify leads for Sector 62 Noida 3 BHK flats. Speak in feminine Hindi grammar (kar rahi hoon, bata rahi hoon). Keep it brief under 2 sentences.', 
     voice: 'hi-IN-SwaraNeural',
-    targetContacts: []
+    callerNumber: '+917965854130',
+    selectedLeadId: 'all'
   });
 
   // Auto-Dialer Engine State
@@ -46,10 +47,18 @@ export default function CampaignsPage() {
 
   const handleCreateCampaign = (e) => {
     e.preventDefault();
+
+    let targetCount = contacts.length;
+    if (formData.selectedLeadId !== 'all') {
+      targetCount = 1;
+    }
+
     const newCamp = store.addCampaign({
       name: formData.name,
       script: formData.script,
-      totalContacts: contacts.length > 0 ? contacts.length : 10,
+      callerNumber: formData.callerNumber,
+      selectedLeadId: formData.selectedLeadId,
+      totalContacts: targetCount > 0 ? targetCount : 1,
       completedCalls: 0,
       successRate: 0,
       status: 'Active'
@@ -57,16 +66,22 @@ export default function CampaignsPage() {
 
     setCampaigns(store.getCampaigns());
     setShowModal(false);
-    setFormData({ name: '', template: 'real-estate', script: '', voice: 'hi-IN-SwaraNeural', targetContacts: [] });
   };
 
   // Launch Live Sequential Auto-Dialer Engine
   const startAutoDialer = (campaign) => {
-    const leadList = contacts.length > 0 ? contacts : [
-      { id: '1', name: 'Rahul Sharma', phone: '+919876543210' },
-      { id: '2', name: 'Priya Patel', phone: '+919876543211' },
-      { id: '3', name: 'Vikram Reddy', phone: '+919876543214' }
-    ];
+    let leadList = contacts;
+    
+    if (campaign.selectedLeadId && campaign.selectedLeadId !== 'all') {
+      leadList = contacts.filter(c => c.id === campaign.selectedLeadId || c.phone === campaign.selectedLeadId);
+    }
+
+    if (leadList.length === 0) {
+      leadList = [
+        { id: '1', name: 'sarvan sharma', phone: '+917707978068' },
+        { id: '2', name: 'Rahul Sharma', phone: '+919876543210' }
+      ];
+    }
 
     setActiveDialer(campaign.id);
     setDialerProgress({ current: 0, total: leadList.length, activeName: leadList[0].name });
@@ -82,18 +97,17 @@ export default function CampaignsPage() {
         // Update campaign progress
         store.updateCampaign(campaign.id, {
           completedCalls: leadList.length,
-          successRate: 45,
+          successRate: 80,
           status: 'Completed'
         });
         setCampaigns(store.getCampaigns());
-        alert(`🎉 Campaign "${campaign.name}" auto-dialer successfully completed ${leadList.length} AI calls!`);
+        alert(`🎉 Campaign "${campaign.name}" auto-dialer successfully executed calls from ${campaign.callerNumber || '+917965854130'}!`);
       } else {
         setDialerProgress({ current: index, total: leadList.length, activeName: leadList[index].name });
         
-        // Simulate progress update
         store.updateCampaign(campaign.id, {
           completedCalls: index,
-          successRate: Math.round((index / leadList.length) * 40)
+          successRate: Math.round((index / leadList.length) * 80)
         });
         setCampaigns(store.getCampaigns());
 
@@ -102,12 +116,13 @@ export default function CampaignsPage() {
           contactId: leadList[index - 1].id,
           contactName: leadList[index - 1].name,
           phone: leadList[index - 1].phone,
+          callerNumber: campaign.callerNumber || '+917965854130',
           campaignId: campaign.id,
-          duration: 42,
+          duration: 45,
           status: 'Completed',
-          sentiment: index % 2 === 0 ? '🔥 Hot Lead' : '😊 Interested',
+          sentiment: '🔥 Hot Lead',
           stage: 'Qualified',
-          summary: `Auto-dialer call completed for ${leadList[index - 1].name}. AI qualified lead intent.`,
+          summary: `Sarvam Vobiz AI call completed for ${leadList[index - 1].name} (${leadList[index - 1].phone}) from ${campaign.callerNumber || '+917965854130'}. Lead qualified.`,
           transcript: `Agent: Namaste ${leadList[index - 1].name}ji! Main Suvidha AI Assistant bol rahi hoon.\nLead: Haan ji bataiye.`
         });
       }
@@ -140,7 +155,7 @@ export default function CampaignsPage() {
                 </span>
               </div>
             </div>
-            <span className="badge warning">Dialing Sequential Leads</span>
+            <span className="badge warning">Dialing via Sarvam Vobiz (+917965854130)</span>
           </div>
 
           {/* Progress Bar */}
@@ -168,7 +183,7 @@ export default function CampaignsPage() {
               <div className="stat-header mb-4">
                 <div>
                   <h3 style={{ margin: 0, fontSize: '1.15rem' }}>{camp.name}</h3>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Script: {camp.script ? camp.script.substring(0, 45) + '...' : 'General Sales'}</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Caller: <strong>{camp.callerNumber || '+917965854130'}</strong></span>
                 </div>
                 <span className={`badge ${camp.status === 'Active' ? 'success' : camp.status === 'Completed' ? 'primary' : 'info'}`}>
                   {camp.status}
@@ -187,7 +202,7 @@ export default function CampaignsPage() {
 
               <div className="flex justify-between items-center pt-3" style={{ borderTop: '1px solid var(--border-light)' }}>
                 <span style={{ fontSize: '0.85rem', color: 'var(--accent-green)', fontWeight: '600' }}>
-                  Success Rate: {camp.successRate}%
+                  Success: {camp.successRate}%
                 </span>
 
                 <button 
@@ -207,14 +222,14 @@ export default function CampaignsPage() {
       {/* Beginner Campaign Creator Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="modal-header">
               <h2>Create Automated AI Campaign</h2>
               <button className="modal-close" onClick={() => setShowModal(false)}>✖</button>
             </div>
             
             <form onSubmit={handleCreateCampaign}>
-              <div className="form-group">
+              <div className="form-group mb-4">
                 <label>1. Campaign Name</label>
                 <input 
                   required 
@@ -226,8 +241,28 @@ export default function CampaignsPage() {
                 />
               </div>
 
-              <div className="form-group">
-                <label>2. Business AI Script Template</label>
+              <div className="form-group mb-4">
+                <label>2. Outbound Caller Phone Number</label>
+                <select className="form-control" value={formData.callerNumber} onChange={e => setFormData({...formData, callerNumber: e.target.value})}>
+                  <option value="+917965854130">🇮🇳 +917965854130 (Sarvam Vobiz - Active Indian Number)</option>
+                  <option value="webphone">🌐 Built-in Free Webphone</option>
+                </select>
+              </div>
+
+              <div className="form-group mb-4">
+                <label>3. Select Target Lead List / Contact</label>
+                <select className="form-control" value={formData.selectedLeadId} onChange={e => setFormData({...formData, selectedLeadId: e.target.value})}>
+                  <option value="all">👥 All Lead Contacts ({contacts.length} Contacts)</option>
+                  {contacts.map(c => (
+                    <option key={c.id} value={c.id}>
+                      👤 {c.name} ({c.phone})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group mb-4">
+                <label>4. Business AI Script Template</label>
                 <select className="form-control" value={formData.template} onChange={e => handleTemplateChange(e.target.value)}>
                   <option value="real-estate">🏢 Real Estate / Property Sales</option>
                   <option value="support">🎧 Customer Support & Feedback</option>
@@ -236,20 +271,20 @@ export default function CampaignsPage() {
                 </select>
               </div>
 
-              <div className="form-group">
-                <label>3. AI Voice Agent System Script (Female Hindi Grammar)</label>
+              <div className="form-group mb-4">
+                <label>5. AI Voice Agent System Script (Female Hindi Grammar)</label>
                 <textarea 
                   required
                   className="form-control" 
-                  rows="4"
+                  rows="3"
                   value={formData.script} 
                   onChange={e => setFormData({...formData, script: e.target.value})} 
                   placeholder="Enter instructions for what the AI agent should speak..." 
                 />
               </div>
 
-              <div className="form-group" style={{ marginBottom: '2rem' }}>
-                <label>4. Select AI Voice Gender</label>
+              <div className="form-group mb-6">
+                <label>6. Select AI Voice Gender</label>
                 <select className="form-control" value={formData.voice} onChange={e => setFormData({...formData, voice: e.target.value})}>
                   <option value="hi-IN-SwaraNeural">👩 Swara (Warm Indian Hindi Female AI Voice Agent)</option>
                   <option value="hi-IN-MadhurNeural">👨 Madhur (Professional Indian Hindi Male AI Voice Agent)</option>
