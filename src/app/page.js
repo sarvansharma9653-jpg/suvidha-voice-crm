@@ -206,13 +206,9 @@ export default function OverviewPage() {
       const data = await res.json();
 
       if (data.audioBase64) {
-        // Single Audio Source: AudioContext only (NO DOUBLE PLAY!)
+        // Single Audio Source: AudioContext only (100% NO DOUBLE PLAY!)
         const played = await playBase64WithAudioContext(data.audioBase64);
-        if (played) {
-          const audioEl = document.getElementById('deepgram-voice-player');
-          if (audioEl) audioEl.src = data.audioBase64;
-          return;
-        }
+        if (played) return;
       }
     } catch (e) {
       console.log('Audio fetch note:', e.message);
@@ -600,7 +596,7 @@ export default function OverviewPage() {
             </div>
 
             {/* Exact Deepgram Green Action Button */}
-            <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ marginTop: '1rem' }}>
               <button 
                 onClick={toggleAgent} 
                 className="btn btn-success"
@@ -616,14 +612,6 @@ export default function OverviewPage() {
               >
                 {isCalling ? '⏹️ End Call' : '🎤 Talk To Your Agent'}
               </button>
-
-              {/* Visible Live Audio Stream Player */}
-              <audio 
-                id="deepgram-voice-player"
-                controls 
-                autoPlay
-                style={{ height: '36px', width: '280px', borderRadius: '20px', background: '#0a0a10', border: '1px solid rgba(16,185,129,0.3)', marginTop: '0.25rem' }}
-              />
             </div>
           </div>
 
