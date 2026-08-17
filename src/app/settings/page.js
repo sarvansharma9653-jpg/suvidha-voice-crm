@@ -17,6 +17,9 @@ export default function SettingsPage() {
   const [authToken, setAuthToken] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('08047280901');
   
+  // ElevenLabs Human Voice Engine API Key
+  const [elevenLabsApiKey, setElevenLabsApiKey] = useState('');
+
   // WhatsApp Meta Cloud API Credentials
   const [metaAccessToken, setMetaAccessToken] = useState('');
   const [metaPhoneNumberId, setMetaPhoneNumberId] = useState('');
@@ -31,6 +34,7 @@ export default function SettingsPage() {
     if (typeof window !== 'undefined') {
       const uid = localStorage.getItem('suvidha_auth_user_id') || 'default';
 
+      setElevenLabsApiKey(localStorage.getItem(`elevenLabsApiKey_${uid}`) || localStorage.getItem('elevenLabsApiKey') || '');
       setMetaAccessToken(localStorage.getItem(`metaAccessToken_${uid}`) || localStorage.getItem('metaAccessToken') || '');
       setMetaPhoneNumberId(localStorage.getItem(`metaPhoneNumberId_${uid}`) || localStorage.getItem('metaPhoneNumberId') || '');
       setAdminNumber(localStorage.getItem(`adminNumber_${uid}`) || localStorage.getItem('adminNumber') || '+917707978068');
@@ -83,73 +87,62 @@ export default function SettingsPage() {
     setLoading(true);
     setStatus(null);
 
-    try {
-      const uid = typeof window !== 'undefined' ? (localStorage.getItem('suvidha_auth_user_id') || 'default') : 'default';
+    const uid = (typeof window !== 'undefined' && localStorage.getItem('suvidha_auth_user_id')) || 'default';
 
-      // Tenant-isolated storage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`elevenLabsApiKey_${uid}`, elevenLabsApiKey);
+      localStorage.setItem('elevenLabsApiKey', elevenLabsApiKey);
+
       localStorage.setItem(`telephonyProvider_${uid}`, provider);
-      localStorage.setItem(`exotelAccountSid_${uid}`, exotelAccountSid);
-      localStorage.setItem(`exotelSubdomain_${uid}`, exotelSubdomain);
-      localStorage.setItem(`exotelApiKey_${uid}`, exotelApiKey);
-      localStorage.setItem(`exotelApiToken_${uid}`, exotelApiToken);
-      localStorage.setItem(`exotelVirtualNumber_${uid}`, exotelVirtualNumber);
-      localStorage.setItem(`metaAccessToken_${uid}`, metaAccessToken);
-      localStorage.setItem(`metaPhoneNumberId_${uid}`, metaPhoneNumberId);
-      localStorage.setItem(`adminNumber_${uid}`, adminNumber);
-
-      // Global fallback keys
       localStorage.setItem('telephonyProvider', provider);
+      
+      localStorage.setItem(`exotelAccountSid_${uid}`, exotelAccountSid);
       localStorage.setItem('exotelAccountSid', exotelAccountSid);
+      localStorage.setItem(`exotelSubdomain_${uid}`, exotelSubdomain);
       localStorage.setItem('exotelSubdomain', exotelSubdomain);
+      localStorage.setItem(`exotelApiKey_${uid}`, exotelApiKey);
       localStorage.setItem('exotelApiKey', exotelApiKey);
+      localStorage.setItem(`exotelApiToken_${uid}`, exotelApiToken);
       localStorage.setItem('exotelApiToken', exotelApiToken);
+      localStorage.setItem(`exotelVirtualNumber_${uid}`, exotelVirtualNumber);
       localStorage.setItem('exotelVirtualNumber', exotelVirtualNumber);
-      localStorage.setItem('accountSid', provider === 'exotel' ? exotelApiKey : accountSid);
-      localStorage.setItem('authToken', provider === 'exotel' ? exotelApiToken : authToken);
-      localStorage.setItem('phoneNumber', provider === 'exotel' ? exotelVirtualNumber : phoneNumber);
+
+      localStorage.setItem(`accountSid_${uid}`, accountSid);
+      localStorage.setItem('accountSid', accountSid);
+      localStorage.setItem(`authToken_${uid}`, authToken);
+      localStorage.setItem('authToken', authToken);
+      localStorage.setItem(`phoneNumber_${uid}`, phoneNumber);
+      localStorage.setItem('phoneNumber', phoneNumber);
+
+      localStorage.setItem(`metaAccessToken_${uid}`, metaAccessToken);
       localStorage.setItem('metaAccessToken', metaAccessToken);
+      localStorage.setItem(`metaPhoneNumberId_${uid}`, metaPhoneNumberId);
       localStorage.setItem('metaPhoneNumberId', metaPhoneNumberId);
+      localStorage.setItem(`adminNumber_${uid}`, adminNumber);
       localStorage.setItem('adminNumber', adminNumber);
-
-      // Safe Supabase database persistence (Non-blocking so RLS policies never crash user UX)
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: existing } = await supabase
-            .from('credentials')
-            .select('id')
-            .eq('user_id', user.id)
-            .maybeSingle();
-
-          const credPayload = {
-            user_id: user.id,
-            provider,
-            account_sid: provider === 'exotel' ? exotelApiKey : accountSid,
-            auth_token: provider === 'exotel' ? exotelApiToken : authToken,
-            phone_number: provider === 'exotel' ? exotelVirtualNumber : phoneNumber
-          };
-
-          if (existing) {
-            await supabase
-              .from('credentials')
-              .update(credPayload)
-              .eq('user_id', user.id);
-          } else {
-            await supabase
-              .from('credentials')
-              .insert([credPayload]);
-          }
-        }
-      } catch (dbErr) {
-        console.log('Supabase sync note (handled safely):', dbErr);
-      }
-
-      setStatus({ type: 'success', message: '🎉 Telephony Credentials & WhatsApp Alert Settings Saved Successfully!' });
-    } catch (err) {
-      setStatus({ type: 'error', message: `❌ Error: ${err.message}` });
-    } finally {
-      setLoading(false);
     }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const payload = {
+          user_id: user.id,
+          provider,
+          account_sid: provider === 'exotel' ? exotelAccountSid : accountSid,
+          auth_token: provider === 'exotel' ? exotelApiToken : authToken,
+          phone_number: provider === 'exotel' ? exotelVirtualNumber : phoneNumber,
+          updated_at: new Date().toISOString()
+        };
+
+        const { error } = await supabase.from('credentials').upsert(payload, { onConflict: 'user_id' });
+        if (error) console.log('Supabase sync note:', error.message);
+      }
+    } catch (e) {
+      console.log('Safe save note:', e.message);
+    }
+
+    setStatus({ type: 'success', message: '🎉 Settings & Credentials saved successfully!' });
+    setLoading(false);
   };
 
   const handleTestWhatsApp = () => {
@@ -168,8 +161,8 @@ export default function SettingsPage() {
     <div style={{ maxWidth: '1000px' }}>
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1>⚙️ Telephony & WhatsApp Settings</h1>
-          <p className="subtitle">Connect your preferred calling provider and configure instant WhatsApp Hot Lead alerts</p>
+          <h1>⚙️ Telephony, Voice Engine & WhatsApp Settings</h1>
+          <p className="subtitle">Connect your ElevenLabs Human Voice API, Cloud Telephony and WhatsApp Alerts</p>
         </div>
       </div>
 
@@ -184,7 +177,43 @@ export default function SettingsPage() {
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(440px, 1fr))', gap: '2rem' }}>
-        {/* Universal Telephony config */}
+        
+        {/* 1. ElevenLabs Ultra-Human Voice API Key */}
+        <div className="card" style={{ padding: '2rem', border: '1px solid rgba(139, 92, 246, 0.3)', background: 'rgba(139, 92, 246, 0.03)' }}>
+          <div className="flex justify-between items-center mb-2">
+            <h2 style={{ marginTop: 0, fontSize: '1.25rem' }}>🎙️ 100% Real Human Voice (ElevenLabs API)</h2>
+            <span className="badge primary">Ultra-Human</span>
+          </div>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
+            Get 10,000 characters FREE every month from <strong>elevenlabs.io</strong> for 100% real human studio voice with natural breaths and emotion:
+          </p>
+
+          <form onSubmit={handleSave}>
+            <div className="form-group mb-4">
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>ElevenLabs API Key</label>
+              <input 
+                type="password" 
+                className="form-control" 
+                value={elevenLabsApiKey} 
+                onChange={e => setElevenLabsApiKey(e.target.value)} 
+                placeholder="e.g. sk_398a72b84f..." 
+              />
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                Copy from: <strong>elevenlabs.io -> Profile -> API Keys</strong>
+              </span>
+            </div>
+
+            <div style={{ background: '#0a0a10', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid var(--border-light)', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
+              💡 <strong>Free Credits Tip:</strong> ElevenLabs par free account banate hi aapko 10,000 characters free milte hain. API key paste karke Save dabaiye, aur CRM turant 100% Real Human Studio Voice mein bolne lagega!
+            </div>
+
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? 'Saving...' : '💾 Save Voice Settings'}
+            </button>
+          </form>
+        </div>
+
+        {/* 2. Universal Telephony config */}
         <div className="card" style={{ padding: '2rem' }}>
           <h2 style={{ marginTop: 0, fontSize: '1.25rem' }}>📞 Telephony Provider Setup</h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
@@ -215,9 +244,6 @@ export default function SettingsPage() {
                     onChange={e => setExotelAccountSid(e.target.value)} 
                     placeholder="e.g. designsuvidha1" 
                   />
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px', display: 'block' }}>
-                    Shown as <strong>Account SID</strong> on Exotel API Credentials page.
-                  </span>
                 </div>
 
                 <div className="form-group">
@@ -230,9 +256,6 @@ export default function SettingsPage() {
                     onChange={e => setExotelSubdomain(e.target.value)} 
                     placeholder="e.g. api.exotel.com" 
                   />
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px', display: 'block' }}>
-                    Shown as <strong>Subdomain</strong> on Exotel page (usually <code>api.exotel.com</code>).
-                  </span>
                 </div>
 
                 <div className="form-group">
@@ -245,9 +268,6 @@ export default function SettingsPage() {
                     onChange={e => setExotelApiKey(e.target.value)} 
                     placeholder="e.g. 1a6170d37e88f2ee7d542fd54e8cb4bf..." 
                   />
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px', display: 'block' }}>
-                    Copy from <strong>API KEY (USERNAME)</strong> column on Exotel page.
-                  </span>
                 </div>
 
                 <div className="form-group">
@@ -258,132 +278,67 @@ export default function SettingsPage() {
                     className="form-control" 
                     value={exotelApiToken} 
                     onChange={e => setExotelApiToken(e.target.value)} 
-                    placeholder="Paste Exotel API Token (Password)..." 
+                    placeholder="e.g. 21f5791338d1591f8fe7388fa4b75ff..." 
                   />
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px', display: 'block' }}>
-                    Copy from <strong>API TOKEN (PASSWORD)</strong> column on Exotel page.
-                  </span>
                 </div>
 
-                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                  <label>5. Exotel ExoPhone (Virtual Number)</label>
-                  <input 
-                    required 
-                    type="tel" 
-                    className="form-control" 
-                    value={exotelVirtualNumber} 
-                    onChange={e => setExotelVirtualNumber(e.target.value)} 
-                    placeholder="08047280901 or +918047280901" 
-                  />
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px', display: 'block' }}>
-                    Your assigned Indian Virtual Number (e.g. <code>08047280901</code>).
-                  </span>
-                </div>
-              </>
-            )}
-
-            {provider !== 'exotel' && provider !== 'webphone' && (
-              <>
                 <div className="form-group">
-                  <label>{provider === 'twilio' ? 'Twilio Account SID' : provider === 'plivo' ? 'Plivo Auth ID' : 'Sarvam API Key'}</label>
+                  <label>5. Exotel Caller ID / ExoPhone</label>
                   <input 
                     required 
                     type="text" 
                     className="form-control" 
-                    value={accountSid} 
-                    onChange={e => setAccountSid(e.target.value)} 
-                    placeholder="Enter Account SID / API Key..." 
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>{provider === 'twilio' ? 'Twilio Auth Token' : provider === 'plivo' ? 'Plivo Auth Token' : 'Sarvam Secret Token'}</label>
-                  <input 
-                    required 
-                    type="password" 
-                    className="form-control" 
-                    value={authToken} 
-                    onChange={e => setAuthToken(e.target.value)} 
-                    placeholder="Enter Auth Token..." 
-                  />
-                </div>
-
-                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-                  <label>Caller Phone Number</label>
-                  <input 
-                    required 
-                    type="tel" 
-                    className="form-control" 
-                    value={phoneNumber} 
-                    onChange={e => setPhoneNumber(e.target.value)} 
-                    placeholder="+91... or +1..." 
+                    value={exotelVirtualNumber} 
+                    onChange={e => setExotelVirtualNumber(e.target.value)} 
+                    placeholder="e.g. 08047280901" 
                   />
                 </div>
               </>
             )}
 
-            <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
-              💾 Save Telephony Settings
+            {provider !== 'exotel' && (
+              <>
+                <div className="form-group">
+                  <label>Account SID / Username</label>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    value={accountSid} 
+                    onChange={e => setAccountSid(e.target.value)} 
+                    placeholder="e.g. ACxxxxxxxxxxxx" 
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Auth Token / API Secret</label>
+                  <input 
+                    type="password" 
+                    className="form-control" 
+                    value={authToken} 
+                    onChange={e => setAuthToken(e.target.value)} 
+                    placeholder="e.g. your_auth_token_here" 
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Caller ID / Virtual Phone Number</label>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    value={phoneNumber} 
+                    onChange={e => setPhoneNumber(e.target.value)} 
+                    placeholder="e.g. +17372212163" 
+                  />
+                </div>
+              </>
+            )}
+
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? 'Saving...' : '💾 Save Telephony Settings'}
             </button>
           </form>
         </div>
 
-        {/* WhatsApp Hot Lead Alerts Setup */}
-        <div className="card" style={{ padding: '2rem' }}>
-          <h2 style={{ marginTop: 0, fontSize: '1.25rem' }}>📱 WhatsApp Hot Lead Alerts</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-            Set up instant WhatsApp notification alerts when an AI voice call identifies a Hot Lead!
-          </p>
-
-          <form onSubmit={handleSave}>
-            <div className="form-group mb-4">
-              <label>1. Your WhatsApp Mobile Number (for Alerts)</label>
-              <input 
-                required
-                type="tel" 
-                className="form-control" 
-                value={adminNumber} 
-                onChange={e => setAdminNumber(e.target.value)} 
-                placeholder="+917707978068" 
-              />
-              <span style={{ fontSize: '0.75rem', color: 'var(--accent-green)', marginTop: '4px', display: 'block' }}>
-                ✅ Instant WhatsApp alert will be sent to this mobile number whenever a lead is qualified!
-              </span>
-            </div>
-
-            <div className="form-group mb-4">
-              <label>2. WhatsApp Meta Access Token (API Key)</label>
-              <input 
-                type="password" 
-                className="form-control" 
-                value={metaAccessToken} 
-                onChange={e => setMetaAccessToken(e.target.value)} 
-                placeholder="EAAG... (Meta Access Token)" 
-              />
-            </div>
-
-            <div className="form-group" style={{ marginBottom: '1.5rem' }}>
-              <label>3. WhatsApp Phone Number ID</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                value={metaPhoneNumberId} 
-                onChange={e => setMetaPhoneNumberId(e.target.value)} 
-                placeholder="1009823472938... (Meta Phone Number ID)" 
-              />
-            </div>
-
-            <div className="flex gap-3">
-              <button type="submit" className="btn btn-success" style={{ flex: 2 }} disabled={loading}>
-                💾 Save WhatsApp Alert Settings
-              </button>
-
-              <button type="button" onClick={handleTestWhatsApp} className="btn btn-secondary" style={{ flex: 1 }}>
-                🧪 Test Alert
-              </button>
-            </div>
-          </form>
-        </div>
       </div>
     </div>
   );
