@@ -339,6 +339,42 @@ export default function SettingsPage() {
           </form>
         </div>
 
+        {/* 3. Optional WhatsApp Hot Lead Alerts */}
+        <div className="card" style={{ padding: '2rem' }}>
+          <div className="flex justify-between items-center mb-2">
+            <h2 style={{ marginTop: 0, fontSize: '1.25rem' }}>📲 WhatsApp Hot Lead Alerts (Optional)</h2>
+            <span className="badge info">Optional</span>
+          </div>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
+            Receive instant WhatsApp alerts on your personal phone whenever an AI voice call detects a Hot Lead:
+          </p>
+
+          <form onSubmit={handleSave}>
+            <div className="form-group mb-4">
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Admin WhatsApp Mobile Number</label>
+              <input 
+                type="text" 
+                className="form-control" 
+                value={adminNumber} 
+                onChange={e => setAdminNumber(e.target.value)} 
+                placeholder="e.g. +917707978068" 
+              />
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                Enter phone number with +91 country code to receive instant lead notifications.
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+              <button type="submit" className="btn btn-primary" disabled={loading}>
+                {loading ? 'Saving...' : '💾 Save WhatsApp Settings'}
+              </button>
+              <button type="button" onClick={handleTestWhatsApp} className="btn btn-secondary">
+                🧪 Test Alert
+              </button>
+            </div>
+          </form>
+        </div>
+
       </div>
     </div>
   );

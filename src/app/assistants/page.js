@@ -77,10 +77,9 @@ export default function VoiceAgentStudioPage() {
         body: JSON.stringify({ text: sampleText, gender: vObj.gender, voice: voiceId })
       });
 
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
+      const data = await res.json();
+      if (data.audioBase64) {
+        const audio = new Audio(data.audioBase64);
         audio.onended = () => setPlayingVoiceId(null);
         audio.onerror = () => setPlayingVoiceId(null);
         await audio.play();

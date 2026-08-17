@@ -168,6 +168,23 @@ export default function OverviewPage() {
 
     const activeId = customVoiceId || ttsVoice;
     const activePersona = voiceLibrary.find(v => v.id === activeId) || voiceLibrary[0];
+    const isFemale = activePersona.gender === 'Female';
+
+    // Dynamic Gender Grammar Correction
+    let speechText = text;
+    if (isFemale) {
+      speechText = speechText
+        .replace(/रहा हूँ/g, 'रही हूँ')
+        .replace(/सकता हूँ/g, 'सकती हूँ')
+        .replace(/करूँगा/g, 'करूँगी')
+        .replace(/बताऊँगा/g, 'बताऊँगी');
+    } else {
+      speechText = speechText
+        .replace(/रही हूँ/g, 'रहा हूँ')
+        .replace(/सकती हूँ/g, 'सकता हूँ')
+        .replace(/करूँगी/g, 'करूँगा')
+        .replace(/बताऊँगी/g, 'बताऊँगा');
+    }
 
     setIsSpeaking(true);
     setStatusText(`AI (${activePersona.name.split(' ')[1]}) is speaking...`);
@@ -179,7 +196,7 @@ export default function OverviewPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text,
+          text: speechText,
           gender: activePersona.gender,
           voice: activePersona.id,
           elevenLabsApiKey: storedKey
@@ -189,13 +206,13 @@ export default function OverviewPage() {
       const data = await res.json();
 
       if (data.audioBase64) {
-        const audioEl = document.getElementById('deepgram-voice-player');
-        if (audioEl) {
-          audioEl.src = data.audioBase64;
-          audioEl.play().catch(e => console.log('Audio autoplay note:', e));
-        }
+        // Single Audio Source: AudioContext only (NO DOUBLE PLAY!)
         const played = await playBase64WithAudioContext(data.audioBase64);
-        if (played) return;
+        if (played) {
+          const audioEl = document.getElementById('deepgram-voice-player');
+          if (audioEl) audioEl.src = data.audioBase64;
+          return;
+        }
       }
     } catch (e) {
       console.log('Audio fetch note:', e.message);
