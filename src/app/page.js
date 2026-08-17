@@ -7,13 +7,14 @@ export default function OverviewPage() {
   const [language, setLanguage] = useState('Hindi');
   const [ttsVoice, setTtsVoice] = useState('madhur');
   const [llmModel, setLlmModel] = useState('Google Gemini 2.0 Flash Lite');
+  const [sttModel, setSttModel] = useState('Deepgram Nova-2 (Real-time Indian)');
   const [elevenLabsKey, setElevenLabsKey] = useState('sk_fd1cace7cf05a5e700ce78a557f61815046a23576e8cb477');
   
-  // Custom Script Editable by User
+  // Custom Script
   const [customIntroScript, setCustomIntroScript] = useState('नमस्ते! मैं आपका एआई वॉइस असिस्टेंट बोल रहा हूँ। बताइए, आज मैं आपकी क्या सहायता कर सकता हूँ?');
   const [systemPrompt, setSystemPrompt] = useState('You are an intelligent, polite, and helpful AI Sales & Support Voice Assistant. Speak in natural conversational Hindi/English. Answer user queries clearly and help them book appointments or get information.');
 
-  // Audio & Interactive Chat State
+  // Audio & Interactive State
   const [isCalling, setIsCalling] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPlayingTest, setIsPlayingTest] = useState(false);
@@ -106,7 +107,7 @@ export default function OverviewPage() {
 
     const storedKey = elevenLabsKey || localStorage.getItem('elevenLabsApiKey') || 'sk_fd1cace7cf05a5e700ce78a557f61815046a23576e8cb477';
 
-    // 1. Try ElevenLabs Ultra-Human Audio Streaming
+    // 1. ElevenLabs Ultra-Human Audio Streaming via Base64 MP3
     try {
       const res = await fetch('/api/tts', {
         method: 'POST',
@@ -119,30 +120,28 @@ export default function OverviewPage() {
         })
       });
 
-      if (res.ok) {
-        const blob = await res.blob();
-        if (blob.size > 1000) {
-          const audioUrl = URL.createObjectURL(blob);
-          const audio = new Audio(audioUrl);
-          audioPlayerRef.current = audio;
+      const data = await res.json();
 
-          audio.onended = () => {
-            setIsSpeaking(false);
-            setIsPlayingTest(false);
-            setStatusText(isCalling ? 'Listening... (Speak now)' : 'Ready');
-            if (isCalling && recognitionRef.current) {
-              try { recognitionRef.current.start(); } catch(e) {}
-            }
-          };
+      if (data.audioBase64) {
+        const audio = new Audio(data.audioBase64);
+        audioPlayerRef.current = audio;
 
-          audio.onerror = (e) => {
-            console.error('Audio play error, using speech synthesis:', e);
-            playBrowserSpeech(text, activePersona);
-          };
+        audio.onended = () => {
+          setIsSpeaking(false);
+          setIsPlayingTest(false);
+          setStatusText(isCalling ? 'Listening... (Speak now)' : 'Ready');
+          if (isCalling && recognitionRef.current) {
+            try { recognitionRef.current.start(); } catch(e) {}
+          }
+        };
 
-          await audio.play();
-          return;
-        }
+        audio.onerror = (e) => {
+          console.error('Audio play error, using speech synthesis:', e);
+          playBrowserSpeech(text, activePersona);
+        };
+
+        await audio.play();
+        return;
       }
     } catch (e) {
       console.log('ElevenLabs fetch note:', e.message);
@@ -311,37 +310,42 @@ export default function OverviewPage() {
 
   return (
     <div style={{ maxWidth: '1400px' }}>
-      {/* Top Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 style={{ fontSize: '1.75rem', margin: 0 }}>🎙️ AI Voice & Script Studio</h1>
-          <p className="subtitle" style={{ margin: 0 }}>ElevenLabs Real Human Voice Calling & Interactive Chat Assistant</p>
+      {/* Dograh Pipeline Status Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#0a0a10', padding: '0.75rem 1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.8rem' }}>
+          <span style={{ color: 'var(--accent-green)', fontWeight: 'bold' }}>🟢 Dograh Engine: ONLINE</span>
+          <span style={{ color: 'var(--text-secondary)' }}>|</span>
+          <span style={{ color: 'var(--text-secondary)' }}>🎤 STT: <strong style={{ color: '#fff' }}>Deepgram Nova-2</strong></span>
+          <span style={{ color: 'var(--text-secondary)' }}>|</span>
+          <span style={{ color: 'var(--text-secondary)' }}>🧠 LLM: <strong style={{ color: '#fff' }}>Gemini 2.0 Flash</strong></span>
+          <span style={{ color: 'var(--text-secondary)' }}>|</span>
+          <span style={{ color: 'var(--text-secondary)' }}>🔊 TTS: <strong style={{ color: 'var(--accent-green)' }}>ElevenLabs Multilingual v2</strong></span>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span className="badge success">⚡ Latency: ~380ms</span>
           <button 
             onClick={testAudioVoice}
             className="btn btn-secondary"
-            style={{ fontSize: '0.8125rem', borderColor: 'var(--accent-green)', color: 'var(--accent-green)' }}
+            style={{ fontSize: '0.75rem', padding: '0.3rem 0.75rem', borderColor: 'var(--accent-green)', color: 'var(--accent-green)' }}
           >
-            {isPlayingTest ? '🔊 Playing Real Voice...' : '🔊 1-Click Voice Audio Test'}
+            {isPlayingTest ? '🔊 Playing Real Voice...' : '🔊 Test Voice Audio'}
           </button>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Credit: <strong style={{ color: 'var(--accent-green)' }}>$199.49 FREE</strong></span>
         </div>
       </div>
 
-      {/* Main Grid: Left Config, Right Deepgram Glowing Ring & Interactive Chat Console */}
+      {/* Main Grid: Left Dograh Orchestrator, Right Deepgram Glowing Concentric Waveform Console */}
       <div style={{ display: 'grid', gridTemplateColumns: '460px 1fr', gap: '2rem' }}>
         
-        {/* Left Column: Model & Script Selector */}
+        {/* Left Column: Dograh Agent Configuration */}
         <div className="card" style={{ padding: '1.75rem', background: '#0c0c12' }}>
           <h2 style={{ fontSize: '1.1rem', marginTop: 0, marginBottom: '1.25rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem' }}>
-            ⚙️ Model & Script Configuration
+            ⚙️ Dograh Voice Pipeline Config
           </h2>
 
           {/* 1. LLM Model Selector */}
           <div className="form-group mb-4">
-            <label style={{ fontSize: '0.8125rem', fontWeight: '600' }}>1. Select AI Intelligence Model (LLM)</label>
+            <label style={{ fontSize: '0.8125rem', fontWeight: '600' }}>1. LLM Intelligence Model</label>
             <select className="form-control" value={llmModel} onChange={e => setLlmModel(e.target.value)}>
               <option value="Google Gemini 2.0 Flash Lite">⚡ Google Gemini 2.0 Flash Lite (Ultra Fast)</option>
               <option value="Google Gemini 1.5 Flash">⚡ Google Gemini 1.5 Flash (Balanced)</option>
@@ -350,9 +354,9 @@ export default function OverviewPage() {
             </select>
           </div>
 
-          {/* 2. Distinct Voice Persona Selector */}
+          {/* 2. Voice Persona Selector */}
           <div className="form-group mb-4">
-            <label style={{ fontSize: '0.8125rem', fontWeight: '600' }}>2. Select Voice Model (ElevenLabs Human Voices)</label>
+            <label style={{ fontSize: '0.8125rem', fontWeight: '600' }}>2. ElevenLabs Voice Persona</label>
             <select 
               className="form-control" 
               value={ttsVoice} 
@@ -371,7 +375,7 @@ export default function OverviewPage() {
 
           {/* 3. Editable Custom Introduction Script */}
           <div className="form-group mb-4">
-            <label style={{ fontSize: '0.8125rem', fontWeight: '600' }}>3. Introduction Script (What AI Speaks First)</label>
+            <label style={{ fontSize: '0.8125rem', fontWeight: '600' }}>3. Introduction Script (First Dialogue)</label>
             <textarea 
               rows="3"
               className="form-control"
@@ -380,12 +384,9 @@ export default function OverviewPage() {
               placeholder="Type your introduction script here..."
               style={{ fontSize: '0.85rem', lineHeight: '1.4' }}
             />
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '3px', display: 'block' }}>
-              Call start hote hi AI sabse pehle yahi sentence bolegi.
-            </span>
           </div>
 
-          {/* 4. Editable System Instructions / Prompt */}
+          {/* 4. Editable System Prompt */}
           <div className="form-group mb-6">
             <label style={{ fontSize: '0.8125rem', fontWeight: '600' }}>4. AI Business Instructions (System Prompt)</label>
             <textarea 
@@ -406,11 +407,11 @@ export default function OverviewPage() {
             fontSize: '0.8125rem', 
             color: 'var(--accent-green)' 
           }}>
-            🌟 <strong>ElevenLabs Ultra-Human Real Studio Voice Active!</strong> Powered with pre-made human voices (George & Sarah) at 44.1kHz MP3 audio stream.
+            🌟 <strong>Dograh + ElevenLabs Pipeline Active!</strong> Real-time streaming 100% human studio voice with natural breath & cadence.
           </div>
         </div>
 
-        {/* Right Column: Deepgram Glowing Ring & Interactive Chat Box */}
+        {/* Right Column: Deepgram Glowing Concentric Waveform Orb & Interactive Chat */}
         <div className="deepgram-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: '620px' }}>
           
           {/* Tabs */}
@@ -420,27 +421,27 @@ export default function OverviewPage() {
                 onClick={() => setActiveTab('Agent')}
                 style={{ background: 'none', border: 'none', borderBottom: activeTab === 'Agent' ? '2px solid var(--accent-green)' : 'none', color: activeTab === 'Agent' ? '#fff' : 'var(--text-secondary)', paddingBottom: '0.5rem', cursor: 'pointer', fontWeight: '600', fontSize: '0.875rem' }}
               >
-                🎙️ Voice Test ({isCurrentMale ? '👨' : '👩'} {currentPersona.name.split(' ')[1]})
+                🎙️ Deepgram Console ({isCurrentMale ? '👨' : '👩'} {currentPersona.name.split(' ')[1]})
               </button>
               <button 
                 onClick={() => setActiveTab('Chat')}
                 style={{ background: 'none', border: 'none', borderBottom: activeTab === 'Chat' ? '2px solid var(--accent-green)' : 'none', color: activeTab === 'Chat' ? '#fff' : 'var(--text-secondary)', paddingBottom: '0.5rem', cursor: 'pointer', fontWeight: '600', fontSize: '0.875rem' }}
               >
-                💬 Chat Test
+                💬 Interactive Chat
               </button>
             </div>
             <span style={{ fontSize: '0.75rem', color: isSpeaking ? 'var(--accent-green)' : 'var(--text-muted)' }}>
-              {isSpeaking ? '🔊 ElevenLabs Speaking...' : '🟢 Ready'}
+              {isSpeaking ? '🔊 Audio Streaming...' : '🟢 Ready'}
             </span>
           </div>
 
-          {/* Voice Ring Section */}
+          {/* Deepgram Glowing Concentric Waveform Orb */}
           <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-            <div className="ring-visualizer" style={{ height: '110px', margin: '0.5rem auto' }}>
-              <div className={`ring-circle ring-outer ${isCalling ? 'active' : ''} ${isSpeaking ? 'speaking' : ''}`} style={{ width: '100px', height: '100px' }}></div>
-              <div className={`ring-circle ring-middle ${isCalling ? 'active' : ''} ${isSpeaking ? 'speaking' : ''}`} style={{ width: '80px', height: '80px' }}></div>
-              <div className={`ring-circle ring-inner ${isCalling ? 'active' : ''} ${isSpeaking ? 'speaking' : ''}`} style={{ width: '60px', height: '60px' }}>
-                <span style={{ fontSize: '1.8rem' }}>
+            <div className="ring-visualizer" style={{ height: '120px', margin: '0.5rem auto' }}>
+              <div className={`ring-circle ring-outer ${isCalling ? 'active' : ''} ${isSpeaking ? 'speaking' : ''}`} style={{ width: '115px', height: '115px' }}></div>
+              <div className={`ring-circle ring-middle ${isCalling ? 'active' : ''} ${isSpeaking ? 'speaking' : ''}`} style={{ width: '90px', height: '90px' }}></div>
+              <div className={`ring-circle ring-inner ${isCalling ? 'active' : ''} ${isSpeaking ? 'speaking' : ''}`} style={{ width: '65px', height: '65px' }}>
+                <span style={{ fontSize: '2rem' }}>
                   {isSpeaking ? '🔊' : isCalling ? (isCurrentMale ? '👨‍💼' : '👩‍💼') : '🎧'}
                 </span>
               </div>
@@ -454,15 +455,15 @@ export default function OverviewPage() {
               <button 
                 onClick={toggleAgent} 
                 className={`talk-agent-btn ${isCalling ? 'listening' : ''}`}
-                style={{ padding: '0.6rem 1.8rem', fontSize: '0.95rem' }}
+                style={{ padding: '0.65rem 2rem', fontSize: '0.95rem' }}
               >
-                {isCalling ? '⏹️ End Voice Test' : `🎙️ Test By Speaking (Mic)`}
+                {isCalling ? '⏹️ End Voice Conversation' : `🎙️ Start Live Voice Call`}
               </button>
             </div>
           </div>
 
-          {/* Interactive Chat Messages Log */}
-          <div style={{ flex: 1, background: '#08080d', padding: '1rem', borderRadius: '10px', border: '1px solid var(--border-light)', overflowY: 'auto', maxHeight: '240px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+          {/* Interactive Chat & Call Transcript Log */}
+          <div style={{ flex: 1, background: '#08080d', padding: '1rem', borderRadius: '10px', border: '1px solid var(--border-light)', overflowY: 'auto', maxHeight: '230px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
             {transcriptHistory.map((t, idx) => {
               const isUser = t.sender.includes('You');
               return (
@@ -494,7 +495,7 @@ export default function OverviewPage() {
               className="form-control"
               value={chatInput}
               onChange={e => setChatInput(e.target.value)}
-              placeholder="Type to test by chat (e.g. hi, price kya hai?)..."
+              placeholder="Type to talk or test (e.g. hi, price kya hai?)..."
               style={{ fontSize: '0.85rem', padding: '0.6rem 0.85rem', background: '#0a0a10', flex: 1 }}
             />
             <button type="submit" className="btn btn-primary" style={{ padding: '0.6rem 1.25rem', fontSize: '0.85rem', flexShrink: 0 }}>

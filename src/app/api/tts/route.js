@@ -7,18 +7,14 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Text required' }, { status: 400 });
     }
 
-    // Default to the provided working user ElevenLabs API key
     const apiKey = elevenLabsApiKey || process.env.ELEVENLABS_API_KEY || 'sk_fd1cace7cf05a5e700ce78a557f61815046a23576e8cb477';
 
-    // 1. ElevenLabs Multilingual v2 Real Human Voice Engine
+    // 1. ElevenLabs Multilingual v2 Ultra-Human Real Studio Voice
     if (apiKey && apiKey.length > 20) {
       try {
-        // Pre-made Free-Tier Supported Voice IDs:
-        // Male: 'JBFqnCBsd6RMkjVDRZzb' (George - Deep Human Male)
-        // Female: 'EXAVITQu4vr4xnSDxMaL' (Sarah - Sweet Human Female)
-        let voiceId = 'JBFqnCBsd6RMkjVDRZzb'; // Male default
+        let voiceId = 'JBFqnCBsd6RMkjVDRZzb'; // Male (George / Adam)
         if (gender?.toLowerCase() === 'female' || voice === 'swara' || voice === 'ananya' || voice === 'pooja' || voice === 'kavya') {
-          voiceId = 'EXAVITQu4vr4xnSDxMaL'; // Female
+          voiceId = 'EXAVITQu4vr4xnSDxMaL'; // Female (Sarah / Rachel)
         }
 
         const elevenRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
@@ -39,13 +35,13 @@ export async function POST(req) {
 
         if (elevenRes.ok) {
           const audioBuffer = await elevenRes.arrayBuffer();
-          return new Response(audioBuffer, {
-            status: 200,
-            headers: {
-              'Content-Type': 'audio/mpeg',
-              'Cache-Control': 'public, max-age=86400',
-              'X-Source': 'ElevenLabs-Official'
-            }
+          const base64Audio = Buffer.from(audioBuffer).toString('base64');
+          
+          return NextResponse.json({
+            success: true,
+            audioBase64: `data:audio/mp3;base64,${base64Audio}`,
+            source: 'ElevenLabs-Multilingual-v2',
+            voice: voiceId
           });
         } else {
           console.log('ElevenLabs status:', elevenRes.status, await elevenRes.text());
@@ -67,16 +63,15 @@ export async function POST(req) {
 
     if (audioRes.ok) {
       const audioBuffer = await audioRes.arrayBuffer();
-      return new Response(audioBuffer, {
-        status: 200,
-        headers: {
-          'Content-Type': 'audio/mpeg',
-          'Cache-Control': 'public, max-age=86400'
-        }
+      const base64Audio = Buffer.from(audioBuffer).toString('base64');
+      return NextResponse.json({
+        success: true,
+        audioBase64: `data:audio/mp3;base64,${base64Audio}`,
+        source: 'Neural-Fallback'
       });
     }
 
-    return NextResponse.json({ error: 'TTS fallback' }, { status: 200 });
+    return NextResponse.json({ error: 'TTS fallback failed' }, { status: 500 });
 
   } catch (error) {
     console.error('TTS Error:', error);
