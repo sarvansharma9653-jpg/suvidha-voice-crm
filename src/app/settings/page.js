@@ -199,7 +199,7 @@ export default function SettingsPage() {
                 placeholder="e.g. sk_398a72b84f..." 
               />
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
-                Copy from: <strong>elevenlabs.io -> Profile -> API Keys</strong>
+                Copy from: <strong>elevenlabs.io &rarr; Profile &rarr; API Keys</strong>
               </span>
             </div>
 
