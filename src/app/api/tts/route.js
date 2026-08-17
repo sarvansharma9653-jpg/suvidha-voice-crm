@@ -9,17 +9,17 @@ export async function POST(req) {
 
     const apiKey = elevenLabsApiKey || process.env.ELEVENLABS_API_KEY;
 
-    // 1. If ElevenLabs API Key is provided, generate 100% Ultra-Human Real Studio Voice!
-    if (apiKey && apiKey.startsWith('sk_') || (apiKey && apiKey.length > 20)) {
+    // 1. Official ElevenLabs Multilingual v2 Engine (100% Real Human Voice!)
+    if (apiKey && apiKey.length > 15) {
       try {
-        // High-Quality Indian Multilingual Voice IDs
-        // Female (Sweet Indian): 21m00Tcm4TlvDq8ikWAM (Rachel) / EXAVITQu4vr4xnSDxMaL (Bella)
-        // Male (Deep Indian): VR6AewLTigWG4ivDxDxE (Adam) / ErXwobaYiN019PkySvjV (Antoni)
+        // High-Quality Voice IDs:
+        // Male: 'VR6AewLTigWG4ivDxDxE' (Adam) / 'JBFqnCBsd6RMkjVDRZzb' (George)
+        // Female: '21m00Tcm4TlvDq8ikWAM' (Rachel) / 'EXAVITQu4vr4xnSDxMaL' (Bella)
         const voiceId = gender?.toLowerCase() === 'male' 
-          ? 'VR6AewLTigWG4ivDxDxE' // Deep natural male
-          : '21m00Tcm4TlvDq8ikWAM'; // Sweet natural female
+          ? 'VR6AewLTigWG4ivDxDxE'
+          : '21m00Tcm4TlvDq8ikWAM';
 
-        const elevenRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+        const elevenRes = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -31,7 +31,7 @@ export async function POST(req) {
             voice_settings: {
               stability: 0.5,
               similarity_boost: 0.8,
-              style: 0.2,
+              style: 0.25,
               use_speaker_boost: true
             }
           })
@@ -44,18 +44,19 @@ export async function POST(req) {
             headers: {
               'Content-Type': 'audio/mpeg',
               'Cache-Control': 'public, max-age=86400',
-              'X-Source': 'ElevenLabs-Human'
+              'X-Source': 'ElevenLabs-Official'
             }
           });
         } else {
-          console.log('ElevenLabs API returned status:', elevenRes.status);
+          const errText = await elevenRes.text();
+          console.log('ElevenLabs API response:', elevenRes.status, errText);
         }
       } catch (elevenErr) {
         console.error('ElevenLabs fetch error:', elevenErr.message);
       }
     }
 
-    // 2. High-Fidelity Neural Fallback
+    // 2. High-Fidelity Fallback
     const encodedText = encodeURIComponent(text);
     const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=hi&client=tw-ob`;
 
@@ -76,7 +77,7 @@ export async function POST(req) {
       });
     }
 
-    return NextResponse.json({ error: 'TTS Synthesis fallback' }, { status: 200 });
+    return NextResponse.json({ error: 'TTS synthesis fallback' }, { status: 200 });
 
   } catch (error) {
     console.error('TTS Error:', error);

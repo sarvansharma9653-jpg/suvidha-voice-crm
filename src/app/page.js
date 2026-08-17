@@ -7,6 +7,7 @@ export default function OverviewPage() {
   const [language, setLanguage] = useState('Hindi');
   const [ttsVoice, setTtsVoice] = useState('madhur');
   const [llmModel, setLlmModel] = useState('Google Gemini 2.0 Flash Lite');
+  const [elevenLabsKey, setElevenLabsKey] = useState('');
   
   // Custom Script Editable by User
   const [customIntroScript, setCustomIntroScript] = useState('नमस्ते! मैं आपका एआई वॉइस असिस्टेंट बोल रहा हूँ। बताइए, आज मैं आपकी क्या सहायता कर सकता हूँ?');
@@ -23,9 +24,10 @@ export default function OverviewPage() {
   const [activeTab, setActiveTab] = useState('Agent');
 
   const recognitionRef = useRef(null);
+  const audioPlayerRef = useRef(null);
   const chatEndRef = useRef(null);
 
-  // 7 DISTINCT INDIAN VOICES
+  // 7 DISTINCT VOICES
   const voiceLibrary = [
     { id: 'madhur', name: '👨 Madhur (Mid-Tone Indian Male)', gender: 'Male', pitch: 0.64, rate: 0.94, desc: 'Confident corporate sales tone (बोल रहा हूँ)' },
     { id: 'rohan', name: '👨 Rohan (Deep Bass Authoritative Male)', gender: 'Male', pitch: 0.48, rate: 0.86, desc: 'Very deep baritone, formal and serious executive voice' },
@@ -48,6 +50,12 @@ export default function OverviewPage() {
       hotLeads,
       totalMinutes: Math.round(totalMinutes / 60)
     });
+
+    if (typeof window !== 'undefined') {
+      const uid = localStorage.getItem('suvidha_auth_user_id') || 'default';
+      const key = localStorage.getItem(`elevenLabsApiKey_${uid}`) || localStorage.getItem('elevenLabsApiKey') || '';
+      setElevenLabsKey(key);
+    }
   }, []);
 
   useEffect(() => {
@@ -76,61 +84,109 @@ export default function OverviewPage() {
     speakResponse(current, newVoiceId);
   };
 
-  // 100% Reliable Synchronous Speech Output Engine
-  const speakResponse = (text, customVoiceId) => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+  // High-Fidelity Audio Synthesis with ElevenLabs & Browser Hybrid Engine
+  const speakResponse = async (text, customVoiceId) => {
+    if (typeof window === 'undefined') return;
+
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.pause();
+      audioPlayerRef.current = null;
+    }
 
     if (recognitionRef.current && isCalling) {
       try { recognitionRef.current.stop(); } catch(e) {}
     }
 
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.resume();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-
     const activeId = customVoiceId || ttsVoice;
     const activePersona = voiceLibrary.find(v => v.id === activeId) || voiceLibrary[0];
     const isMale = activePersona.gender === 'Male';
 
-    utterance.pitch = activePersona.pitch;
-    utterance.rate = activePersona.rate;
-    utterance.lang = language === 'Hindi' ? 'hi-IN' : 'en-US';
+    setIsSpeaking(true);
+    setStatusText(`AI (${activePersona.name.split(' ')[1]}) is speaking...`);
 
-    const voices = window.speechSynthesis.getVoices();
-    let selectedVoice = null;
+    const storedKey = elevenLabsKey || localStorage.getItem('elevenLabsApiKey') || '';
 
-    if (isMale) {
-      selectedVoice = voices.find(v => (v.name.toLowerCase().includes('male') || v.name.includes('Madhur') || v.name.includes('Ravi') || v.name.includes('David') || v.name.includes('George')) && !v.name.toLowerCase().includes('female'));
-    } else {
-      selectedVoice = voices.find(v => v.name.toLowerCase().includes('female') || v.name.includes('Swara') || v.name.includes('Heera') || v.name.includes('Kalpana') || v.name.includes('Zira'));
-    }
+    // If ElevenLabs key exists, stream 100% real human MP3 audio!
+    if (storedKey && storedKey.length > 15) {
+      try {
+        const res = await fetch('/api/tts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text,
+            gender: activePersona.gender,
+            voice: activePersona.id,
+            elevenLabsApiKey: storedKey
+          })
+        });
 
-    if (!selectedVoice) {
-      selectedVoice = voices.find(v => v.lang.includes('hi') || v.lang.includes('IN')) || voices[0];
-    }
+        if (res.ok && res.headers.get('Content-Type')?.includes('audio')) {
+          const blob = await res.blob();
+          const audioUrl = URL.createObjectURL(blob);
+          const audio = new Audio(audioUrl);
+          audioPlayerRef.current = audio;
 
-    if (selectedVoice) utterance.voice = selectedVoice;
+          audio.onended = () => {
+            setIsSpeaking(false);
+            setStatusText(isCalling ? 'Listening... (Speak now)' : 'Ready');
+            if (isCalling && recognitionRef.current) {
+              try { recognitionRef.current.start(); } catch(e) {}
+            }
+          };
 
-    utterance.onstart = () => {
-      setIsSpeaking(true);
-      setStatusText(`AI (${activePersona.name.split(' ')[1]}) is speaking...`);
-    };
+          audio.onerror = () => {
+            setIsSpeaking(false);
+            setStatusText('Ready');
+          };
 
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      setStatusText(isCalling ? 'Listening... (Speak now)' : 'Ready');
-      if (isCalling && recognitionRef.current) {
-        try { recognitionRef.current.start(); } catch(e) {}
+          await audio.play();
+          return;
+        }
+      } catch (e) {
+        console.log('ElevenLabs playback note:', e.message);
       }
-    };
+    }
 
-    utterance.onerror = () => {
-      setIsSpeaking(false);
-      setStatusText('Ready');
-    };
+    // Fallback: Browser Speech Synthesis with pitch/speed modulation
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.resume();
 
-    window.speechSynthesis.speak(utterance);
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.pitch = activePersona.pitch;
+      utterance.rate = activePersona.rate;
+      utterance.lang = language === 'Hindi' ? 'hi-IN' : 'en-US';
+
+      const voices = window.speechSynthesis.getVoices();
+      let selectedVoice = null;
+
+      if (isMale) {
+        selectedVoice = voices.find(v => (v.name.toLowerCase().includes('male') || v.name.includes('Madhur') || v.name.includes('Ravi') || v.name.includes('David') || v.name.includes('George')) && !v.name.toLowerCase().includes('female'));
+      } else {
+        selectedVoice = voices.find(v => v.name.toLowerCase().includes('female') || v.name.includes('Swara') || v.name.includes('Heera') || v.name.includes('Kalpana') || v.name.includes('Zira'));
+      }
+
+      if (!selectedVoice) {
+        selectedVoice = voices.find(v => v.lang.includes('hi') || v.lang.includes('IN')) || voices[0];
+      }
+
+      if (selectedVoice) utterance.voice = selectedVoice;
+
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        setStatusText(isCalling ? 'Listening... (Speak now)' : 'Ready');
+        if (isCalling && recognitionRef.current) {
+          try { recognitionRef.current.start(); } catch(e) {}
+        }
+      };
+
+      utterance.onerror = () => {
+        setIsSpeaking(false);
+        setStatusText('Ready');
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
   };
 
   const toggleAgent = () => {
@@ -139,6 +195,7 @@ export default function OverviewPage() {
       setIsSpeaking(false);
       setStatusText('Call Ended. Click to talk or type in live chat');
       if (recognitionRef.current) try { recognitionRef.current.stop(); } catch(e) {}
+      if (audioPlayerRef.current) audioPlayerRef.current.pause();
       if (typeof window !== 'undefined' && window.speechSynthesis) window.speechSynthesis.cancel();
     } else {
       setIsCalling(true);
@@ -241,7 +298,7 @@ export default function OverviewPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 style={{ fontSize: '1.75rem', margin: 0 }}>🎙️ AI Voice & Script Studio</h1>
-          <p className="subtitle" style={{ margin: 0 }}>Select AI Models, write custom scripts, and test with live voice or text chat</p>
+          <p className="subtitle" style={{ margin: 0 }}>Select AI Models, write custom scripts, and test with ElevenLabs Real Human Voice or text chat</p>
         </div>
 
         <div className="flex items-center gap-4">
@@ -319,14 +376,14 @@ export default function OverviewPage() {
           </div>
 
           <div style={{ 
-            background: isCurrentMale ? 'rgba(59, 130, 246, 0.08)' : 'rgba(16, 185, 129, 0.08)', 
+            background: elevenLabsKey ? 'rgba(16, 185, 129, 0.08)' : 'rgba(59, 130, 246, 0.08)', 
             padding: '1rem', 
             borderRadius: '8px', 
-            border: isCurrentMale ? '1px solid rgba(59, 130, 246, 0.2)' : '1px solid rgba(16, 185, 129, 0.2)', 
+            border: elevenLabsKey ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(59, 130, 246, 0.2)', 
             fontSize: '0.8125rem', 
-            color: isCurrentMale ? 'var(--accent-blue)' : 'var(--accent-green)' 
+            color: elevenLabsKey ? 'var(--accent-green)' : 'var(--accent-blue)' 
           }}>
-            {isCurrentMale ? '👨' : '👩'} <strong>{currentPersona.name} Active!</strong> Pitch: {currentPersona.pitch} | Rate: {currentPersona.rate}x.
+            {elevenLabsKey ? '🌟 ElevenLabs Ultra-Human Real Studio Voice Active!' : '⚡ Standard Neural Voice Active (Connect ElevenLabs API in Settings for 100% Real Human Voice)'}
           </div>
         </div>
 
@@ -350,7 +407,7 @@ export default function OverviewPage() {
               </button>
             </div>
             <span style={{ fontSize: '0.75rem', color: isSpeaking ? 'var(--accent-green)' : 'var(--text-muted)' }}>
-              {isSpeaking ? '🔊 Audio Speaking...' : '🟢 Ready'}
+              {isSpeaking ? '🔊 Audio Playing...' : '🟢 Ready'}
             </span>
           </div>
 
