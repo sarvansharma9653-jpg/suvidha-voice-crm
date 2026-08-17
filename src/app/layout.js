@@ -133,11 +133,11 @@ export default function RootLayout({ children }) {
                 </li>
               </ul>
 
-              {!isSidebarCollapsed && <div className="nav-section-title" style={{ marginTop: '1.25rem' }}>DEPLOY & TELEPHONY</div>}
+              {!isSidebarCollapsed && <div className="nav-section-title" style={{ marginTop: '1rem' }}>DEPLOY & TELEPHONY</div>}
               <ul className="nav-links">
                 <li>
                   <Link href="/settings" className="nav-item">
-                    <span>📞</span> {!isSidebarCollapsed && <span>Telephony & Numbers</span>}
+                    <span>⚙️</span> {!isSidebarCollapsed && <span>Settings & API Keys</span>}
                   </Link>
                 </li>
                 <li>

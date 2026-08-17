@@ -8,14 +8,15 @@ export default function WebCallPage() {
   const [selectedAgent, setSelectedAgent] = useState('swara');
   const [transcript, setTranscript] = useState([]);
   const [statusMsg, setStatusMsg] = useState('Click Start Call to speak with AI');
+  const [copied, setCopied] = useState(false);
 
   const recognitionRef = useRef(null);
   const audioRef = useRef(null);
   const timerRef = useRef(null);
 
   const agents = {
-    swara: { name: 'Swara', gender: 'Female', title: 'Real Estate Sales Specialist', greeting: 'नमस्ते! मैं स्वरा बोल रही हूँ। सुविधा में आपका स्वागत है। बताइए मैं आपकी क्या सहायता कर सकती हूँ?' },
-    madhur: { name: 'Madhur', gender: 'Male', title: 'Financial & Loan Advisor', greeting: 'नमस्ते! मैं मधुर बोल रहा हूँ। सुविधा में आपका स्वागत है। बताइए मैं आपकी क्या मदद कर सकता हूँ?' },
+    swara: { name: 'Swara', gender: 'Female', title: 'Real Estate & Sales Specialist', greeting: 'नमस्ते! मैं स्वरा बोल रही हूँ। सुविधा में आपका स्वागत है। बताइए आज मैं आपकी क्या सहायता कर सकती हूँ?' },
+    madhur: { name: 'Madhur', gender: 'Male', title: 'Financial & Loan Advisor', greeting: 'नमस्ते! मैं मधुर बोल रहा हूँ। सुविधा में आपका स्वागत है। बताइए आज मैं आपकी क्या मदद कर सकता हूँ?' },
     ananya: { name: 'Ananya', gender: 'Female', title: 'Customer Support Lead', greeting: 'नमस्ते! मैं अनन्या बोल रही हूँ। सुविधा कस्टमर केयर में आपका स्वागत है।' },
     rohan: { name: 'Rohan', gender: 'Male', title: 'Corporate Consultant', greeting: 'नमस्ते! मैं रोहन बोल रहा हूँ। सुविधा कंसल्टेंसी में आपका स्वागत है।' }
   };
@@ -47,26 +48,15 @@ export default function WebCallPage() {
         const audio = new Audio(url);
         audioRef.current = audio;
 
-        if (gender === 'Male') {
-          audio.playbackRate = 0.92;
-        } else {
-          audio.playbackRate = 1.0;
-        }
-
         audio.onended = () => {
           setIsSpeaking(false);
           setStatusMsg('Listening to you... (Speak now)');
         };
 
-        audio.onerror = () => {
-          setIsSpeaking(false);
-          setStatusMsg('Listening...');
-        };
-
         await audio.play();
       }
     } catch (e) {
-      console.log('Audio error:', e);
+      console.error('Audio playback error:', e);
       setIsSpeaking(false);
     }
   };
@@ -74,160 +64,207 @@ export default function WebCallPage() {
   const startWebCall = () => {
     setCallActive(true);
     setCallDuration(0);
-    setStatusMsg(`Connecting to ${currentAgent.name}...`);
-    
+    setTranscript([{ speaker: currentAgent.name, text: currentAgent.greeting }]);
+    setStatusMsg(`${currentAgent.name} is speaking...`);
+
     timerRef.current = setInterval(() => {
       setCallDuration(prev => prev + 1);
     }, 1000);
 
-    setTranscript([{ sender: currentAgent.name, text: currentAgent.greeting }]);
     playAgentVoice(currentAgent.greeting, currentAgent.gender);
 
-    // Browser Speech Recognition
     if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const rec = new SpeechRecognition();
-      rec.continuous = true;
-      rec.interimResults = false;
-      rec.lang = 'hi-IN';
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.lang = 'hi-IN';
 
-      rec.onresult = (e) => {
-        const userSpeech = e.results[e.results.length - 1][0].transcript;
-        if (userSpeech.trim()) {
-          setTranscript(prev => [...prev, { sender: 'You', text: userSpeech }]);
-          handleAIConversation(userSpeech);
+      recognition.onresult = (event) => {
+        const text = event.results[event.results.length - 1][0].transcript;
+        if (text.trim()) {
+          setTranscript(prev => [...prev, { speaker: 'You', text }]);
+          handleAICallResponse(text);
         }
       };
 
-      rec.onerror = (err) => console.log('Mic note:', err.error);
-      rec.start();
-      recognitionRef.current = rec;
+      recognition.onerror = (e) => console.log('WebCall recognition note:', e.error);
+      recognition.start();
+      recognitionRef.current = recognition;
     }
+  };
+
+  const handleAICallResponse = (userText) => {
+    let reply = '';
+    const lower = userText.toLowerCase();
+
+    if (lower.includes('price') || lower.includes('cost') || lower.includes('rate') || lower.includes('budget')) {
+      reply = currentAgent.gender === 'Male'
+        ? 'हाँ जी बिल्कुल सर! हमारे पैकेजेस बहुत ही कस्टमाइज़्ड और अफोर्डेबल हैं। क्या मैं आपकी जरूरत के हिसाब से सबसे बेस्ट प्लान बताऊँ?'
+        : 'हाँ जी बिल्कुल सर! हमारे पैकेजेस बहुत ही कस्टमाइज़्ड और अफोर्डेबल हैं। क्या मैं आपकी जरूरत के हिसाब से सबसे बेस्ट प्लान बताऊँ?';
+    } else if (lower.includes('yes') || lower.includes('haan') || lower.includes('theek') || lower.includes('interested')) {
+      reply = currentAgent.gender === 'Male'
+        ? 'अरे बहुत ही बढ़िया सर! मैंने आपका टाइम लॉक कर दिया है। मैं तुरंत आपको व्हाट्सएप पर सारी डिटेल भेज रहा हूँ!'
+        : 'अरे बहुत ही बढ़िया सर! मैंने आपका टाइम लॉक कर दिया है। मैं तुरंत आपको व्हाट्सएप पर सारी डिटेल भेज रही हूँ!';
+    } else {
+      reply = currentAgent.gender === 'Male'
+        ? 'जी बिल्कुल, मैं आपकी बात समझ रहा हूँ। आप बेझिझक बताइए, मैं आपकी किस प्रकार सहायता कर सकता हूँ?'
+        : 'जी बिल्कुल, मैं आपकी बात समझ रही हूँ। आप बेझिझक बताइए, मैं आपकी किस प्रकार सहायता कर सकती हूँ?';
+    }
+
+    setTimeout(() => {
+      setTranscript(prev => [...prev, { speaker: currentAgent.name, text: reply }]);
+      playAgentVoice(reply, currentAgent.gender);
+    }, 300);
   };
 
   const endWebCall = () => {
     setCallActive(false);
-    setIsSpeaking(false);
-    setStatusMsg('Call Ended. Thank you for speaking with Suvidha AI.');
     if (timerRef.current) clearInterval(timerRef.current);
     if (recognitionRef.current) recognitionRef.current.stop();
     if (audioRef.current) audioRef.current.pause();
+    setIsSpeaking(false);
+    setStatusMsg('Call Ended. Ready for next call');
   };
 
-  const handleAIConversation = (userSpeech) => {
-    let reply = '';
-    const lower = userSpeech.toLowerCase();
+  const formatDuration = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
-    if (lower.includes('price') || lower.includes('cost') || lower.includes('budget') || lower.includes('daam')) {
-      reply = 'हमारे सेक्टर 62 नोएडा फ्लैट्स 1.2 करोड़ से शुरू होते हैं। क्या मैं आपके लिए साइट विज़िट बुक कर दूँ?';
-    } else if (lower.includes('loan') || lower.includes('finance') || lower.includes('interest')) {
-      reply = 'हम 5 लाख तक का प्री-अप्रूव्ड पर्सनल लोन सिर्फ 9.5% ब्याज दर पर ऑफर कर रहे हैं।';
-    } else if (lower.includes('yes') || lower.includes('haan') || lower.includes('theek') || lower.includes('interested')) {
-      reply = currentAgent.gender === 'Male'
-        ? 'बहुत बढ़िया! मैंने आपकी विज़िट कन्फर्म कर दी है। मैं आपको व्हाट्सएप पर डिटेल भेज रहा हूँ।'
-        : 'बहुत बढ़िया! मैंने आपकी विज़िट कन्फर्म कर दी है। मैं आपको व्हाट्सएप पर डिटेल भेज रही हूँ।';
-    } else {
-      reply = currentAgent.gender === 'Male'
-        ? 'जी बिल्कुल, मैं आपकी बात समझ रहा हूँ। कृपया बताइए मैं आपकी क्या सहायता कर सकता हूँ?'
-        : 'जी बिल्कुल, मैं आपकी बात समझ रही हूँ। कृपया बताइए मैं आपकी क्या सहायता कर सकती हूँ?';
+  const copyShareLink = () => {
+    if (typeof window !== 'undefined') {
+      navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
     }
-
-    setTimeout(() => {
-      setTranscript(prev => [...prev, { sender: currentAgent.name, text: reply }]);
-      playAgentVoice(reply, currentAgent.gender);
-    }, 400);
-  };
-
-  const formatTime = (secs) => {
-    const m = Math.floor(secs / 60).toString().padStart(2, '0');
-    const s = (secs % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
   };
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center', padding: '2rem 1rem' }}>
-      
-      {/* Header */}
-      <div className="mb-8">
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(59, 130, 246, 0.1)', padding: '0.4rem 1rem', borderRadius: '20px', border: '1px solid rgba(59, 130, 246, 0.2)', marginBottom: '1rem' }}>
-          <span className="pulse-dot"></span>
-          <span style={{ fontSize: '0.8rem', color: 'var(--accent-blue)', fontWeight: '600' }}>OmniDimension WebRTC In-Browser Voice Calling (Zero Telephony Needed)</span>
+    <div style={{ maxWidth: '1100px' }}>
+      {/* Top Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1>🌐 Instant Web Call Room (Zero Telephony / No SIM)</h1>
+          <p className="subtitle">High-Definition In-Browser 2-Way Voice Call Room powered by WebRTC & Neural AI</p>
         </div>
-        <h1 style={{ fontSize: '2rem', margin: '0 0 0.5rem 0' }}>🌐 Instant AI Web Call</h1>
-        <p className="subtitle">Call and talk to Suvidha AI directly through your browser or mobile phone with 0 telephony cost</p>
+
+        <button 
+          onClick={copyShareLink}
+          className="btn btn-secondary"
+          style={{ fontSize: '0.8125rem' }}
+        >
+          {copied ? '✅ Link Copied!' : '🔗 Copy Shareable Web Call Link'}
+        </button>
+      </div>
+
+      {/* Step-by-Step Guide Banner */}
+      <div className="card mb-6" style={{ padding: '1.25rem 1.5rem', background: 'rgba(59, 130, 246, 0.05)', borderColor: 'rgba(59, 130, 246, 0.2)' }}>
+        <div style={{ fontWeight: '600', fontSize: '0.9rem', color: 'var(--accent-blue)', marginBottom: '0.5rem' }}>
+          📖 How Instant Web Calling Works (Zero Cost Telephony):
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+          <div>
+            <strong>1. Select AI Agent:</strong> Choose female (Swara/Ananya) or male (Madhur/Rohan) voice persona below.
+          </div>
+          <div>
+            <strong>2. Start WebRTC Call:</strong> Click <strong>`Start Instant Web Call`</strong> to connect live 2-way audio through your laptop/mobile mic.
+          </div>
+          <div>
+            <strong>3. Share with Clients:</strong> Send this link on WhatsApp so customers can talk to your AI agent directly without phone recharge!
+          </div>
+        </div>
       </div>
 
       {/* Main Calling Box */}
-      <div className="card" style={{ padding: '3rem 2rem', background: '#0e0e14', position: 'relative' }}>
+      <div className="card" style={{ padding: '3rem 2rem', textAlign: 'center', background: '#0a0a10' }}>
         
-        {/* Agent Selector when not on call */}
+        {/* Agent Selector */}
         {!callActive && (
-          <div className="mb-6" style={{ maxWidth: '400px', margin: '0 auto 2rem' }}>
-            <label style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'block', marginBottom: '0.5rem' }}>Select AI Agent to Call</label>
-            <select className="form-control" value={selectedAgent} onChange={e => setSelectedAgent(e.target.value)}>
-              <option value="swara">👩 Swara — Real Estate Sales (Female Hindi)</option>
-              <option value="madhur">👨 Madhur — Loans & Financial Advisor (Male Hindi)</option>
-              <option value="ananya">👩 Ananya — Customer Support (Female Hinglish)</option>
-              <option value="rohan">👨 Rohan — Corporate Advisory (Male Hindi)</option>
+          <div style={{ maxWidth: '400px', margin: '0 auto 2.5rem' }}>
+            <label style={{ fontSize: '0.85rem', fontWeight: '600', display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
+              Select Calling Agent Persona:
+            </label>
+            <select 
+              className="form-control" 
+              value={selectedAgent} 
+              onChange={e => setSelectedAgent(e.target.value)}
+              style={{ textAlign: 'center', fontWeight: '600', fontSize: '0.95rem' }}
+            >
+              {Object.keys(agents).map(k => (
+                <option key={k} value={k}>
+                  {agents[k].gender === 'Female' ? '👩' : '👨'} {agents[k].name} — {agents[k].title}
+                </option>
+              ))}
             </select>
           </div>
         )}
 
-        {/* Live Call Pulsing Visualizer */}
-        <div style={{ margin: '2rem 0' }}>
-          <div style={{ 
-            width: '120px', 
-            height: '120px', 
-            borderRadius: '50%', 
-            background: callActive ? 'linear-gradient(135deg, var(--accent-green), var(--accent-blue))' : 'rgba(255,255,255,0.05)', 
-            margin: '0 auto', 
-            display: 'flex', 
-            alignItems: 'center', 
+        {/* Pulse Visualizer */}
+        <div style={{ position: 'relative', width: '130px', height: '130px', margin: '0 auto 2rem' }}>
+          <div style={{
+            position: 'absolute',
+            inset: 0,
+            borderRadius: '50%',
+            background: callActive ? 'radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0) 70%)' : 'rgba(255, 255, 255, 0.03)',
+            animation: callActive ? 'pulse 2s infinite' : 'none',
+            border: callActive ? '2px solid rgba(16, 185, 129, 0.4)' : '1px solid var(--border-light)'
+          }}></div>
+          
+          <div style={{
+            width: '100%',
+            height: '100%',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
             justifyContent: 'center',
             fontSize: '3rem',
-            boxShadow: callActive ? '0 0 40px rgba(16, 185, 129, 0.4)' : 'none',
-            animation: callActive ? 'pulse 1.8s infinite' : 'none',
-            transition: 'all 0.3s ease'
+            background: callActive ? (isSpeaking ? 'rgba(16, 185, 129, 0.15)' : 'rgba(59, 130, 246, 0.15)') : 'rgba(255, 255, 255, 0.05)'
           }}>
-            {isSpeaking ? '🔊' : callActive ? (currentAgent.gender === 'Male' ? '👨‍💼' : '👩‍💼') : '📞'}
+            {callActive ? (isSpeaking ? '🔊' : '🎙️') : (currentAgent.gender === 'Female' ? '👩‍💼' : '👨‍💼')}
           </div>
-
-          <h2 style={{ fontSize: '1.4rem', marginTop: '1.5rem', marginBottom: '0.25rem' }}>{currentAgent.name}</h2>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{currentAgent.title}</span>
-
-          {callActive && (
-            <div style={{ marginTop: '0.75rem', fontSize: '1.1rem', color: 'var(--accent-green)', fontWeight: 'bold' }}>
-              ⏱️ {formatTime(callDuration)}
-            </div>
-          )}
         </div>
 
-        <p style={{ color: isSpeaking ? 'var(--accent-green)' : callActive ? 'var(--accent-blue)' : 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '2.5rem' }}>
-          {statusMsg}
-        </p>
+        {/* Call Info */}
+        <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.5rem' }}>
+          {currentAgent.name} ({currentAgent.title})
+        </h2>
+
+        <div style={{ fontSize: '1rem', color: callActive ? 'var(--accent-green)' : 'var(--text-muted)', marginBottom: '1.5rem', fontWeight: '600' }}>
+          {callActive ? `🟢 Live Call in Progress • ${formatDuration(callDuration)}` : statusMsg}
+        </div>
 
         {/* Action Button */}
         <div>
           {!callActive ? (
-            <button onClick={startWebCall} className="btn btn-success" style={{ padding: '0.85rem 2.5rem', fontSize: '1.1rem', borderRadius: '30px', fontWeight: 'bold' }}>
-              📞 Start Live Web Call
+            <button 
+              onClick={startWebCall} 
+              className="btn btn-primary" 
+              style={{ padding: '0.85rem 2.5rem', fontSize: '1rem', borderRadius: '30px', fontWeight: '600' }}
+            >
+              📞 Start Instant Web Call
             </button>
           ) : (
-            <button onClick={endWebCall} className="btn btn-danger" style={{ padding: '0.85rem 2.5rem', fontSize: '1.1rem', borderRadius: '30px', fontWeight: 'bold' }}>
-              🔴 End Call
+            <button 
+              onClick={endWebCall} 
+              className="btn btn-danger" 
+              style={{ padding: '0.85rem 2.5rem', fontSize: '1rem', borderRadius: '30px', fontWeight: '600' }}
+            >
+              ⏹️ End Call
             </button>
           )}
         </div>
 
-        {/* Live Conversation Transcript */}
+        {/* Live Transcript Box */}
         {transcript.length > 0 && (
-          <div style={{ marginTop: '2.5rem', background: '#08080c', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)', textAlign: 'left', maxHeight: '200px', overflowY: 'auto' }}>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.5rem', fontWeight: 'bold' }}>
-              💬 LIVE WEBCALL TRANSCRIPT:
+          <div style={{ marginTop: '2.5rem', background: '#050508', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-light)', maxWidth: '600px', margin: '2.5rem auto 0', textAlign: 'left', maxHeight: '200px', overflowY: 'auto' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
+              💬 LIVE WEB CALL TRANSCRIPT:
             </div>
             {transcript.map((t, idx) => (
-              <div key={idx} style={{ fontSize: '0.85rem', marginBottom: '0.4rem', color: t.sender === 'You' ? 'var(--accent-blue)' : 'var(--accent-green)' }}>
-                <strong>{t.sender}:</strong> {t.text}
+              <div key={idx} style={{ fontSize: '0.85rem', marginBottom: '0.5rem', color: t.speaker === 'You' ? 'var(--accent-blue)' : 'var(--accent-green)' }}>
+                <strong>{t.speaker}:</strong> {t.text}
               </div>
             ))}
           </div>

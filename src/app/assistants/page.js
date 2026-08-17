@@ -3,26 +3,25 @@ import { useEffect, useState, useRef } from 'react';
 
 export default function VoiceAgentStudioPage() {
   const [agents, setAgents] = useState([]);
-  const [showCreateModal, setShowCreateModal] = useState(false);
 
   // Voice Studio Form Fields
   const [callType, setCallType] = useState('Outbound (AI calls users)');
-  const [useCase, setUseCase] = useState('Design Suvidha - Client Acquisition & Growth');
-  const [activityDescription, setActivityDescription] = useState('Qualify business clients for Meta Ads, SEO, Website Development, Landing Pages, Social Media Marketing, and Graphic/Video content. Offer a free 15-minute digital growth consultation call.');
-  const [agentName, setAgentName] = useState('Design Suvidha - Growth Consultant (Madhur)');
-  const [selectedVoice, setSelectedVoice] = useState('madhur');
+  const [useCase, setUseCase] = useState('Real Estate & Sales Leads');
+  const [activityDescription, setActivityDescription] = useState('Qualify clients for 2 & 3 BHK luxury flats in Noida. Ask for budget, location preference, and schedule site visits.');
+  const [agentName, setAgentName] = useState('Swara - Luxury Real Estate Closer');
+  const [selectedVoice, setSelectedVoice] = useState('swara');
   const [playingVoiceId, setPlayingVoiceId] = useState(null);
 
   const [status, setStatus] = useState(null);
 
   const voiceLibrary = [
-    { id: 'madhur', name: '👨 Madhur (Senior Growth Consultant)', gender: 'Male', desc: 'Confident & trustworthy corporate tone for Digital Marketing & B2B Sales (बोल रहा हूँ)' },
-    { id: 'rohan', name: '👨 Rohan (Executive Business Development Lead)', gender: 'Male', desc: 'Deep & authoritative tone for High-Ticket Client Deals' },
-    { id: 'aarav', name: '👨 Aarav (Dynamic Tech & Ads Specialist)', gender: 'Male', desc: 'Young & enthusiastic for Startups & E-commerce' },
-    { id: 'swara', name: '👩 Swara (Creative Strategy Lead)', gender: 'Female', desc: 'Sweet, polite & persuasive female marketing expert (बोल रही हूँ)' },
-    { id: 'ananya', name: '👩 Ananya (Client Growth Manager)', gender: 'Female', desc: 'Clear, modern & energetic Hinglish sales voice' },
+    { id: 'madhur', name: '👨 Madhur (Corporate Sales Consultant)', gender: 'Male', desc: 'Confident & trustworthy corporate tone for Sales & B2B (बोल रहा हूँ)' },
+    { id: 'rohan', name: '👨 Rohan (Executive Business Development)', gender: 'Male', desc: 'Deep & authoritative tone for High-Ticket Deals' },
+    { id: 'aarav', name: '👨 Aarav (Dynamic Tech & Ads Specialist)', gender: 'Male', desc: 'Young & enthusiastic for Startups & Tech' },
+    { id: 'swara', name: '👩 Swara (Warm Real Estate & Closer)', gender: 'Female', desc: 'Sweet, polite & persuasive female sales expert (बोल रही हूँ)' },
+    { id: 'ananya', name: '👩 Ananya (Client Support Manager)', gender: 'Female', desc: 'Clear, modern & energetic Hinglish sales voice' },
     { id: 'pooja', name: '👩 Pooja (Brand Success Advisor)', gender: 'Female', desc: 'Soft & caring voice for Local Businesses & Clinics' },
-    { id: 'kavya', name: '👩 Kavya (Social Media & Video Specialist)', gender: 'Female', desc: 'High conversion tone for E-commerce & Festive sales' },
+    { id: 'kavya', name: '👩 Kavya (Social Media & Deals Specialist)', gender: 'Female', desc: 'High conversion tone for Retail & Festive sales' },
   ];
 
   useEffect(() => {
@@ -30,28 +29,28 @@ export default function VoiceAgentStudioPage() {
     if (!saved) {
       const initial = [
         {
-          id: 'ag_design_suvidha',
-          name: 'Design Suvidha - Client Acquisition Specialist',
+          id: 'ag_swara',
+          name: 'Swara - Luxury Real Estate Closer',
           callType: 'Outbound (AI calls users)',
-          useCase: 'Digital Marketing & Creative Solutions',
-          description: 'Offers Meta Ads, SEO, Website Development, Social Media, and Video Content to businesses.',
-          voice: '👨 Madhur (Indian Male)'
-        },
-        {
-          id: 'ag_1',
-          name: 'Swara - Creative Strategy & Branding Lead',
-          callType: 'Outbound (AI calls users)',
-          useCase: 'Graphic Design & Video Production',
-          description: 'Pitches Instagram Reels, Brand Identity, and Creative Landing Pages.',
+          useCase: 'Real Estate Sales & Discovery',
+          description: 'Qualifies clients for 2 & 3 BHK luxury flats in Noida. Asks for budget, location preference, and schedules site visits.',
           voice: '👩 Swara (Indian Female)'
         },
         {
-          id: 'ag_2',
-          name: 'Madhur - Performance Marketing & Meta Ads',
+          id: 'ag_madhur',
+          name: 'Madhur - Financial & Loan Advisor',
           callType: 'Outbound (AI calls users)',
-          useCase: 'Paid Ads & Lead Gen',
-          description: 'Qualifies businesses looking for high-converting Facebook and Google Ads campaigns.',
+          useCase: 'Pre-Approved Loans',
+          description: 'Offers pre-approved personal & business loans up to 10 Lakhs. Collects KYC details and checks eligibility.',
           voice: '👨 Madhur (Indian Male)'
+        },
+        {
+          id: 'ag_ananya',
+          name: 'Ananya - 24/7 Customer Support Agent',
+          callType: 'Inbound (Users call AI)',
+          useCase: 'Customer Service & Ticketing',
+          description: 'Answers customer queries, resolves order issues, and registers complaints directly into CRM.',
+          voice: '👩 Ananya (Indian Female)'
         }
       ];
       localStorage.setItem('suvidha_custom_agents', JSON.stringify(initial));
@@ -61,38 +60,37 @@ export default function VoiceAgentStudioPage() {
     }
   }, []);
 
-  const playVoiceSample = (voiceId) => {
-    if (typeof window === 'undefined' || !window.speechSynthesis) return;
+  const playVoiceSample = async (voiceId) => {
+    try {
+      setPlayingVoiceId(voiceId);
+      const vObj = voiceLibrary.find(v => v.id === voiceId) || voiceLibrary[0];
+      const isMale = vObj.gender === 'Male';
+      const personaName = vObj.name.split(' ')[1];
 
-    window.speechSynthesis.cancel();
-    const vObj = voiceLibrary.find(v => v.id === voiceId) || voiceLibrary[0];
-    const isMale = vObj.gender === 'Male';
-    const personaName = vObj.name.split(' ')[1];
+      const sampleText = isMale 
+        ? `नमस्ते! मैं ${personaName} बोल रहा हूँ सुविधा एआई से। बताइए, आज मैं आपकी क्या सहायता कर सकता हूँ?`
+        : `नमस्ते! मैं ${personaName} बोल रही हूँ सुविधा एआई से। बताइए, आज मैं आपकी क्या सहायता कर सकती हूँ?`;
 
-    const sampleText = isMale 
-      ? `नमस्ते सर! मैं Design Suvidha से ${personaName} बात कर रहा हूँ। हम आपके बिजनेस की ऑनलाइन ग्रोथ के लिए Meta Ads और वेबसाइट डेवलपमेंट सर्विसेज प्रोवाइड करते हैं।`
-      : `नमस्ते सर! मैं Design Suvidha से ${personaName} बात कर रही हूँ। हम आपके बिजनेस की ऑनलाइन ग्रोथ के लिए Meta Ads और वेबसाइट डेवलपमेंट सर्विसेज प्रोवाइड करते हैं।`;
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: sampleText, gender: vObj.gender, voice: voiceId })
+      });
 
-    setPlayingVoiceId(voiceId);
-
-    const utterance = new SpeechSynthesisUtterance(sampleText);
-    utterance.lang = 'hi-IN';
-    utterance.pitch = isMale ? 0.65 : 1.25;
-    utterance.rate = isMale ? 0.92 : 0.96;
-
-    const voices = window.speechSynthesis.getVoices();
-    let sel = null;
-    if (isMale) {
-      sel = voices.find(v => (v.name.toLowerCase().includes('male') || v.name.includes('Madhur') || v.name.includes('David')) && !v.name.toLowerCase().includes('female'));
-    } else {
-      sel = voices.find(v => v.name.toLowerCase().includes('female') || v.name.includes('Swara') || v.name.includes('Heera') || v.name.includes('Kalpana'));
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audio.onended = () => setPlayingVoiceId(null);
+        audio.onerror = () => setPlayingVoiceId(null);
+        await audio.play();
+      } else {
+        setPlayingVoiceId(null);
+      }
+    } catch(e) {
+      console.log('Sample playback note:', e);
+      setPlayingVoiceId(null);
     }
-    if (!sel) sel = voices.find(v => v.lang.includes('hi')) || voices[0];
-    if (sel) utterance.voice = sel;
-
-    utterance.onend = () => setPlayingVoiceId(null);
-    utterance.onerror = () => setPlayingVoiceId(null);
-    window.speechSynthesis.speak(utterance);
   };
 
   const handleCreateAgent = (e) => {
@@ -110,16 +108,37 @@ export default function VoiceAgentStudioPage() {
     const updated = [newAgent, ...agents];
     localStorage.setItem('suvidha_custom_agents', JSON.stringify(updated));
     setAgents(updated);
-    setStatus({ type: 'success', message: `🎉 Voice Agent "${agentName}" created for Design Suvidha successfully!` });
+    setStatus({ type: 'success', message: `🎉 Voice Agent "${agentName}" created and ready for campaigns!` });
     setTimeout(() => setStatus(null), 4000);
   };
 
   return (
     <div style={{ maxWidth: '1100px' }}>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1>🎨 Design Suvidha Voice Agent Creation Studio</h1>
-          <p className="subtitle">Deploy customized AI Calling Agents with Design Suvidha marketing services knowledge</p>
+          <h1>🤖 AI Voice Agent Creation Studio</h1>
+          <p className="subtitle">Build, customize, and deploy AI voice agents for automated inbound & outbound calling</p>
+        </div>
+      </div>
+
+      {/* 3-Step Guide Banner */}
+      <div className="card mb-6" style={{ padding: '1.25rem 1.5rem', background: 'rgba(16, 185, 129, 0.05)', borderColor: 'rgba(16, 185, 129, 0.2)' }}>
+        <div style={{ fontWeight: '600', fontSize: '0.9rem', color: 'var(--accent-green)', marginBottom: '0.5rem' }}>
+          📖 How to Create an Agent & Start Calling in 3 Simple Steps:
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+          <div>
+            <strong>Step 1: Choose Voice Persona</strong><br />
+            Select male or female voice and click <strong>`Listen Sample`</strong> to hear 100% human studio speech.
+          </div>
+          <div>
+            <strong>Step 2: Define Agent Script & Pitch</strong><br />
+            Give your agent a name, business use case (e.g. Loans / Real Estate), and instructions on how to answer.
+          </div>
+          <div>
+            <strong>Step 3: Launch in Campaigns</strong><br />
+            Go to <strong>`🎯 Campaigns`</strong>, upload your customer lead numbers, and click Start Calling!
+          </div>
         </div>
       </div>
 
@@ -180,8 +199,8 @@ export default function VoiceAgentStudioPage() {
 
       {/* Main Create Agent Box */}
       <div className="card mb-8" style={{ padding: '2.5rem', background: '#0e0e14' }}>
-        <h2 style={{ marginTop: 0, fontSize: '1.35rem', marginBottom: '0.5rem' }}>Create Customized Marketing Voice Agent</h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '2rem' }}>Configure your Design Suvidha agent pitch and business scripts</p>
+        <h2 style={{ marginTop: 0, fontSize: '1.35rem', marginBottom: '0.5rem' }}>Create Customized AI Voice Agent</h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '2rem' }}>Configure your agent pitch, business use case, and objections handling</p>
 
         <form onSubmit={handleCreateAgent}>
           <div className="form-group mb-6">
@@ -196,8 +215,8 @@ export default function VoiceAgentStudioPage() {
           <div className="form-group mb-6">
             <label style={{ fontSize: '0.875rem', fontWeight: '600' }}>2. Call Type</label>
             <select className="form-control" value={callType} onChange={e => setCallType(e.target.value)}>
-              <option value="Outbound (AI calls users)">Outbound (AI calls business leads / Client Acquisition)</option>
-              <option value="Inbound (Users call AI)">Inbound (Users call Design Suvidha / Client Support)</option>
+              <option value="Outbound (AI calls users)">Outbound (AI calls leads / Sales & Follow-ups)</option>
+              <option value="Inbound (Users call AI)">Inbound (Users call AI / Customer Support)</option>
             </select>
           </div>
 
@@ -209,43 +228,43 @@ export default function VoiceAgentStudioPage() {
               className="form-control" 
               value={agentName}
               onChange={e => setAgentName(e.target.value)} 
-              placeholder="e.g. Design Suvidha - Growth Consultant" 
+              placeholder="e.g. Swara - Real Estate Closer" 
             />
           </div>
 
           <div className="form-group mb-6">
-            <label style={{ fontSize: '0.875rem', fontWeight: '600' }}>4. Core Service / Use Case</label>
+            <label style={{ fontSize: '0.875rem', fontWeight: '600' }}>4. Core Use Case</label>
             <input 
               required
               type="text" 
               className="form-control" 
               value={useCase}
               onChange={e => setUseCase(e.target.value)} 
-              placeholder="e.g. Meta Ads, SEO, Website Development, Social Media Marketing" 
+              placeholder="e.g. Real Estate Sales, Loans, Support, Client Discovery" 
             />
           </div>
 
           <div className="form-group mb-8">
-            <label style={{ fontSize: '0.875rem', fontWeight: '600' }}>5. AI Prompt & Company Pitch</label>
+            <label style={{ fontSize: '0.875rem', fontWeight: '600' }}>5. AI Prompt & Company Pitch Instructions</label>
             <textarea 
               required
               rows="4"
               className="form-control" 
               value={activityDescription}
               onChange={e => setActivityDescription(e.target.value)} 
-              placeholder="Describe how the agent should qualify clients for Design Suvidha services..." 
+              placeholder="Describe how the agent should qualify clients and answer queries..." 
             />
           </div>
 
           <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.85rem' }}>
-            🚀 Save & Launch Design Suvidha Agent
+            🚀 Save & Deploy AI Voice Agent
           </button>
         </form>
       </div>
 
       {/* Active Agents List */}
       <div>
-        <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Active Design Suvidha Voice Agents ({agents.length})</h2>
+        <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Active Deployed Voice Agents ({agents.length})</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
           {agents.map(ag => (
             <div className="card" key={ag.id} style={{ padding: '1.5rem' }}>
