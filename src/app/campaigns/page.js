@@ -44,9 +44,11 @@ export default function CampaignsPage() {
     setQuickLoading(true);
     setCallStatus(null);
 
-    const provider = typeof window !== 'undefined' ? (localStorage.getItem('telephonyProvider') || 'vobiz') : 'vobiz';
-    const vobizApiKey = typeof window !== 'undefined' ? (localStorage.getItem('vobizApiKey') || '') : '';
-    const vobizVirtualNumber = typeof window !== 'undefined' ? (localStorage.getItem('vobizVirtualNumber') || '+917965854130') : '+917965854130';
+    const uid = typeof window !== 'undefined' ? (localStorage.getItem('suvidha_auth_user_id') || 'default') : 'default';
+    const provider = typeof window !== 'undefined' ? (localStorage.getItem(`telephonyProvider_${uid}`) || localStorage.getItem('telephonyProvider') || 'vobiz') : 'vobiz';
+    const vobizAuthId = typeof window !== 'undefined' ? (localStorage.getItem(`vobizAuthId_${uid}`) || localStorage.getItem('vobizAuthId') || 'MA_QTLGTSF9') : 'MA_QTLGTSF9';
+    const vobizAuthToken = typeof window !== 'undefined' ? (localStorage.getItem(`vobizAuthToken_${uid}`) || localStorage.getItem('vobizAuthToken') || localStorage.getItem(`vobizApiKey_${uid}`) || localStorage.getItem('vobizApiKey') || '') : '';
+    const vobizVirtualNumber = typeof window !== 'undefined' ? (localStorage.getItem(`vobizVirtualNumber_${uid}`) || localStorage.getItem('vobizVirtualNumber') || '+917965854263') : '+917965854263';
 
     const systemPrompt = `You are a polite, helpful AI voice executive for Suvidha.
 Product/Service details: ${quickProduct}
@@ -61,7 +63,9 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
           contactName: 'Direct Lead',
           systemPrompt,
           provider,
-          vobizApiKey,
+          vobizAuthId,
+          vobizAuthToken,
+          vobizApiKey: vobizAuthToken,
           vobizVirtualNumber,
           callerNumber: vobizVirtualNumber
         })
