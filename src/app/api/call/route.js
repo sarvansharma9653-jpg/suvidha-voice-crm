@@ -20,14 +20,14 @@ export async function POST(req) {
       const authToken = (body.vobizAuthToken || body.vobizApiKey || process.env.VOBIZ_AUTH_TOKEN || '').trim();
       const callerNumber = (body.vobizVirtualNumber || body.callerNumber || process.env.VOBIZ_CALLER_ID || '+917965854263').trim();
 
-      // Format clean numbers
+      // Format E.164 phone numbers with +91
       const rawTarget = targetNumber.replace(/[^0-9]/g, '');
-      const cleanTarget = rawTarget.startsWith('91') ? rawTarget : `91${rawTarget.replace(/^0+/, '')}`;
-      const plusTarget = `+${cleanTarget}`;
+      const cleanTarget91 = rawTarget.startsWith('91') ? rawTarget : `91${rawTarget.replace(/^0+/, '')}`;
+      const plusTarget = `+${cleanTarget91}`;
 
       const rawCaller = callerNumber.replace(/[^0-9]/g, '');
-      const cleanCaller = rawCaller.startsWith('91') ? rawCaller : `91${rawCaller.replace(/^0+/, '')}`;
-      const plusCaller = `+${cleanCaller}`;
+      const cleanCaller91 = rawCaller.startsWith('91') ? rawCaller : `91${rawCaller.replace(/^0+/, '')}`;
+      const plusCaller = `+${cleanCaller91}`;
 
       if (!authId || !authToken) {
         return NextResponse.json({
@@ -38,10 +38,9 @@ export async function POST(req) {
 
       try {
         const authString = Buffer.from(`${authId}:${authToken}`).toString('base64');
-        console.log(`📡 Vobiz Calling API: AuthID=${authId}, From=${plusCaller}, To=${plusTarget}`);
+        console.log(`📡 Vobiz API Call: AuthID=${authId}, From=${plusCaller}, To=${plusTarget}`);
 
-        // Try Endpoint 1: Standard Plivo/Vobiz Account Call Endpoint
-        const payload1 = {
+        const payload = {
           from: plusCaller,
           to: plusTarget,
           answer_url: 'https://suvidha-voice-crm.vercel.app/api/inbound',
@@ -50,67 +49,63 @@ export async function POST(req) {
           hangup_method: 'POST'
         };
 
-        const res1 = await fetch(`https://api.vobiz.ai/v1/Account/${authId}/Call/`, {
+        const headers = {
+          'Authorization': `Basic ${authString}`,
+          'X-Auth-ID': authId,
+          'X-Auth-Token': authToken,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        };
+
+        // Try Official Vobiz Base URL (/api/v1/)
+        let vobizRes = await fetch(`https://api.vobiz.ai/api/v1/Account/${authId}/Call/`, {
           method: 'POST',
-          headers: {
-            'Authorization': `Basic ${authString}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
-          body: JSON.stringify(payload1)
+          headers,
+          body: JSON.stringify(payload)
         });
 
-        const text1 = await res1.text();
-        console.log(`Vobiz Endpoint 1 Status: ${res1.status}, Body:`, text1);
+        let resText = await vobizRes.text();
+        console.log(`Vobiz /api/v1/ Status: ${vobizRes.status}, Body:`, resText);
 
-        let data1 = {};
-        try { data1 = JSON.parse(text1); } catch(e) {}
+        // Fallback without trailing slash
+        if (vobizRes.status === 404) {
+          vobizRes = await fetch(`https://api.vobiz.ai/api/v1/Account/${authId}/Call`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(payload)
+          });
+          resText = await vobizRes.text();
+          console.log(`Vobiz /api/v1/Call (no slash) Status: ${vobizRes.status}, Body:`, resText);
+        }
 
-        if (res1.ok && (data1.request_uuid || data1.call_uuid || data1.message?.toLowerCase().includes('queued') || data1.message?.toLowerCase().includes('success'))) {
-          callSid = data1.request_uuid || data1.call_uuid || callSid;
+        // Fallback to /v1/Account
+        if (vobizRes.status === 404) {
+          vobizRes = await fetch(`https://api.vobiz.ai/v1/Account/${authId}/Call/`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(payload)
+          });
+          resText = await vobizRes.text();
+          console.log(`Vobiz /v1/ Status: ${vobizRes.status}, Body:`, resText);
+        }
+
+        let resJson = {};
+        try { resJson = JSON.parse(resText); } catch(e) {}
+
+        if (vobizRes.ok && (resJson.request_uuid || resJson.call_uuid || resJson.message?.toLowerCase().includes('queued') || resJson.message?.toLowerCase().includes('success'))) {
+          callSid = resJson.request_uuid || resJson.call_uuid || callSid;
           statusMessage = `🎉 REAL VOBIZ PHONE CALL DISPATCHED! Phone is ringing on ${plusTarget} (Call ID: ${callSid})!`;
           isSuccess = true;
         } else {
-          // Try Endpoint 2: Direct REST /calls Endpoint with Bearer Auth
-          const res2 = await fetch('https://api.vobiz.ai/v1/calls', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${authToken}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              from: plusCaller,
-              to: plusTarget,
-              webhookUrl: 'https://suvidha-voice-crm.vercel.app/api/inbound',
-              authId: authId
-            })
-          });
+          // Unpack clean error
+          let cleanErr = '';
+          if (typeof resJson.error === 'string') cleanErr = resJson.error;
+          else if (typeof resJson.message === 'string') cleanErr = resJson.message;
+          else if (resJson.error && typeof resJson.error === 'object') cleanErr = JSON.stringify(resJson.error);
+          else cleanErr = resText || `HTTP ${vobizRes.status}`;
 
-          const text2 = await res2.text();
-          console.log(`Vobiz Endpoint 2 Status: ${res2.status}, Body:`, text2);
-
-          let data2 = {};
-          try { data2 = JSON.parse(text2); } catch(e) {}
-
-          if (res2.ok && (data2.callId || data2.id || data2.success)) {
-            callSid = data2.callId || data2.id || callSid;
-            statusMessage = `🎉 REAL VOBIZ PHONE CALL DISPATCHED! Phone is ringing on ${plusTarget}!`;
-            isSuccess = true;
-          } else {
-            // Extract clean readable error string (NEVER [object Object])
-            let cleanErr = '';
-            if (typeof data1.error === 'string') cleanErr = data1.error;
-            else if (typeof data1.message === 'string') cleanErr = data1.message;
-            else if (data1.error && typeof data1.error === 'object') cleanErr = JSON.stringify(data1.error);
-            else if (data1.errors) cleanErr = JSON.stringify(data1.errors);
-            else if (typeof data2.error === 'string') cleanErr = data2.error;
-            else if (typeof data2.message === 'string') cleanErr = data2.message;
-            else cleanErr = text1 || text2 || `HTTP ${res1.status}`;
-
-            console.error('Vobiz Call Dispatch Error:', cleanErr);
-            statusMessage = `⚠️ Vobiz Error: ${cleanErr}. Check your Vobiz Auth Token and DID Number in Settings.`;
-            isSuccess = false;
-          }
+          statusMessage = `⚠️ Vobiz Notice: ${cleanErr}`;
+          isSuccess = false;
         }
       } catch (err) {
         console.error('Vobiz Network Exception:', err);
