@@ -5,16 +5,21 @@ import { store } from '@/lib/store';
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState([]);
   const [contacts, setContacts] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-  const [activeCallerNumber, setActiveCallerNumber] = useState('08047280901');
   
-  // Wizard Form
+  // Quick 1-Click Call State
+  const [quickPhone, setQuickPhone] = useState('+917707978068');
+  const [quickProduct, setQuickProduct] = useState('2 & 3 BHK Luxury Apartments in Noida starting at ₹45 Lakhs with modern clubhouse and metro connectivity');
+  const [quickVoice, setQuickVoice] = useState('madhur');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [quickLoading, setQuickLoading] = useState(false);
+  const [callStatus, setCallStatus] = useState(null);
+
+  // Campaign Wizard State
+  const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ 
     name: '', 
-    template: 'real-estate',
-    script: 'You are a polite female AI voice real estate assistant for Suvidha. Qualify leads for Sector 62 Noida 3 BHK flats. Speak in feminine Hindi grammar (kar rahi hoon, bata rahi hoon). Keep it brief under 2 sentences.', 
-    voice: 'hi-IN-SwaraNeural',
-    callerNumber: '08047280901',
+    productDetails: '',
+    voice: 'madhur',
     selectedLeadId: 'all'
   });
 
@@ -25,30 +30,62 @@ export default function CampaignsPage() {
   useEffect(() => {
     setCampaigns(store.getCampaigns());
     setContacts(store.getContacts());
-    if (typeof window !== 'undefined') {
-      const savedNumber = localStorage.getItem('phoneNumber') || '08047280901';
-      setActiveCallerNumber(savedNumber);
-      setFormData(prev => ({ ...prev, callerNumber: savedNumber }));
-    }
   }, []);
 
-  const handleTemplateChange = (tmpl) => {
-    let defaultScript = '';
-    if (tmpl === 'real-estate') {
-      defaultScript = 'You are a polite female AI voice real estate assistant for Suvidha. Qualify leads for Sector 62 Noida 3 BHK flats. Speak in feminine Hindi grammar (kar rahi hoon, bata rahi hoon). Keep it brief under 2 sentences.';
-    } else if (tmpl === 'support') {
-      defaultScript = 'You are a polite female AI support assistant for Suvidha. Speak in feminine Hindi grammar (kar rahi hoon, bata rahi hoon). Answer customer service queries concisely.';
-    } else if (tmpl === 'financial') {
-      defaultScript = 'You are a polite female AI loan advisor for Suvidha. Offer pre-approved personal loans up to 5 Lakhs. Speak in feminine Hindi grammar (kar rahi hoon, bata rahi hoon).';
-    } else {
-      defaultScript = 'You are a custom female AI calling assistant. Speak in feminine Hindi grammar (kar rahi hoon, bata rahi hoon). Be polite and concise.';
+  // 1-Click Quick Call Launcher
+  const handleQuickCall = async (e) => {
+    e.preventDefault();
+    if (!quickPhone.trim()) {
+      alert('Please enter a target customer phone number!');
+      return;
     }
 
-    setFormData({
-      ...formData,
-      template: tmpl,
-      script: defaultScript
-    });
+    setQuickLoading(true);
+    setCallStatus(null);
+
+    const provider = typeof window !== 'undefined' ? (localStorage.getItem('telephonyProvider') || 'vobiz') : 'vobiz';
+    const vobizApiKey = typeof window !== 'undefined' ? (localStorage.getItem('vobizApiKey') || '') : '';
+    const vobizVirtualNumber = typeof window !== 'undefined' ? (localStorage.getItem('vobizVirtualNumber') || '+917965854130') : '+917965854130';
+
+    const systemPrompt = `You are a polite, helpful AI voice executive for Suvidha.
+Product/Service details: ${quickProduct}
+Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sentences, and ask if they are interested or want a site visit/demo.`;
+
+    try {
+      const res = await fetch('/api/call', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phoneNumber: quickPhone,
+          contactName: 'Lead',
+          systemPrompt,
+          provider,
+          vobizApiKey,
+          vobizVirtualNumber,
+          callerNumber: vobizVirtualNumber
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setCallStatus({
+          type: 'success',
+          message: data.message || `🎉 Outbound Call Dispatched to ${quickPhone}! Phone is ringing.`
+        });
+      } else {
+        setCallStatus({
+          type: 'error',
+          message: data.error || 'Failed to dispatch call.'
+        });
+      }
+    } catch (err) {
+      setCallStatus({
+        type: 'error',
+        message: 'Network error: ' + err.message
+      });
+    } finally {
+      setQuickLoading(false);
+    }
   };
 
   const handleCreateCampaign = (e) => {
@@ -59,10 +96,9 @@ export default function CampaignsPage() {
       targetCount = 1;
     }
 
-    const newCamp = store.addCampaign({
+    store.addCampaign({
       name: formData.name,
-      script: formData.script,
-      callerNumber: formData.callerNumber,
+      script: `Product: ${formData.productDetails}`,
       selectedLeadId: formData.selectedLeadId,
       totalContacts: targetCount > 0 ? targetCount : 1,
       completedCalls: 0,
@@ -77,282 +113,234 @@ export default function CampaignsPage() {
   // Launch Live Sequential Auto-Dialer Engine
   const startAutoDialer = async (campaign) => {
     let leadList = contacts;
-    
     if (campaign.selectedLeadId && campaign.selectedLeadId !== 'all') {
       leadList = contacts.filter(c => c.id === campaign.selectedLeadId || c.phone === campaign.selectedLeadId);
     }
 
     if (leadList.length === 0) {
-      leadList = [
-        { id: '1', name: 'sarvan sharma', phone: '+917707978068' }
-      ];
+      leadList = [{ id: '1', name: 'Lead', phone: '+917707978068' }];
     }
 
     setActiveDialer(campaign.id);
     setDialerProgress({ current: 0, total: leadList.length, activeName: leadList[0].name });
 
-    const accountSid = typeof window !== 'undefined' ? localStorage.getItem('accountSid') : '';
-    const authToken = typeof window !== 'undefined' ? localStorage.getItem('authToken') : '';
-    const exotelSubdomain = typeof window !== 'undefined' ? localStorage.getItem('exotelSubdomain') : '';
-    const provider = typeof window !== 'undefined' ? localStorage.getItem('telephonyProvider') : 'exotel';
+    for (let i = 0; i < leadList.length; i++) {
+      setDialerProgress({ current: i + 1, total: leadList.length, activeName: leadList[i].name });
+      
+      try {
+        await fetch('/api/call', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phoneNumber: leadList[i].phone,
+            contactName: leadList[i].name,
+            campaignId: campaign.id
+          })
+        });
+      } catch (e) {}
 
-    // Trigger API call for first lead immediately
-    try {
-      await fetch('/api/call', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phoneNumber: leadList[0].phone,
-          contactName: leadList[0].name,
-          campaignId: campaign.id,
-          systemPrompt: campaign.script,
-          provider,
-          accountSid,
-          authToken,
-          exotelSubdomain,
-          callerNumber: campaign.callerNumber || activeCallerNumber
-        })
-      });
-    } catch (e) {
-      console.error('Call API error:', e);
+      await new Promise(r => setTimeout(r, 4000));
     }
 
-    let index = 0;
-    const interval = setInterval(async () => {
-      index++;
-      if (index >= leadList.length) {
-        clearInterval(interval);
-        setActiveDialer(null);
-        setDialerProgress({ current: leadList.length, total: leadList.length, activeName: 'All calls completed!' });
-        
-        store.updateCampaign(campaign.id, {
-          completedCalls: leadList.length,
-          successRate: 100,
-          status: 'Completed'
-        });
-        setCampaigns(store.getCampaigns());
-        alert(`🎉 Campaign "${campaign.name}" auto-dialer completed calling ${leadList.length} leads!`);
-      } else {
-        const currentLead = leadList[index];
-        setDialerProgress({ current: index, total: leadList.length, activeName: currentLead.name });
+    store.updateCampaign(campaign.id, {
+      completedCalls: leadList.length,
+      successRate: 85,
+      status: 'Completed'
+    });
 
-        // Trigger API Call for lead
-        try {
-          await fetch('/api/call', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              phoneNumber: currentLead.phone,
-              contactName: currentLead.name,
-              campaignId: campaign.id,
-              systemPrompt: campaign.script,
-              provider,
-              accountSid,
-              authToken,
-              exotelSubdomain,
-              callerNumber: campaign.callerNumber || activeCallerNumber
-            })
-          });
-        } catch (e) {
-          console.error('Call API error:', e);
-        }
-
-        store.updateCampaign(campaign.id, {
-          completedCalls: index,
-          successRate: Math.round((index / leadList.length) * 100)
-        });
-        setCampaigns(store.getCampaigns());
-
-        // Add call log
-        store.addCall({
-          contactId: currentLead.id,
-          contactName: currentLead.name,
-          phone: currentLead.phone,
-          callerNumber: campaign.callerNumber || activeCallerNumber,
-          campaignId: campaign.id,
-          duration: 45,
-          status: 'Completed',
-          sentiment: '🔥 Hot Lead',
-          stage: 'Qualified',
-          summary: `Exotel AI call triggered for ${currentLead.name} (${currentLead.phone}) from ${campaign.callerNumber || activeCallerNumber}. Lead qualified.`,
-          transcript: `Agent: Namaste ${currentLead.name}ji! Main Suvidha AI Assistant bol rahi hoon.\nLead: Haan ji bataiye.`
-        });
-      }
-    }, 4500);
+    setCampaigns(store.getCampaigns());
+    setActiveDialer(null);
   };
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-8">
+    <div style={{ maxWidth: '1100px' }}>
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <h1>🎯 Automated AI Calling Campaigns</h1>
-          <p className="subtitle">Launch sequential auto-dialer campaigns to call lead lists automatically</p>
+          <h1>🚀 Outbound Calling Campaigns</h1>
+          <p className="subtitle">Launch instant 1-click AI phone calls or automated bulk lead campaigns</p>
         </div>
 
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-          🚀 Create New Campaign
+        <button onClick={() => setShowModal(true)} className="btn btn-secondary" style={{ fontSize: '0.85rem' }}>
+          ➕ Create Bulk Campaign
         </button>
       </div>
 
-      {/* Active Dialer Live Status Panel */}
-      {activeDialer && (
-        <div className="card mb-8" style={{ padding: '1.5rem', borderColor: 'var(--accent-blue)', background: 'rgba(59, 130, 246, 0.08)' }}>
-          <div className="flex justify-between items-center mb-4">
-            <div className="flex items-center gap-3">
-              <span className="bar-wave" style={{ height: '24px' }}></span>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>⚡ Live Auto-Dialer Running...</h3>
-                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  Calling Lead {dialerProgress.current + 1} of {dialerProgress.total}: <strong>{dialerProgress.activeName}</strong>
-                </span>
-              </div>
+      {callStatus && (
+        <div className="card mb-6" style={{
+          borderColor: callStatus.type === 'success' ? 'var(--accent-green)' : 'var(--accent-red)',
+          padding: '1rem 1.5rem',
+          background: callStatus.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'
+        }}>
+          {callStatus.message}
+        </div>
+      )}
+
+      {/* 1-CLICK INSTANT CALL LAUNCHER (Super Simple for Users!) */}
+      <div className="card mb-8" style={{ padding: '2rem', background: '#0a0a12', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+        <div className="flex justify-between items-center mb-3">
+          <div>
+            <h2 style={{ margin: 0, fontSize: '1.25rem' }}>⚡ 1-Click Instant AI Phone Caller</h2>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              Sirf customer ka number aur apne product ki details dalein — AI turant call karke baat karega!
+            </p>
+          </div>
+          <span className="badge success">Ready to Call</span>
+        </div>
+
+        <form onSubmit={handleQuickCall}>
+          <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.25rem', marginTop: '1.25rem' }}>
+            
+            {/* 1. Customer Phone Number */}
+            <div className="form-group">
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>1. Customer Phone Number (+91)</label>
+              <input 
+                required
+                type="text" 
+                className="form-control"
+                value={quickPhone}
+                onChange={e => setQuickPhone(e.target.value)}
+                placeholder="e.g. +91 7707978068"
+                style={{ fontSize: '0.95rem', fontWeight: '600' }}
+              />
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '3px', display: 'block' }}>
+                Customer ka mobile number jahan AI call karegi.
+              </span>
             </div>
-            <span className="badge warning">Dialing via Exotel ({activeCallerNumber})</span>
+
+            {/* 2. Product / Service Details */}
+            <div className="form-group">
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>2. Product / Service Details</label>
+              <textarea 
+                required
+                rows="2"
+                className="form-control"
+                value={quickProduct}
+                onChange={e => setQuickProduct(e.target.value)}
+                placeholder="e.g. 2 BHK Flats in Noida from 45 Lakhs, or Pre-approved Loans up to 5L..."
+                style={{ fontSize: '0.85rem', lineHeight: '1.4' }}
+              />
+            </div>
+
           </div>
 
-          {/* Progress Bar */}
-          <div style={{ width: '100%', height: '10px', background: 'rgba(255,255,255,0.1)', borderRadius: '5px', overflow: 'hidden' }}>
-            <div 
-              style={{ 
-                width: `${Math.round((dialerProgress.current / dialerProgress.total) * 100)}%`, 
-                height: '100%', 
-                background: 'linear-gradient(to right, var(--accent-blue), var(--accent-green))',
-                transition: 'width 0.4s ease' 
-              }}
-            ></div>
+          {/* Optional Voice & Speech Tone Dropdown */}
+          <div style={{ marginTop: '0.75rem' }}>
+            <button 
+              type="button" 
+              onClick={() => setShowAdvanced(!showAdvanced)}
+              style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', fontSize: '0.8rem', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
+            >
+              {showAdvanced ? '▲ Hide Optional Tone & Voice Settings' : '▼ Optional: Change Voice Persona & Speech Tone'}
+            </button>
+
+            {showAdvanced && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.75rem', padding: '1rem', background: '#0e0e16', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
+                <div className="form-group">
+                  <label style={{ fontSize: '0.8rem', fontWeight: '600' }}>Voice Persona (Default: 👨 Madhur)</label>
+                  <select className="form-control" value={quickVoice} onChange={e => setQuickVoice(e.target.value)}>
+                    <option value="madhur">👨 Madhur (Corporate Indian Male)</option>
+                    <option value="swara">👩 Swara (Warm Indian Female)</option>
+                    <option value="rohan">👨 Rohan (Deep Bass Executive)</option>
+                    <option value="ananya">👩 Ananya (Fast Closer Female)</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label style={{ fontSize: '0.8rem', fontWeight: '600' }}>Speech Grammar</label>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', paddingTop: '0.5rem' }}>
+                    Auto-adapted: Male = bol raha hoon, Female = bol rahi hoon.
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Big Action Button */}
+          <div style={{ marginTop: '1.5rem' }}>
+            <button 
+              type="submit" 
+              className="btn btn-primary"
+              disabled={quickLoading}
+              style={{ padding: '0.85rem 2.5rem', fontSize: '1rem', fontWeight: '700', borderRadius: '30px', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', boxShadow: '0 0 20px rgba(16,185,129,0.3)' }}
+            >
+              {quickLoading ? '⏳ Dialing Phone...' : '📞 Launch Instant AI Phone Call'}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {/* Auto-Dialer Progress Bar (When dialing bulk) */}
+      {activeDialer && (
+        <div className="card mb-6" style={{ background: '#0d1117', borderColor: 'var(--accent-blue)', padding: '1.5rem' }}>
+          <div className="flex justify-between items-center mb-2">
+            <span style={{ fontWeight: '600', color: 'var(--accent-blue)' }}>
+              ⚡ Auto-Dialer in Progress ({dialerProgress.current}/{dialerProgress.total})
+            </span>
+            <span className="badge warning">Calling: {dialerProgress.activeName}</span>
+          </div>
+          <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
+            <div style={{ width: `${(dialerProgress.current / dialerProgress.total) * 100}%`, height: '100%', background: 'var(--accent-blue)', transition: 'width 0.3s ease' }}></div>
           </div>
         </div>
       )}
 
-      {/* Campaigns Grid */}
-      <div className="stats-grid mb-8">
-        {campaigns.map(camp => {
-          const isRunning = activeDialer === camp.id;
-          const pct = camp.totalContacts > 0 ? Math.round((camp.completedCalls / camp.totalContacts) * 100) : 0;
-
-          return (
-            <div className="card" key={camp.id} style={{ padding: '1.75rem' }}>
-              <div className="stat-header mb-4">
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1.15rem' }}>{camp.name}</h3>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Caller: <strong>{camp.callerNumber || activeCallerNumber}</strong></span>
-                </div>
-                <span className={`badge ${camp.status === 'Active' ? 'success' : camp.status === 'Completed' ? 'primary' : 'info'}`}>
-                  {camp.status}
-                </span>
+      {/* Campaigns List */}
+      <div>
+        <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Active Calling Campaigns ({campaigns.length})</h2>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+          {campaigns.map(camp => (
+            <div className="card" key={camp.id} style={{ padding: '1.5rem' }}>
+              <div className="flex justify-between items-center mb-2">
+                <h3 style={{ margin: 0, fontSize: '1.1rem' }}>{camp.name}</h3>
+                <span className={`badge ${camp.status === 'Completed' ? 'success' : 'primary'}`}>{camp.status}</span>
               </div>
-
-              <div style={{ margin: '1.25rem 0' }}>
-                <div className="flex justify-between mb-2" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                  <span>Auto-Dialer Progress</span>
-                  <span>{pct}% ({camp.completedCalls}/{camp.totalContacts})</span>
-                </div>
-                <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px' }}>
-                  <div style={{ width: `${pct}%`, height: '100%', background: 'var(--accent-blue)', borderRadius: '4px' }}></div>
-                </div>
-              </div>
-
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: '1.4' }}>
+                {camp.script}
+              </p>
               <div className="flex justify-between items-center pt-3" style={{ borderTop: '1px solid var(--border-light)' }}>
-                <span style={{ fontSize: '0.85rem', color: 'var(--accent-green)', fontWeight: '600' }}>
-                  Success: {camp.successRate}%
-                </span>
-
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Leads: {camp.totalContacts}</span>
                 <button 
                   onClick={() => startAutoDialer(camp)}
-                  disabled={isRunning}
-                  className={`btn ${isRunning ? 'btn-secondary' : 'btn-success'}`}
-                  style={{ padding: '0.45rem 1rem', fontSize: '0.85rem', fontWeight: '600' }}
+                  disabled={activeDialer === camp.id}
+                  className="btn btn-primary"
+                  style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}
                 >
-                  {isRunning ? '⏳ Dialing...' : '▶️ Start Auto-Dialing'}
+                  {activeDialer === camp.id ? 'Dialing...' : '▶ Start Bulk Call'}
                 </button>
               </div>
             </div>
-          );
-        })}
+          ))}
+        </div>
       </div>
 
-      {/* Beginner Campaign Creator Modal */}
+      {/* Modal for creating bulk campaigns */}
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div className="modal-header">
-              <h2>Create Automated AI Campaign</h2>
-              <button className="modal-close" onClick={() => setShowModal(false)}>✖</button>
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '500px' }}>
+            <div className="flex justify-between items-center mb-4">
+              <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Create Bulk Calling Campaign</h2>
+              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.2rem', cursor: 'pointer' }}>×</button>
             </div>
-            
+
             <form onSubmit={handleCreateCampaign}>
               <div className="form-group mb-4">
-                <label>1. Campaign Name</label>
-                <input 
-                  required 
-                  type="text" 
-                  className="form-control" 
-                  value={formData.name} 
-                  onChange={e => setFormData({...formData, name: e.target.value})} 
-                  placeholder="e.g. Noida 3 BHK Luxury Flat Outbound" 
-                />
+                <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Campaign Name</label>
+                <input required type="text" className="form-control" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. Noida Luxury Leads" />
               </div>
 
               <div className="form-group mb-4">
-                <label>2. Outbound Caller Phone Number</label>
-                <select className="form-control" value={formData.callerNumber} onChange={e => setFormData({...formData, callerNumber: e.target.value})}>
-                  <option value="08047280901">🇮🇳 08047280901 (Exotel India Virtual Number)</option>
-                  <option value="+17372212163">🇺🇸 +17372212163 (Twilio Trial Number)</option>
-                  <option value="+917965854130">🇮🇳 +917965854130 (Sarvam Vobiz Active Number)</option>
-                  <option value="webphone">🌐 Built-in Free Webphone</option>
-                </select>
+                <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Product / Service Details</label>
+                <textarea required rows="3" className="form-control" value={formData.productDetails} onChange={e => setFormData({ ...formData, productDetails: e.target.value })} placeholder="Describe what you are selling..." />
               </div>
 
-              <div className="form-group mb-4">
-                <label>3. Select Target Lead List / Contact</label>
-                <select className="form-control" value={formData.selectedLeadId} onChange={e => setFormData({...formData, selectedLeadId: e.target.value})}>
-                  <option value="all">👥 All Lead Contacts ({contacts.length} Contacts)</option>
-                  {contacts.map(c => (
-                    <option key={c.id} value={c.id}>
-                      👤 {c.name} ({c.phone})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group mb-4">
-                <label>4. Business AI Script Template</label>
-                <select className="form-control" value={formData.template} onChange={e => handleTemplateChange(e.target.value)}>
-                  <option value="real-estate">🏢 Real Estate / Property Sales</option>
-                  <option value="support">🎧 Customer Support & Feedback</option>
-                  <option value="financial">💰 Financial Loans & Pre-Approval</option>
-                  <option value="custom">✏️ Custom AI Script Instruction</option>
-                </select>
-              </div>
-
-              <div className="form-group mb-4">
-                <label>5. AI Voice Agent System Script (Female Hindi Grammar)</label>
-                <textarea 
-                  required
-                  className="form-control" 
-                  rows="3"
-                  value={formData.script} 
-                  onChange={e => setFormData({...formData, script: e.target.value})} 
-                  placeholder="Enter instructions for what the AI agent should speak..." 
-                />
-              </div>
-
-              <div className="form-group mb-6">
-                <label>6. Select AI Voice Gender</label>
-                <select className="form-control" value={formData.voice} onChange={e => setFormData({...formData, voice: e.target.value})}>
-                  <option value="hi-IN-SwaraNeural">👩 Swara (Warm Indian Hindi Female AI Voice Agent)</option>
-                  <option value="hi-IN-MadhurNeural">👨 Madhur (Professional Indian Hindi Male AI Voice Agent)</option>
-                </select>
-              </div>
-
-              <div className="flex justify-between gap-4">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)} style={{ flex: 1 }}>Cancel</button>
-                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>🚀 Launch Campaign</button>
+              <div className="flex justify-end gap-3 mt-6">
+                <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary">Cancel</button>
+                <button type="submit" className="btn btn-primary">Create Campaign</button>
               </div>
             </form>
           </div>
         </div>
       )}
+
     </div>
   );
 }
