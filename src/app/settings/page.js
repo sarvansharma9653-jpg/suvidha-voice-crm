@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase';
 export default function SettingsPage() {
   const [provider, setProvider] = useState('vobiz');
   
-  // Vobiz Exact Fields (+91 Indian Calling)
+  // Vobiz Exact Fields
   const [vobizApiKey, setVobizApiKey] = useState('');
   const [vobizVirtualNumber, setVobizVirtualNumber] = useState('');
   const [vobizOrgId, setVobizOrgId] = useState('');
@@ -82,23 +82,18 @@ export default function SettingsPage() {
         setPhoneNumber(data.phone_number || '');
       }
     } catch (err) {
-      console.log('Supabase credentials fetch note:', err);
+      console.log('Supabase fetch note:', err);
     } finally {
       setFetching(false);
     }
   };
 
-  const handleSave = async (e) => {
+  const handleSaveTelephony = (e) => {
     e.preventDefault();
     setLoading(true);
-    setStatus(null);
-
     const uid = (typeof window !== 'undefined' && localStorage.getItem('suvidha_auth_user_id')) || 'default';
 
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`elevenLabsApiKey_${uid}`, elevenLabsApiKey);
-      localStorage.setItem('elevenLabsApiKey', elevenLabsApiKey);
-
       localStorage.setItem(`telephonyProvider_${uid}`, provider);
       localStorage.setItem('telephonyProvider', provider);
       
@@ -128,32 +123,67 @@ export default function SettingsPage() {
       localStorage.setItem('authToken', authToken);
       localStorage.setItem(`phoneNumber_${uid}`, phoneNumber);
       localStorage.setItem('phoneNumber', phoneNumber);
+    }
 
+    setStatus({ type: 'success', message: '🎉 Telephony Provider Settings Saved Successfully!' });
+    setLoading(false);
+    setTimeout(() => setStatus(null), 4000);
+  };
+
+  const handleSaveVoice = (e) => {
+    e.preventDefault();
+    const uid = (typeof window !== 'undefined' && localStorage.getItem('suvidha_auth_user_id')) || 'default';
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`elevenLabsApiKey_${uid}`, elevenLabsApiKey);
+      localStorage.setItem('elevenLabsApiKey', elevenLabsApiKey);
+    }
+    setStatus({ type: 'success', message: '🎉 ElevenLabs Voice Key Saved Successfully!' });
+    setTimeout(() => setStatus(null), 4000);
+  };
+
+  const handleSaveWhatsApp = (e) => {
+    e.preventDefault();
+    const uid = (typeof window !== 'undefined' && localStorage.getItem('suvidha_auth_user_id')) || 'default';
+    if (typeof window !== 'undefined') {
       localStorage.setItem(`adminNumber_${uid}`, adminNumber);
       localStorage.setItem('adminNumber', adminNumber);
     }
+    setStatus({ type: 'success', message: '🎉 WhatsApp Notification Number Saved Successfully!' });
+    setTimeout(() => setStatus(null), 4000);
+  };
 
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const payload = {
-          user_id: user.id,
-          provider,
-          account_sid: provider === 'vobiz' ? vobizOrgId : (provider === 'exotel' ? exotelAccountSid : accountSid),
-          auth_token: provider === 'vobiz' ? vobizApiKey : (provider === 'exotel' ? exotelApiToken : authToken),
-          phone_number: provider === 'vobiz' ? vobizVirtualNumber : (provider === 'exotel' ? exotelVirtualNumber : phoneNumber),
-          updated_at: new Date().toISOString()
-        };
-
-        const { error } = await supabase.from('credentials').upsert(payload, { onConflict: 'user_id' });
-        if (error) console.log('Supabase sync note:', error.message);
+  const handleClearAll = () => {
+    if (confirm('Are you sure you want to clear all saved API keys and tokens?')) {
+      if (typeof window !== 'undefined') {
+        const uid = localStorage.getItem('suvidha_auth_user_id') || 'default';
+        localStorage.removeItem(`vobizApiKey_${uid}`);
+        localStorage.removeItem('vobizApiKey');
+        localStorage.removeItem(`vobizVirtualNumber_${uid}`);
+        localStorage.removeItem('vobizVirtualNumber');
+        localStorage.removeItem(`elevenLabsApiKey_${uid}`);
+        localStorage.removeItem('elevenLabsApiKey');
+        localStorage.removeItem(`accountSid_${uid}`);
+        localStorage.removeItem('accountSid');
+        localStorage.removeItem(`authToken_${uid}`);
+        localStorage.removeItem('authToken');
+        localStorage.removeItem(`adminNumber_${uid}`);
+        localStorage.removeItem('adminNumber');
       }
-    } catch (e) {
-      console.log('Safe save note:', e.message);
+      setVobizApiKey('');
+      setVobizVirtualNumber('');
+      setVobizOrgId('');
+      setElevenLabsApiKey('');
+      setAdminNumber('');
+      setExotelApiKey('');
+      setExotelApiToken('');
+      setExotelAccountSid('');
+      setExotelVirtualNumber('');
+      setAccountSid('');
+      setAuthToken('');
+      setPhoneNumber('');
+      setStatus({ type: 'success', message: '🧹 All credentials cleared successfully!' });
+      setTimeout(() => setStatus(null), 3000);
     }
-
-    setStatus({ type: 'success', message: '🎉 Telephony & Voice Settings saved successfully!' });
-    setLoading(false);
   };
 
   if (fetching) {
@@ -161,12 +191,16 @@ export default function SettingsPage() {
   }
 
   return (
-    <div style={{ maxWidth: '1050px' }}>
+    <div style={{ maxWidth: '1100px' }}>
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1>⚙️ Telephony & AI Voice Settings</h1>
-          <p className="subtitle">Configure your Indian Calling Carrier (Vobiz / Exotel / Plivo) and ElevenLabs Voice Key</p>
+          <p className="subtitle">Configure your Indian Calling Carrier (Vobiz), ElevenLabs Voice Key, and WhatsApp Alerts</p>
         </div>
+
+        <button onClick={handleClearAll} className="btn btn-secondary" style={{ fontSize: '0.8rem', borderColor: 'var(--accent-red)', color: 'var(--accent-red)' }}>
+          🧹 Clear All Saved Keys
+        </button>
       </div>
 
       {status && (
@@ -179,19 +213,19 @@ export default function SettingsPage() {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(460px, 1fr))', gap: '2rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: '2rem' }}>
         
-        {/* 1. Telephony Provider Setup (Clean & Simple) */}
-        <div className="card" style={{ padding: '2rem' }}>
+        {/* CARD 1: Telephony Provider Setup */}
+        <div className="card" style={{ padding: '2rem', background: '#0a0a12' }}>
           <div className="flex justify-between items-center mb-2">
-            <h2 style={{ marginTop: 0, fontSize: '1.25rem' }}>📞 1. Telephony Provider Setup</h2>
+            <h2 style={{ marginTop: 0, fontSize: '1.25rem' }}>📞 1. Calling Provider Setup</h2>
             <span className="badge success">Active</span>
           </div>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-            Select your calling provider and enter your credentials:
+            Select your calling carrier for Real Indian Inbound & Outbound Calling:
           </p>
 
-          <form onSubmit={handleSave}>
+          <form onSubmit={handleSaveTelephony}>
             <div className="form-group mb-4">
               <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Select Calling Carrier</label>
               <select className="form-control" value={provider} onChange={e => setProvider(e.target.value)}>
@@ -245,9 +279,19 @@ export default function SettingsPage() {
                   />
                 </div>
 
-                <div style={{ background: '#0a0a10', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.3)', fontSize: '0.8rem', color: 'var(--accent-green)', marginBottom: '1.5rem' }}>
-                  💡 <strong>Inbound Call Webhook:</strong> <code>https://suvidha-voice-crm.vercel.app/api/inbound</code><br />
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Paste in Vobiz console to auto-answer incoming customer calls with AI!</span>
+                {/* Step-by-Step Vobiz Guide Box */}
+                <div style={{ background: 'rgba(16, 185, 129, 0.06)', padding: '1rem', borderRadius: '10px', border: '1px solid rgba(16,185,129,0.3)', fontSize: '0.8rem', marginBottom: '1.5rem' }}>
+                  <div style={{ fontWeight: '700', color: 'var(--accent-green)', marginBottom: '0.4rem' }}>
+                    📍 Vobiz Inbound Webhook Setup Guide:
+                  </div>
+                  <div style={{ color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '0.6rem' }}>
+                    1. Vobiz Console kholein &rarr; <strong>Phone Numbers</strong> par click karein.<br />
+                    2. Apne +91 number ke <strong>Edit / Settings</strong> icon par click karein.<br />
+                    3. <strong>Webhook URL (Inbound)</strong> box mein yeh URL paste karein:
+                  </div>
+                  <code style={{ background: '#07070b', padding: '0.4rem 0.6rem', borderRadius: '6px', color: '#fff', display: 'block', wordBreak: 'break-all', fontSize: '0.75rem' }}>
+                    https://suvidha-voice-crm.vercel.app/api/inbound
+                  </code>
                 </div>
               </>
             )}
@@ -298,69 +342,87 @@ export default function SettingsPage() {
 
             {provider === 'webphone' && (
               <div style={{ background: '#0a0a10', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-light)', fontSize: '0.825rem', color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-                🌐 <strong>Zero Telephony Web Calling Active:</strong> Calls connect directly through browser microphone & speaker without requiring any SIM card, Vobiz, or telecom recharge.
+                🌐 <strong>Zero Telephony Web Calling Active:</strong> Free in-browser calling with zero telecom recharge.
               </div>
             )}
 
-            <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%' }}>
+            <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%', padding: '0.75rem', fontWeight: '700' }}>
               {loading ? 'Saving...' : '💾 Save Telephony Settings'}
             </button>
           </form>
         </div>
 
-        {/* 2. ElevenLabs Human Voice Engine API Key */}
-        <div className="card" style={{ padding: '2rem', border: '1px solid rgba(139, 92, 246, 0.3)', background: 'rgba(139, 92, 246, 0.03)' }}>
-          <div className="flex justify-between items-center mb-2">
-            <h2 style={{ marginTop: 0, fontSize: '1.25rem' }}>🎙️ 2. Real Human Voice (ElevenLabs)</h2>
-            <span className="badge primary">Ultra-Human</span>
-          </div>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-            Get 10,000 characters FREE every month from <strong>elevenlabs.io</strong>:
-          </p>
-
-          <form onSubmit={handleSave}>
-            <div className="form-group mb-4">
-              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>ElevenLabs API Key</label>
-              <input 
-                type="password" 
-                className="form-control" 
-                value={elevenLabsApiKey} 
-                onChange={e => setElevenLabsApiKey(e.target.value)} 
-                placeholder="Paste your ElevenLabs API Key" 
-              />
-              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
-                Copy from: <strong>elevenlabs.io &rarr; Profile &rarr; API Keys</strong>
-              </span>
-            </div>
-
-            <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%' }}>
-              {loading ? 'Saving...' : '💾 Save Voice Key'}
-            </button>
-          </form>
-
-          {/* 3. Optional WhatsApp Hot Lead Alerts */}
-          <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-light)' }}>
+        {/* RIGHT COLUMN: SEPARATE ELEVENLABS & WHATSAPP CARDS */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+          
+          {/* CARD 2: ElevenLabs Human Voice Engine */}
+          <div className="card" style={{ padding: '2rem', border: '1px solid rgba(139, 92, 246, 0.3)', background: '#0a0a12' }}>
             <div className="flex justify-between items-center mb-2">
-              <h3 style={{ margin: 0, fontSize: '1rem' }}>📲 WhatsApp Hot Lead Alerts (Optional)</h3>
-              <span className="badge info">Optional</span>
+              <h2 style={{ marginTop: 0, fontSize: '1.25rem' }}>🎙️ 2. Real Human Voice (ElevenLabs)</h2>
+              <span className="badge primary">Ultra-Human</span>
             </div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '1rem' }}>
-              Receive instant alerts on WhatsApp when a lead says Yes:
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
+              Get 10,000 characters FREE every month from <strong>elevenlabs.io</strong>:
             </p>
 
-            <form onSubmit={handleSave}>
-              <div className="form-group mb-3">
+            <form onSubmit={handleSaveVoice}>
+              <div className="form-group mb-4">
+                <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>ElevenLabs API Key</label>
+                <input 
+                  type="password" 
+                  className="form-control" 
+                  value={elevenLabsApiKey} 
+                  onChange={e => setElevenLabsApiKey(e.target.value)} 
+                  placeholder="Paste your ElevenLabs API Key" 
+                />
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', display: 'block' }}>
+                  Copy from: <strong>elevenlabs.io &rarr; Profile &rarr; API Keys</strong>
+                </span>
+              </div>
+
+              <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.75rem', fontWeight: '700' }}>
+                💾 Save Voice Key
+              </button>
+            </form>
+          </div>
+
+          {/* CARD 3: Standalone WhatsApp Hot Lead Alerts (HIGHLIGHTED BUTTON!) */}
+          <div className="card" style={{ padding: '2rem', border: '1px solid rgba(59, 130, 246, 0.3)', background: '#0a0a12' }}>
+            <div className="flex justify-between items-center mb-2">
+              <h2 style={{ marginTop: 0, fontSize: '1.25rem' }}>📲 3. WhatsApp Hot Lead Alerts</h2>
+              <span className="badge info">Optional</span>
+            </div>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
+              Receive instant WhatsApp alerts on your mobile when a customer shows interest:
+            </p>
+
+            <form onSubmit={handleSaveWhatsApp}>
+              <div className="form-group mb-4">
+                <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Admin WhatsApp Mobile Number</label>
                 <input 
                   type="text" 
                   className="form-control" 
                   value={adminNumber} 
                   onChange={e => setAdminNumber(e.target.value)} 
-                  placeholder="e.g. +917707978068" 
+                  placeholder="e.g. +91 7707978068" 
                 />
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '3px', display: 'block' }}>
+                  Enter number with +91 country code.
+                </span>
               </div>
 
-              <button type="submit" className="btn btn-secondary" style={{ fontSize: '0.8125rem', width: '100%' }}>
-                Save WhatsApp Number
+              <button 
+                type="submit" 
+                className="btn btn-primary" 
+                style={{ 
+                  width: '100%', 
+                  padding: '0.75rem', 
+                  fontWeight: '700',
+                  background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                  boxShadow: '0 0 15px rgba(37, 99, 235, 0.3)'
+                }}
+              >
+                💾 Save WhatsApp Number
               </button>
             </form>
           </div>

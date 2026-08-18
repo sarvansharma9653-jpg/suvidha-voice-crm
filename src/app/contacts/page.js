@@ -170,7 +170,7 @@ export default function ContactsPage() {
       {/* CSV Sample Download Notice */}
       <div className="card mb-8" style={{ padding: '1rem 1.5rem', background: 'rgba(59, 130, 246, 0.05)', borderColor: 'rgba(59, 130, 246, 0.2)' }}>
         <div className="flex justify-between items-center" style={{ fontSize: '0.85rem' }}>
-          <span>💡 <strong>Outbound Calling Active:</strong> Active Caller Number is <code>08047280901</code> (Exotel India). Indian country code (+91) is auto-formatted!</span>
+          <span>💡 <strong>Outbound Calling Active:</strong> Connected to your active Calling Carrier (Vobiz / Telephony). Indian country code (+91) is auto-formatted!</span>
           <button 
             onClick={() => {
               const sample = "Name,Phone,Email,Stage\nRahul Sharma,+919876543210,rahul@example.com,New\nPriya Patel,+919876543211,priya@example.com,New";
