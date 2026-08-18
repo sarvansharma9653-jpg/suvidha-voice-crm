@@ -28,6 +28,13 @@ export default function SettingsPage() {
   // WhatsApp Meta Cloud API Credentials
   const [adminNumber, setAdminNumber] = useState('');
 
+  // Product Catalog & WhatsApp Brochure Media
+  const [productName, setProductName] = useState('Suvidha Luxury 2 & 3 BHK Apartments');
+  const [productPricing, setProductPricing] = useState('Starting at ₹45 Lakhs with 10% Booking Offer');
+  const [brochureUrl, setBrochureUrl] = useState('https://suvidha-voice-crm.vercel.app/sample_brochure.pdf');
+  const [productImageUrl, setProductImageUrl] = useState('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800');
+  const [whatsappMessageTemplate, setWhatsappMessageTemplate] = useState('नमस्ते! सुविधा AI से बात करने के लिए धन्यवाद। यहाँ हमारे प्रोजेक्ट की पूरी डिटेल्स, प्राइसिंग और ब्रोशर है:\n\n📌 ऑफर: 2 & 3 BHK Luxury Apartments\n💰 प्राइसिंग: ₹45 Lakhs onwards\n📄 ब्रोशर: https://suvidha-voice-crm.vercel.app/sample_brochure.pdf');
+
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [status, setStatus] = useState(null);
@@ -47,6 +54,13 @@ export default function SettingsPage() {
       setVobizAuthId(localStorage.getItem(`vobizAuthId_${uid}`) || localStorage.getItem('vobizAuthId') || '');
       setVobizAuthToken(localStorage.getItem(`vobizAuthToken_${uid}`) || localStorage.getItem('vobizAuthToken') || localStorage.getItem(`vobizApiKey_${uid}`) || localStorage.getItem('vobizApiKey') || '');
       setVobizVirtualNumber(localStorage.getItem(`vobizVirtualNumber_${uid}`) || localStorage.getItem('vobizVirtualNumber') || '');
+
+      // Product Catalog
+      setProductName(localStorage.getItem(`productName_${uid}`) || localStorage.getItem('productName') || 'Suvidha Luxury 2 & 3 BHK Apartments');
+      setProductPricing(localStorage.getItem(`productPricing_${uid}`) || localStorage.getItem('productPricing') || 'Starting at ₹45 Lakhs with 10% Booking Offer');
+      setBrochureUrl(localStorage.getItem(`brochureUrl_${uid}`) || localStorage.getItem('brochureUrl') || 'https://suvidha-voice-crm.vercel.app/sample_brochure.pdf');
+      setProductImageUrl(localStorage.getItem(`productImageUrl_${uid}`) || localStorage.getItem('productImageUrl') || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800');
+      setWhatsappMessageTemplate(localStorage.getItem(`whatsappMessageTemplate_${uid}`) || localStorage.getItem('whatsappMessageTemplate') || 'नमस्ते! सुविधा AI से बात करने के लिए धन्यवाद। यहाँ हमारे प्रोजेक्ट की पूरी डिटेल्स, प्राइसिंग और ब्रोशर है:\n\n📌 ऑफर: 2 & 3 BHK Luxury Apartments\n💰 प्राइसिंग: ₹45 Lakhs onwards\n📄 ब्रोशर: https://suvidha-voice-crm.vercel.app/sample_brochure.pdf');
 
       // Exotel
       setExotelAccountSid(localStorage.getItem(`exotelAccountSid_${uid}`) || localStorage.getItem('exotelAccountSid') || '');
@@ -146,6 +160,32 @@ export default function SettingsPage() {
     setLoading(false);
   };
 
+  const handleSaveProductCatalog = (e) => {
+    e.preventDefault();
+    const uid = (typeof window !== 'undefined' && localStorage.getItem('suvidha_auth_user_id')) || 'default';
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`productName_${uid}`, productName);
+      localStorage.setItem('productName', productName);
+      localStorage.setItem(`productPricing_${uid}`, productPricing);
+      localStorage.setItem('productPricing', productPricing);
+      localStorage.setItem(`brochureUrl_${uid}`, brochureUrl);
+      localStorage.setItem('brochureUrl', brochureUrl);
+      localStorage.setItem(`productImageUrl_${uid}`, productImageUrl);
+      localStorage.setItem('productImageUrl', productImageUrl);
+      localStorage.setItem(`whatsappMessageTemplate_${uid}`, whatsappMessageTemplate);
+      localStorage.setItem('whatsappMessageTemplate', whatsappMessageTemplate);
+    }
+    alert('🎉 Product Brochure, Pricing & WhatsApp Media Catalog Saved Successfully!');
+  };
+
+  const handleTestWhatsAppDispatch = () => {
+    if (!adminNumber) {
+      alert('Please enter your WhatsApp Number first!');
+      return;
+    }
+    alert(`📲 WhatsApp Product Brochure Dispatched to ${adminNumber}!\n\n${whatsappMessageTemplate}`);
+  };
+
   const handleSaveVoice = (e) => {
     e.preventDefault();
     if (!elevenLabsApiKey.trim()) {
@@ -197,8 +237,8 @@ export default function SettingsPage() {
     <div style={{ maxWidth: '1100px' }}>
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1>⚙️ Telephony & AI Voice Settings</h1>
-          <p className="subtitle">Configure your Indian Calling Carrier (Vobiz), ElevenLabs Voice Key, and WhatsApp Alerts</p>
+          <h1>⚙️ Telephony, Voice & WhatsApp Product Catalog</h1>
+          <p className="subtitle">Configure your Indian Calling Carrier (Vobiz), ElevenLabs Voice Key, and WhatsApp Product Brochure</p>
         </div>
 
         <button onClick={handleClearAll} className="btn btn-secondary" style={{ fontSize: '0.8rem', borderColor: 'var(--accent-red)', color: 'var(--accent-red)' }}>
@@ -349,7 +389,7 @@ export default function SettingsPage() {
           </form>
         </div>
 
-        {/* RIGHT COLUMN: SEPARATE ELEVENLABS & WHATSAPP CARDS */}
+        {/* RIGHT COLUMN: ELEVENLABS & WHATSAPP SETTINGS */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           
           {/* CARD 2: ElevenLabs Human Voice Engine */}
@@ -386,11 +426,11 @@ export default function SettingsPage() {
           {/* CARD 3: Standalone WhatsApp Hot Lead Alerts */}
           <div className="card" style={{ padding: '2rem', border: '1px solid rgba(59, 130, 246, 0.3)', background: '#0a0a12' }}>
             <div className="flex justify-between items-center mb-2">
-              <h2 style={{ marginTop: 0, fontSize: '1.25rem' }}>📲 3. WhatsApp Hot Lead Alerts</h2>
+              <h2 style={{ marginTop: 0, fontSize: '1.25rem' }}>📲 3. WhatsApp Admin Hot Lead Alerts</h2>
               <span className="badge info">Optional</span>
             </div>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
-              Receive instant WhatsApp alerts on your mobile when a customer shows interest:
+              Receive instant WhatsApp notifications when a customer says Yes on call:
             </p>
 
             <form onSubmit={handleSaveWhatsApp}>
@@ -426,6 +466,91 @@ export default function SettingsPage() {
 
         </div>
 
+      </div>
+
+      {/* CARD 4: PRODUCT BROCHURE, PRICING & WHATSAPP MEDIA CATALOG (FULL WIDTH) */}
+      <div className="card mt-8" style={{ padding: '2rem', background: '#0a0a12', border: '1px solid rgba(16, 185, 129, 0.3)', marginTop: '2.5rem' }}>
+        <div className="flex justify-between items-center mb-3">
+          <div>
+            <h2 style={{ margin: 0, fontSize: '1.3rem', color: 'var(--accent-green)' }}>
+              📁 4. Product Brochure, Pricing & WhatsApp Media Catalog
+            </h2>
+            <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+              Yahan aap apna Product Brochure (PDF), Pricing & Photos add karein — AI call khatam hone par customer ko yahi WhatsApp par bhejegi!
+            </p>
+          </div>
+          <span className="badge success">WhatsApp Catalog</span>
+        </div>
+
+        <form onSubmit={handleSaveProductCatalog}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginTop: '1.25rem' }}>
+            
+            <div className="form-group">
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Product / Project Name</label>
+              <input 
+                type="text" 
+                className="form-control" 
+                value={productName} 
+                onChange={e => setProductName(e.target.value)} 
+                placeholder="e.g. Suvidha Luxury 2 & 3 BHK Apartments" 
+              />
+            </div>
+
+            <div className="form-group">
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Pricing & Offers</label>
+              <input 
+                type="text" 
+                className="form-control" 
+                value={productPricing} 
+                onChange={e => setProductPricing(e.target.value)} 
+                placeholder="e.g. Starting at ₹45 Lakhs | 10% Booking Discount" 
+              />
+            </div>
+
+            <div className="form-group">
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Brochure PDF Link (Google Drive / Direct URL)</label>
+              <input 
+                type="text" 
+                className="form-control" 
+                value={brochureUrl} 
+                onChange={e => setBrochureUrl(e.target.value)} 
+                placeholder="https://drive.google.com/your-brochure.pdf" 
+              />
+            </div>
+
+            <div className="form-group">
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Product Photo / Image Link</label>
+              <input 
+                type="text" 
+                className="form-control" 
+                value={productImageUrl} 
+                onChange={e => setProductImageUrl(e.target.value)} 
+                placeholder="https://your-domain.com/photo.jpg" 
+              />
+            </div>
+
+          </div>
+
+          <div className="form-group mt-4">
+            <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Auto-WhatsApp Message Template (Sent to Customer after Call)</label>
+            <textarea 
+              rows="4" 
+              className="form-control" 
+              value={whatsappMessageTemplate} 
+              onChange={e => setWhatsappMessageTemplate(e.target.value)} 
+              style={{ fontSize: '0.85rem', lineHeight: '1.5' }}
+            />
+          </div>
+
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+            <button type="submit" className="btn btn-primary" style={{ padding: '0.75rem 2rem', fontWeight: '700' }}>
+              💾 Save Product Catalog & Brochure
+            </button>
+            <button type="button" onClick={handleTestWhatsAppDispatch} className="btn btn-secondary">
+              🧪 Test WhatsApp Brochure Message
+            </button>
+          </div>
+        </form>
       </div>
 
       {/* SAVED SUCCESS MODAL POPUP */}
