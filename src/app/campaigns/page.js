@@ -13,6 +13,8 @@ export default function CampaignsPage() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [quickLoading, setQuickLoading] = useState(false);
   const [callStatus, setCallStatus] = useState(null);
+  const [activeCallSid, setActiveCallSid] = useState(null);
+  const [hangingUp, setHangingUp] = useState(false);
 
   // Bulk Campaign Modal State
   const [showModal, setShowModal] = useState(false);
@@ -20,7 +22,7 @@ export default function CampaignsPage() {
     name: '', 
     productDetails: '',
     voice: 'madhur',
-    targetAudience: 'all', // 'all' | specific lead id
+    targetAudience: 'all',
     stageFilter: 'All'
   });
 
@@ -43,6 +45,7 @@ export default function CampaignsPage() {
 
     setQuickLoading(true);
     setCallStatus(null);
+    setActiveCallSid(null);
 
     const uid = typeof window !== 'undefined' ? (localStorage.getItem('suvidha_auth_user_id') || 'default') : 'default';
     const provider = typeof window !== 'undefined' ? (localStorage.getItem(`telephonyProvider_${uid}`) || localStorage.getItem('telephonyProvider') || 'vobiz') : 'vobiz';
@@ -77,6 +80,9 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
           type: 'success',
           message: data.message || `🎉 Outbound Call Dispatched to ${quickPhone}! Phone is ringing.`
         });
+        if (data.callSid) {
+          setActiveCallSid(data.callSid);
+        }
 
         // Record call summary in Call Logs store
         store.addCall({
@@ -88,8 +94,8 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
           status: 'Completed',
           sentiment: '😊 Interested',
           stage: 'Qualified',
-          summary: `AI introduced: "${quickProduct.substring(0, 70)}...". Customer answered and showed positive interest.`,
-          transcript: `AI: Namaste! Main Suvidha AI Voice Assistant bol raha hoon. Kya aap hamare offer mein interested hain?\nCustomer: Haan, mujhe WhatsApp par detail bhej dijiye.`
+          summary: `AI called customer about: "${quickProduct.substring(0, 60)}...". Customer answered and details sent on WhatsApp.`,
+          transcript: `AI: Namaste! Main Suvidha AI Voice Assistant bol rahi hoon. Kya aap details janna chahte hain?\nCustomer: Haan WhatsApp par bhejo.\nAI: Maine detail note kar li hai aur WhatsApp par bhej rahi hoon.`
         });
       } else {
         setCallStatus({
@@ -104,6 +110,26 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
       });
     } finally {
       setQuickLoading(false);
+    }
+  };
+
+  const handleHangupCall = async () => {
+    if (!activeCallSid) return;
+    setHangingUp(true);
+    const uid = typeof window !== 'undefined' ? (localStorage.getItem('suvidha_auth_user_id') || 'default') : 'default';
+    const vobizAuthId = typeof window !== 'undefined' ? (localStorage.getItem(`vobizAuthId_${uid}`) || localStorage.getItem('vobizAuthId') || 'MA_QTLGTSF9') : 'MA_QTLGTSF9';
+    const vobizAuthToken = typeof window !== 'undefined' ? (localStorage.getItem(`vobizAuthToken_${uid}`) || localStorage.getItem('vobizAuthToken') || '') : '';
+
+    try {
+      await fetch(`/api/call?callSid=${activeCallSid}&authId=${vobizAuthId}&authToken=${vobizAuthToken}`, {
+        method: 'DELETE'
+      });
+      setCallStatus({ type: 'success', message: '⏹️ Call Disconnected / Hung Up successfully!' });
+      setActiveCallSid(null);
+    } catch(e) {
+      setCallStatus({ type: 'error', message: 'Hangup error: ' + e.message });
+    } finally {
+      setHangingUp(false);
     }
   };
 
@@ -147,7 +173,7 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
     setDialerProgress({ current: 0, total: leadList.length, activeName: leadList[0].name });
 
     const provider = typeof window !== 'undefined' ? (localStorage.getItem('telephonyProvider') || 'vobiz') : 'vobiz';
-    const vobizVirtualNumber = typeof window !== 'undefined' ? (localStorage.getItem('vobizVirtualNumber') || '+917965854130') : '+917965854130';
+    const vobizVirtualNumber = typeof window !== 'undefined' ? (localStorage.getItem('vobizVirtualNumber') || '+917965854263') : '+917965854263';
 
     for (let i = 0; i < leadList.length; i++) {
       const lead = leadList[i];
@@ -165,7 +191,6 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
           })
         });
 
-        // Record Detailed Call Summary in Call Logs
         store.addCall({
           contactId: lead.id,
           contactName: lead.name,
@@ -176,8 +201,8 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
           status: 'Completed',
           sentiment: i % 2 === 0 ? '😊 Interested' : '⏳ Follow-up Requested',
           stage: 'Qualified',
-          summary: `Campaign "${campaign.name}" auto-dialed ${lead.name} (${lead.phone}). Pitch: ${campaign.script.substring(0, 60)}... Lead response was positive.`,
-          transcript: `AI: Namaste ${lead.name}! Main Suvidha AI Assistant bol raha hoon.\n${lead.name}: Haan ji, bataiye kya offer hai?\nAI: Hamara ${campaign.script.substring(0, 50)}... offer ready hai.\n${lead.name}: Theek hai, mujhe details whatsapp karein.`
+          summary: `Campaign "${campaign.name}" auto-dialed ${lead.name} (${lead.phone}). Pitch: ${campaign.script.substring(0, 60)}...`,
+          transcript: `AI: Namaste ${lead.name}! Main Suvidha AI Assistant bol rahi hoon.\n${lead.name}: Haan ji, details WhatsApp karein.`
         });
 
         store.updateContact(lead.id, { status: 'Called', stage: 'Called', lastCalled: new Date().toISOString().split('T')[0] });
@@ -222,7 +247,19 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
           padding: '1rem 1.5rem',
           background: callStatus.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'
         }}>
-          {callStatus.message}
+          <div className="flex justify-between items-center">
+            <span>{callStatus.message}</span>
+            {activeCallSid && (
+              <button 
+                onClick={handleHangupCall}
+                disabled={hangingUp}
+                className="btn btn-danger"
+                style={{ fontSize: '0.8rem', padding: '0.35rem 0.85rem', fontWeight: '700', borderRadius: '20px' }}
+              >
+                {hangingUp ? 'Disconnecting...' : '⏹️ Cut / Hang Up Call'}
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -287,7 +324,7 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
             {showAdvanced && (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.75rem', padding: '1rem', background: '#0e0e16', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
                 <div className="form-group">
-                  <label style={{ fontSize: '0.8rem', fontWeight: '600' }}>Voice Persona (Default: 👨 Madhur)</label>
+                  <label style={{ fontSize: '0.8rem', fontWeight: '600' }}>Voice Persona (Default: 👩 Polly.Aditi / 👨 Madhur)</label>
                   <select className="form-control" value={quickVoice} onChange={e => setQuickVoice(e.target.value)}>
                     <option value="madhur">👨 Madhur (Corporate Indian Male)</option>
                     <option value="swara">👩 Swara (Warm Indian Female)</option>
@@ -305,8 +342,8 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
             )}
           </div>
 
-          {/* Big Action Button */}
-          <div style={{ marginTop: '1.5rem' }}>
+          {/* Action Buttons: Launch Call + Hang Up */}
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
             <button 
               type="submit" 
               className="btn btn-primary"
@@ -315,6 +352,18 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
             >
               {quickLoading ? '⏳ Dialing Phone...' : '📞 Launch Instant AI Phone Call'}
             </button>
+
+            {activeCallSid && (
+              <button 
+                type="button" 
+                onClick={handleHangupCall}
+                disabled={hangingUp}
+                className="btn btn-danger"
+                style={{ padding: '0.85rem 2rem', fontSize: '0.95rem', fontWeight: '700', borderRadius: '30px' }}
+              >
+                {hangingUp ? 'Disconnecting...' : '⏹️ Cut / Hang Up Call'}
+              </button>
+            )}
           </div>
         </form>
       </div>
@@ -363,7 +412,7 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
         </div>
       </div>
 
-      {/* Modal for creating bulk campaigns (With Lead Selection!) */}
+      {/* Modal for creating bulk campaigns */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal-content" style={{ maxWidth: '520px' }}>
@@ -378,7 +427,6 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
                 <input required type="text" className="form-control" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. Noida Real Estate Leads" />
               </div>
 
-              {/* Lead Selection Option */}
               <div className="form-group mb-4">
                 <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Select Leads to Call</label>
                 <select className="form-control" value={formData.stageFilter} onChange={e => setFormData({ ...formData, stageFilter: e.target.value })}>
@@ -392,14 +440,6 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
               <div className="form-group mb-4">
                 <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Product / Service Pitch Details</label>
                 <textarea required rows="3" className="form-control" value={formData.productDetails} onChange={e => setFormData({ ...formData, productDetails: e.target.value })} placeholder="Describe what the AI agent should pitch..." />
-              </div>
-
-              <div className="form-group mb-4">
-                <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>AI Voice Persona</label>
-                <select className="form-control" value={formData.voice} onChange={e => setFormData({ ...formData, voice: e.target.value })}>
-                  <option value="madhur">👨 Madhur (Corporate Indian Male)</option>
-                  <option value="swara">👩 Swara (Warm Indian Female)</option>
-                </select>
               </div>
 
               <div className="flex justify-end gap-3 mt-6">

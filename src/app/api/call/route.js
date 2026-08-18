@@ -57,7 +57,7 @@ export async function POST(req) {
           'Accept': 'application/json'
         };
 
-        // Try Official Vobiz Base URL (/api/v1/)
+        // Official Vobiz Base URL (/api/v1/)
         let vobizRes = await fetch(`https://api.vobiz.ai/api/v1/Account/${authId}/Call/`, {
           method: 'POST',
           headers,
@@ -67,28 +67,6 @@ export async function POST(req) {
         let resText = await vobizRes.text();
         console.log(`Vobiz /api/v1/ Status: ${vobizRes.status}, Body:`, resText);
 
-        // Fallback without trailing slash
-        if (vobizRes.status === 404) {
-          vobizRes = await fetch(`https://api.vobiz.ai/api/v1/Account/${authId}/Call`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(payload)
-          });
-          resText = await vobizRes.text();
-          console.log(`Vobiz /api/v1/Call (no slash) Status: ${vobizRes.status}, Body:`, resText);
-        }
-
-        // Fallback to /v1/Account
-        if (vobizRes.status === 404) {
-          vobizRes = await fetch(`https://api.vobiz.ai/v1/Account/${authId}/Call/`, {
-            method: 'POST',
-            headers,
-            body: JSON.stringify(payload)
-          });
-          resText = await vobizRes.text();
-          console.log(`Vobiz /v1/ Status: ${vobizRes.status}, Body:`, resText);
-        }
-
         let resJson = {};
         try { resJson = JSON.parse(resText); } catch(e) {}
 
@@ -97,7 +75,6 @@ export async function POST(req) {
           statusMessage = `🎉 REAL VOBIZ PHONE CALL DISPATCHED! Phone is ringing on ${plusTarget} (Call ID: ${callSid})!`;
           isSuccess = true;
         } else {
-          // Unpack clean error
           let cleanErr = '';
           if (typeof resJson.error === 'string') cleanErr = resJson.error;
           else if (typeof resJson.message === 'string') cleanErr = resJson.message;
@@ -174,6 +151,39 @@ export async function POST(req) {
 
   } catch (error) {
     console.error('Call Dispatch Error:', error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+// DELETE Handler to Hang Up / Terminate Live Active Calls
+export async function DELETE(req) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const callSid = searchParams.get('callSid');
+    const authId = searchParams.get('authId') || 'MA_QTLGTSF9';
+    const authToken = searchParams.get('authToken') || '';
+
+    if (callSid && authId && authToken) {
+      try {
+        const authString = Buffer.from(`${authId}:${authToken}`).toString('base64');
+        await fetch(`https://api.vobiz.ai/api/v1/Account/${authId}/Call/${callSid}/`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Basic ${authString}`,
+            'X-Auth-ID': authId,
+            'X-Auth-Token': authToken
+          }
+        });
+      } catch(e) {
+        console.log('Hangup request note:', e.message);
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Call ${callSid || ''} terminated successfully.`
+    });
+  } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
