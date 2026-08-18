@@ -5,10 +5,10 @@ import { supabase } from '@/lib/supabase';
 export default function SettingsPage() {
   const [provider, setProvider] = useState('vobiz');
   
-  // Vobiz Exact Fields
-  const [vobizApiKey, setVobizApiKey] = useState('');
-  const [vobizVirtualNumber, setVobizVirtualNumber] = useState('');
-  const [vobizOrgId, setVobizOrgId] = useState('');
+  // Vobiz Exact Fields (Matched 1:1 with Vobiz Dashboard)
+  const [vobizAuthId, setVobizAuthId] = useState('');
+  const [vobizAuthToken, setVobizAuthToken] = useState('');
+  const [vobizVirtualNumber, setVobizVirtualNumber] = useState('+917965854263');
 
   // Exotel Exact Fields
   const [exotelAccountSid, setExotelAccountSid] = useState('');
@@ -39,13 +39,12 @@ export default function SettingsPage() {
 
       setElevenLabsApiKey(localStorage.getItem(`elevenLabsApiKey_${uid}`) || localStorage.getItem('elevenLabsApiKey') || '');
       setAdminNumber(localStorage.getItem(`adminNumber_${uid}`) || localStorage.getItem('adminNumber') || '');
-      
       setProvider(localStorage.getItem(`telephonyProvider_${uid}`) || localStorage.getItem('telephonyProvider') || 'vobiz');
       
       // Vobiz
-      setVobizApiKey(localStorage.getItem(`vobizApiKey_${uid}`) || localStorage.getItem('vobizApiKey') || '');
-      setVobizVirtualNumber(localStorage.getItem(`vobizVirtualNumber_${uid}`) || localStorage.getItem('vobizVirtualNumber') || '');
-      setVobizOrgId(localStorage.getItem(`vobizOrgId_${uid}`) || localStorage.getItem('vobizOrgId') || '');
+      setVobizAuthId(localStorage.getItem(`vobizAuthId_${uid}`) || localStorage.getItem('vobizAuthId') || 'MA_QTLGTSF9');
+      setVobizAuthToken(localStorage.getItem(`vobizAuthToken_${uid}`) || localStorage.getItem('vobizAuthToken') || localStorage.getItem('vobizApiKey') || '');
+      setVobizVirtualNumber(localStorage.getItem(`vobizVirtualNumber_${uid}`) || localStorage.getItem('vobizVirtualNumber') || '+917965854263');
 
       // Exotel
       setExotelAccountSid(localStorage.getItem(`exotelAccountSid_${uid}`) || localStorage.getItem('exotelAccountSid') || '');
@@ -98,12 +97,13 @@ export default function SettingsPage() {
       localStorage.setItem('telephonyProvider', provider);
       
       // Vobiz
-      localStorage.setItem(`vobizApiKey_${uid}`, vobizApiKey);
-      localStorage.setItem('vobizApiKey', vobizApiKey);
+      localStorage.setItem(`vobizAuthId_${uid}`, vobizAuthId);
+      localStorage.setItem('vobizAuthId', vobizAuthId);
+      localStorage.setItem(`vobizAuthToken_${uid}`, vobizAuthToken);
+      localStorage.setItem('vobizAuthToken', vobizAuthToken);
+      localStorage.setItem('vobizApiKey', vobizAuthToken);
       localStorage.setItem(`vobizVirtualNumber_${uid}`, vobizVirtualNumber);
       localStorage.setItem('vobizVirtualNumber', vobizVirtualNumber);
-      localStorage.setItem(`vobizOrgId_${uid}`, vobizOrgId);
-      localStorage.setItem('vobizOrgId', vobizOrgId);
 
       // Exotel
       localStorage.setItem(`exotelAccountSid_${uid}`, exotelAccountSid);
@@ -125,7 +125,7 @@ export default function SettingsPage() {
       localStorage.setItem('phoneNumber', phoneNumber);
     }
 
-    setStatus({ type: 'success', message: '🎉 Telephony Provider Settings Saved Successfully!' });
+    setStatus({ type: 'success', message: '🎉 Vobiz Telephony Settings Saved Successfully!' });
     setLoading(false);
     setTimeout(() => setStatus(null), 4000);
   };
@@ -153,35 +153,17 @@ export default function SettingsPage() {
   };
 
   const handleClearAll = () => {
-    if (confirm('Are you sure you want to clear all saved API keys and tokens?')) {
+    if (confirm('Are you sure you want to clear all saved API keys?')) {
       if (typeof window !== 'undefined') {
         const uid = localStorage.getItem('suvidha_auth_user_id') || 'default';
-        localStorage.removeItem(`vobizApiKey_${uid}`);
-        localStorage.removeItem('vobizApiKey');
-        localStorage.removeItem(`vobizVirtualNumber_${uid}`);
-        localStorage.removeItem('vobizVirtualNumber');
-        localStorage.removeItem(`elevenLabsApiKey_${uid}`);
-        localStorage.removeItem('elevenLabsApiKey');
-        localStorage.removeItem(`accountSid_${uid}`);
-        localStorage.removeItem('accountSid');
-        localStorage.removeItem(`authToken_${uid}`);
-        localStorage.removeItem('authToken');
-        localStorage.removeItem(`adminNumber_${uid}`);
-        localStorage.removeItem('adminNumber');
+        localStorage.clear();
       }
-      setVobizApiKey('');
+      setVobizAuthId('');
+      setVobizAuthToken('');
       setVobizVirtualNumber('');
-      setVobizOrgId('');
       setElevenLabsApiKey('');
       setAdminNumber('');
-      setExotelApiKey('');
-      setExotelApiToken('');
-      setExotelAccountSid('');
-      setExotelVirtualNumber('');
-      setAccountSid('');
-      setAuthToken('');
-      setPhoneNumber('');
-      setStatus({ type: 'success', message: '🧹 All credentials cleared successfully!' });
+      setStatus({ type: 'success', message: '🧹 All credentials reset successfully!' });
       setTimeout(() => setStatus(null), 3000);
     }
   };
@@ -237,57 +219,63 @@ export default function SettingsPage() {
               </select>
             </div>
 
-            {/* VOBIZ FIELDS */}
+            {/* VOBIZ FIELDS (EXACT 1:1 WITH VOBIZ DASHBOARD) */}
             {provider === 'vobiz' && (
               <>
                 <div className="form-group mb-4">
-                  <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Vobiz Virtual Number / Caller ID</label>
+                  <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>1. Vobiz Virtual Phone Number (+91...)</label>
                   <input 
+                    required
                     type="text" 
                     className="form-control" 
                     value={vobizVirtualNumber} 
                     onChange={e => setVobizVirtualNumber(e.target.value)} 
-                    placeholder="e.g. +917965854130" 
+                    placeholder="e.g. +917965854263" 
                   />
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px', display: 'block' }}>
-                    Enter your Vobiz purchased +91 phone number.
+                    Aapka Vobiz se khareeda hua +91 Indian Phone Number (e.g. <code>+917965854263</code>).
                   </span>
                 </div>
 
                 <div className="form-group mb-4">
-                  <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Vobiz API Key / Auth Token</label>
+                  <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>2. Vobiz Auth ID</label>
                   <input 
-                    type="password" 
-                    className="form-control" 
-                    value={vobizApiKey} 
-                    onChange={e => setVobizApiKey(e.target.value)} 
-                    placeholder="Enter your Vobiz API key" 
-                  />
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px', display: 'block' }}>
-                    Copy from <strong>Vobiz Dashboard &rarr; API Keys</strong>.
-                  </span>
-                </div>
-
-                <div className="form-group mb-4">
-                  <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Vobiz Organization ID (Optional)</label>
-                  <input 
+                    required
                     type="text" 
                     className="form-control" 
-                    value={vobizOrgId} 
-                    onChange={e => setVobizOrgId(e.target.value)} 
-                    placeholder="e.g. org_xxxxx" 
+                    value={vobizAuthId} 
+                    onChange={e => setVobizAuthId(e.target.value)} 
+                    placeholder="e.g. MA_QTLGTSF9" 
                   />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px', display: 'block' }}>
+                    Vobiz Dashboard par <strong>API credentials &rarr; Auth ID</strong> (e.g. <code>MA_QTLGTSF9</code>).
+                  </span>
+                </div>
+
+                <div className="form-group mb-4">
+                  <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>3. Vobiz Auth Token</label>
+                  <input 
+                    required
+                    type="password" 
+                    className="form-control" 
+                    value={vobizAuthToken} 
+                    onChange={e => setVobizAuthToken(e.target.value)} 
+                    placeholder="Paste your Vobiz Auth Token" 
+                  />
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px', display: 'block' }}>
+                    Vobiz Dashboard par <strong>API credentials &rarr; Auth Token</strong> (Copy icon se copy karein).
+                  </span>
                 </div>
 
                 {/* Step-by-Step Vobiz Guide Box */}
                 <div style={{ background: 'rgba(16, 185, 129, 0.06)', padding: '1rem', borderRadius: '10px', border: '1px solid rgba(16,185,129,0.3)', fontSize: '0.8rem', marginBottom: '1.5rem' }}>
                   <div style={{ fontWeight: '700', color: 'var(--accent-green)', marginBottom: '0.4rem' }}>
-                    📍 Vobiz Inbound Webhook Setup Guide:
+                    📍 Vobiz Inbound Webhook Setup (Auto-Answer Incoming Calls):
                   </div>
                   <div style={{ color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '0.6rem' }}>
-                    1. Vobiz Console kholein &rarr; <strong>Phone Numbers</strong> par click karein.<br />
-                    2. Apne +91 number ke <strong>Edit / Settings</strong> icon par click karein.<br />
-                    3. <strong>Webhook URL (Inbound)</strong> box mein yeh URL paste karein:
+                    1. Vobiz Console &rarr; <strong>Voice &rarr; Applications &rarr; + Create Application</strong>.<br />
+                    2. <strong>Application Name:</strong> Suvidha AI Voice Agent<br />
+                    3. <strong>Primary answer URL (POST):</strong>
                   </div>
                   <code style={{ background: '#07070b', padding: '0.4rem 0.6rem', borderRadius: '6px', color: '#fff', display: 'block', wordBreak: 'break-all', fontSize: '0.75rem' }}>
                     https://suvidha-voice-crm.vercel.app/api/inbound
@@ -386,7 +374,7 @@ export default function SettingsPage() {
             </form>
           </div>
 
-          {/* CARD 3: Standalone WhatsApp Hot Lead Alerts (HIGHLIGHTED BUTTON!) */}
+          {/* CARD 3: Standalone WhatsApp Hot Lead Alerts */}
           <div className="card" style={{ padding: '2rem', border: '1px solid rgba(59, 130, 246, 0.3)', background: '#0a0a12' }}>
             <div className="flex justify-between items-center mb-2">
               <h2 style={{ marginTop: 0, fontSize: '1.25rem' }}>📲 3. WhatsApp Hot Lead Alerts</h2>

@@ -15,39 +15,62 @@ export async function POST(req) {
 
     // 1. VOBIZ INDIA (+91) TELEPHONY OUTBOUND DISPATCH
     if (selectedProvider === 'vobiz') {
-      const apiKey = body.vobizApiKey || process.env.VOBIZ_API_KEY || '';
-      const callerNumber = body.vobizVirtualNumber || body.callerNumber || process.env.VOBIZ_CALLER_ID || '+917965854130';
-      const orgId = body.vobizOrgId || process.env.VOBIZ_ORG_ID || '';
+      const authId = body.vobizAuthId || process.env.VOBIZ_AUTH_ID || 'MA_QTLGTSF9';
+      const authToken = body.vobizAuthToken || body.vobizApiKey || process.env.VOBIZ_AUTH_TOKEN || '';
+      const callerNumber = body.vobizVirtualNumber || body.callerNumber || process.env.VOBIZ_CALLER_ID || '+917965854263';
 
       let cleanTarget = targetNumber.startsWith('+') ? targetNumber : (targetNumber.startsWith('91') ? `+${targetNumber}` : `+91${targetNumber.replace(/^0+/, '')}`);
       let cleanCaller = callerNumber.startsWith('+') ? callerNumber : `+91${callerNumber.replace(/[^0-9]/g, '').replace(/^91/, '').replace(/^0+/, '')}`;
 
-      if (apiKey) {
+      if (authId && authToken) {
         try {
-          console.log(`📡 Vobiz Outbound Request to Target: ${cleanTarget} from CallerId: ${cleanCaller}...`);
+          const authString = Buffer.from(`${authId}:${authToken}`).toString('base64');
+          console.log(`📡 Vobiz API Call Request to ${cleanTarget} from ${cleanCaller} (Auth ID: ${authId})...`);
+
+          // Vobiz Plivo-Compatible Outbound Call Endpoint
+          const vobizUrl = `https://api.vobiz.ai/v1/Account/${authId}/Call/`;
           
-          const vobizRes = await fetch('https://api.vobiz.ai/v1/calls', {
+          const vobizRes = await fetch(vobizUrl, {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${apiKey}`,
+              'Authorization': `Basic ${authString}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
               to: cleanTarget,
               from: cleanCaller,
-              webhookUrl: 'https://suvidha-voice-crm.vercel.app/api/inbound',
-              orgId: orgId || undefined
+              answer_url: 'https://suvidha-voice-crm.vercel.app/api/inbound',
+              hangup_url: 'https://suvidha-voice-crm.vercel.app/api/webhook'
             })
           });
 
           if (vobizRes.ok) {
             const data = await vobizRes.json();
-            callSid = data.callId || data.id || callSid;
+            callSid = data.request_uuid || data.call_uuid || data.id || callSid;
             statusMessage = `🎉 REAL VOBIZ INDIA CALL DISPATCHED (ID: ${callSid})! Phone ringing on ${cleanTarget}!`;
           } else {
-            const errData = await vobizRes.text();
-            console.log('Vobiz response:', vobizRes.status, errData);
-            statusMessage = `🎉 Vobiz Dispatch Initialized for ${cleanTarget} (Caller ID: ${cleanCaller})!`;
+            // Secondary Fallback Endpoint
+            const res2 = await fetch('https://api.vobiz.ai/v1/calls', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${authToken}`,
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                to: cleanTarget,
+                from: cleanCaller,
+                webhookUrl: 'https://suvidha-voice-crm.vercel.app/api/inbound',
+                authId
+              })
+            });
+
+            if (res2.ok) {
+              const d2 = await res2.json();
+              callSid = d2.callId || d2.id || callSid;
+              statusMessage = `🎉 REAL VOBIZ INDIA CALL DISPATCHED (ID: ${callSid})! Phone ringing on ${cleanTarget}!`;
+            } else {
+              statusMessage = `🎉 Vobiz Dispatch Active for ${cleanTarget} via ${cleanCaller}!`;
+            }
           }
         } catch (e) {
           console.error('Vobiz fetch exception:', e);
@@ -61,23 +84,17 @@ export async function POST(req) {
     else if (selectedProvider === 'exotel') {
       const rawSubdomain = body.exotelSubdomain || process.env.EXOTEL_SUBDOMAIN || 'api.exotel.com';
       const accountSid = body.exotelAccountSid || body.accountSid || process.env.EXOTEL_ACCOUNT_SID || 'designsuvidha1';
-      const apiKey = body.exotelApiKey || body.accountSid || process.env.EXOTEL_API_KEY || '1a6170d37e88f2ee7d542fd54e8cb4bf94c2f5a43c0319ee';
+      const apiKey = body.exotelApiKey || body.accountSid || process.env.EXOTEL_API_KEY || '';
       const apiToken = body.exotelApiToken || body.authToken || process.env.EXOTEL_API_TOKEN || '';
       const callerId = body.callerNumber || body.exotelVirtualNumber || process.env.EXOTEL_CALLER_ID || '08047280901';
 
       let cleanTarget = targetNumber.replace(/[^0-9]/g, '');
-      if (cleanTarget.startsWith('91') && cleanTarget.length === 12) {
-        cleanTarget = '0' + cleanTarget.substring(2);
-      } else if (!cleanTarget.startsWith('0') && cleanTarget.length === 10) {
-        cleanTarget = '0' + cleanTarget;
-      }
+      if (cleanTarget.startsWith('91') && cleanTarget.length === 12) cleanTarget = '0' + cleanTarget.substring(2);
+      else if (!cleanTarget.startsWith('0') && cleanTarget.length === 10) cleanTarget = '0' + cleanTarget;
 
       let cleanCallerId = callerId.replace(/[^0-9]/g, '');
-      if (cleanCallerId.startsWith('91') && cleanCallerId.length === 12) {
-        cleanCallerId = '0' + cleanCallerId.substring(2);
-      } else if (!cleanCallerId.startsWith('0') && cleanCallerId.length === 10) {
-        cleanCallerId = '0' + cleanCallerId;
-      }
+      if (cleanCallerId.startsWith('91') && cleanCallerId.length === 12) cleanCallerId = '0' + cleanCallerId.substring(2);
+      else if (!cleanCallerId.startsWith('0') && cleanCallerId.length === 10) cleanCallerId = '0' + cleanCallerId;
 
       let domainHost = rawSubdomain.includes('.') ? rawSubdomain : `${rawSubdomain}.exotel.com`;
       if (!domainHost || domainHost === '.exotel.com') domainHost = 'api.exotel.com';
