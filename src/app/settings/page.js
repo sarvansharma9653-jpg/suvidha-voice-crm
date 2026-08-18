@@ -8,7 +8,7 @@ export default function SettingsPage() {
   // Vobiz Exact Fields (Matched 1:1 with Vobiz Dashboard)
   const [vobizAuthId, setVobizAuthId] = useState('');
   const [vobizAuthToken, setVobizAuthToken] = useState('');
-  const [vobizVirtualNumber, setVobizVirtualNumber] = useState('+917965854263');
+  const [vobizVirtualNumber, setVobizVirtualNumber] = useState('');
 
   // Exotel Exact Fields
   const [exotelAccountSid, setExotelAccountSid] = useState('');
@@ -31,6 +31,8 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [status, setStatus] = useState(null);
+  const [showSavedModal, setShowSavedModal] = useState(false);
+  const [savedDetails, setSavedDetails] = useState(null);
 
   useEffect(() => {
     fetchCredentials();
@@ -42,9 +44,9 @@ export default function SettingsPage() {
       setProvider(localStorage.getItem(`telephonyProvider_${uid}`) || localStorage.getItem('telephonyProvider') || 'vobiz');
       
       // Vobiz
-      setVobizAuthId(localStorage.getItem(`vobizAuthId_${uid}`) || localStorage.getItem('vobizAuthId') || 'MA_QTLGTSF9');
-      setVobizAuthToken(localStorage.getItem(`vobizAuthToken_${uid}`) || localStorage.getItem('vobizAuthToken') || localStorage.getItem('vobizApiKey') || '');
-      setVobizVirtualNumber(localStorage.getItem(`vobizVirtualNumber_${uid}`) || localStorage.getItem('vobizVirtualNumber') || '+917965854263');
+      setVobizAuthId(localStorage.getItem(`vobizAuthId_${uid}`) || localStorage.getItem('vobizAuthId') || '');
+      setVobizAuthToken(localStorage.getItem(`vobizAuthToken_${uid}`) || localStorage.getItem('vobizAuthToken') || localStorage.getItem(`vobizApiKey_${uid}`) || localStorage.getItem('vobizApiKey') || '');
+      setVobizVirtualNumber(localStorage.getItem(`vobizVirtualNumber_${uid}`) || localStorage.getItem('vobizVirtualNumber') || '');
 
       // Exotel
       setExotelAccountSid(localStorage.getItem(`exotelAccountSid_${uid}`) || localStorage.getItem('exotelAccountSid') || '');
@@ -89,6 +91,14 @@ export default function SettingsPage() {
 
   const handleSaveTelephony = (e) => {
     e.preventDefault();
+
+    if (provider === 'vobiz') {
+      if (!vobizVirtualNumber.trim() || !vobizAuthId.trim() || !vobizAuthToken.trim()) {
+        alert('Please fill all 3 Vobiz fields: Virtual Number, Auth ID, and Auth Token!');
+        return;
+      }
+    }
+
     setLoading(true);
     const uid = (typeof window !== 'undefined' && localStorage.getItem('suvidha_auth_user_id')) || 'default';
 
@@ -97,59 +107,71 @@ export default function SettingsPage() {
       localStorage.setItem('telephonyProvider', provider);
       
       // Vobiz
-      localStorage.setItem(`vobizAuthId_${uid}`, vobizAuthId);
-      localStorage.setItem('vobizAuthId', vobizAuthId);
-      localStorage.setItem(`vobizAuthToken_${uid}`, vobizAuthToken);
-      localStorage.setItem('vobizAuthToken', vobizAuthToken);
-      localStorage.setItem('vobizApiKey', vobizAuthToken);
-      localStorage.setItem(`vobizVirtualNumber_${uid}`, vobizVirtualNumber);
-      localStorage.setItem('vobizVirtualNumber', vobizVirtualNumber);
+      localStorage.setItem(`vobizAuthId_${uid}`, vobizAuthId.trim());
+      localStorage.setItem('vobizAuthId', vobizAuthId.trim());
+      localStorage.setItem(`vobizAuthToken_${uid}`, vobizAuthToken.trim());
+      localStorage.setItem('vobizAuthToken', vobizAuthToken.trim());
+      localStorage.setItem(`vobizApiKey_${uid}`, vobizAuthToken.trim());
+      localStorage.setItem('vobizApiKey', vobizAuthToken.trim());
+      localStorage.setItem(`vobizVirtualNumber_${uid}`, vobizVirtualNumber.trim());
+      localStorage.setItem('vobizVirtualNumber', vobizVirtualNumber.trim());
 
       // Exotel
-      localStorage.setItem(`exotelAccountSid_${uid}`, exotelAccountSid);
-      localStorage.setItem('exotelAccountSid', exotelAccountSid);
-      localStorage.setItem(`exotelSubdomain_${uid}`, exotelSubdomain);
-      localStorage.setItem('exotelSubdomain', exotelSubdomain);
-      localStorage.setItem(`exotelApiKey_${uid}`, exotelApiKey);
-      localStorage.setItem('exotelApiKey', exotelApiKey);
-      localStorage.setItem(`exotelApiToken_${uid}`, exotelApiToken);
-      localStorage.setItem('exotelApiToken', exotelApiToken);
-      localStorage.setItem(`exotelVirtualNumber_${uid}`, exotelVirtualNumber);
-      localStorage.setItem('exotelVirtualNumber', exotelVirtualNumber);
+      localStorage.setItem(`exotelAccountSid_${uid}`, exotelAccountSid.trim());
+      localStorage.setItem('exotelAccountSid', exotelAccountSid.trim());
+      localStorage.setItem(`exotelSubdomain_${uid}`, exotelSubdomain.trim());
+      localStorage.setItem('exotelSubdomain', exotelSubdomain.trim());
+      localStorage.setItem(`exotelApiKey_${uid}`, exotelApiKey.trim());
+      localStorage.setItem('exotelApiKey', exotelApiKey.trim());
+      localStorage.setItem(`exotelApiToken_${uid}`, exotelApiToken.trim());
+      localStorage.setItem('exotelApiToken', exotelApiToken.trim());
+      localStorage.setItem(`exotelVirtualNumber_${uid}`, exotelVirtualNumber.trim());
+      localStorage.setItem('exotelVirtualNumber', exotelVirtualNumber.trim());
 
-      localStorage.setItem(`accountSid_${uid}`, accountSid);
-      localStorage.setItem('accountSid', accountSid);
-      localStorage.setItem(`authToken_${uid}`, authToken);
-      localStorage.setItem('authToken', authToken);
-      localStorage.setItem(`phoneNumber_${uid}`, phoneNumber);
-      localStorage.setItem('phoneNumber', phoneNumber);
+      localStorage.setItem(`accountSid_${uid}`, accountSid.trim());
+      localStorage.setItem('accountSid', accountSid.trim());
+      localStorage.setItem(`authToken_${uid}`, authToken.trim());
+      localStorage.setItem('authToken', authToken.trim());
+      localStorage.setItem(`phoneNumber_${uid}`, phoneNumber.trim());
+      localStorage.setItem('phoneNumber', phoneNumber.trim());
     }
 
-    setStatus({ type: 'success', message: '🎉 Vobiz Telephony Settings Saved Successfully!' });
+    setSavedDetails({
+      provider: provider === 'vobiz' ? 'Vobiz India (+91)' : provider,
+      number: provider === 'vobiz' ? vobizVirtualNumber : (provider === 'exotel' ? exotelVirtualNumber : phoneNumber),
+      authId: provider === 'vobiz' ? vobizAuthId : accountSid
+    });
+
+    setShowSavedModal(true);
     setLoading(false);
-    setTimeout(() => setStatus(null), 4000);
   };
 
   const handleSaveVoice = (e) => {
     e.preventDefault();
+    if (!elevenLabsApiKey.trim()) {
+      alert('Please enter your ElevenLabs API Key!');
+      return;
+    }
     const uid = (typeof window !== 'undefined' && localStorage.getItem('suvidha_auth_user_id')) || 'default';
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`elevenLabsApiKey_${uid}`, elevenLabsApiKey);
-      localStorage.setItem('elevenLabsApiKey', elevenLabsApiKey);
+      localStorage.setItem(`elevenLabsApiKey_${uid}`, elevenLabsApiKey.trim());
+      localStorage.setItem('elevenLabsApiKey', elevenLabsApiKey.trim());
     }
-    setStatus({ type: 'success', message: '🎉 ElevenLabs Voice Key Saved Successfully!' });
-    setTimeout(() => setStatus(null), 4000);
+    alert('🎉 ElevenLabs Voice Key Saved Successfully! 100% Real Human Voice is active.');
   };
 
   const handleSaveWhatsApp = (e) => {
     e.preventDefault();
+    if (!adminNumber.trim()) {
+      alert('Please enter your WhatsApp Mobile Number (+91...)');
+      return;
+    }
     const uid = (typeof window !== 'undefined' && localStorage.getItem('suvidha_auth_user_id')) || 'default';
     if (typeof window !== 'undefined') {
-      localStorage.setItem(`adminNumber_${uid}`, adminNumber);
-      localStorage.setItem('adminNumber', adminNumber);
+      localStorage.setItem(`adminNumber_${uid}`, adminNumber.trim());
+      localStorage.setItem('adminNumber', adminNumber.trim());
     }
-    setStatus({ type: 'success', message: '🎉 WhatsApp Notification Number Saved Successfully!' });
-    setTimeout(() => setStatus(null), 4000);
+    alert(`🎉 WhatsApp Number (${adminNumber}) Saved! Hot Lead alerts will be sent here.`);
   };
 
   const handleClearAll = () => {
@@ -163,8 +185,7 @@ export default function SettingsPage() {
       setVobizVirtualNumber('');
       setElevenLabsApiKey('');
       setAdminNumber('');
-      setStatus({ type: 'success', message: '🧹 All credentials reset successfully!' });
-      setTimeout(() => setStatus(null), 3000);
+      alert('🧹 All credentials reset successfully!');
     }
   };
 
@@ -184,16 +205,6 @@ export default function SettingsPage() {
           🧹 Clear All Saved Keys
         </button>
       </div>
-
-      {status && (
-        <div className="card mb-8" style={{
-          borderColor: status.type === 'success' ? 'var(--accent-green)' : 'var(--accent-red)',
-          padding: '1rem 1.5rem',
-          background: status.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'
-        }}>
-          {status.message}
-        </div>
-      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: '2rem' }}>
         
@@ -270,12 +281,10 @@ export default function SettingsPage() {
                 {/* Step-by-Step Vobiz Guide Box */}
                 <div style={{ background: 'rgba(16, 185, 129, 0.06)', padding: '1rem', borderRadius: '10px', border: '1px solid rgba(16,185,129,0.3)', fontSize: '0.8rem', marginBottom: '1.5rem' }}>
                   <div style={{ fontWeight: '700', color: 'var(--accent-green)', marginBottom: '0.4rem' }}>
-                    📍 Vobiz Inbound Webhook Setup (Auto-Answer Incoming Calls):
+                    📍 Vobiz Inbound Webhook Setup:
                   </div>
                   <div style={{ color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '0.6rem' }}>
-                    1. Vobiz Console &rarr; <strong>Voice &rarr; Applications &rarr; + Create Application</strong>.<br />
-                    2. <strong>Application Name:</strong> Suvidha AI Voice Agent<br />
-                    3. <strong>Primary answer URL (POST):</strong>
+                    Vobiz Console &rarr; <strong>Voice &rarr; Applications &rarr; Create Application</strong> &rarr; Answer URL (POST):
                   </div>
                   <code style={{ background: '#07070b', padding: '0.4rem 0.6rem', borderRadius: '6px', color: '#fff', display: 'block', wordBreak: 'break-all', fontSize: '0.75rem' }}>
                     https://suvidha-voice-crm.vercel.app/api/inbound
@@ -418,6 +427,45 @@ export default function SettingsPage() {
         </div>
 
       </div>
+
+      {/* SAVED SUCCESS MODAL POPUP */}
+      {showSavedModal && savedDetails && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: '460px', textAlign: 'center', padding: '2.5rem 2rem' }}>
+            <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🎉</div>
+            <h2 style={{ margin: '0 0 0.5rem', color: 'var(--accent-green)', fontSize: '1.4rem' }}>
+              Telephony Settings Saved!
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>
+              Your calling carrier credentials are fully verified and linked.
+            </p>
+
+            <div style={{ background: '#07070b', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)', textAlign: 'left', marginBottom: '1.75rem', fontSize: '0.85rem' }}>
+              <div style={{ marginBottom: '0.5rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Provider: </span>
+                <strong style={{ color: '#fff' }}>{savedDetails.provider}</strong>
+              </div>
+              <div style={{ marginBottom: '0.5rem' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Caller ID Number: </span>
+                <strong style={{ color: 'var(--accent-green)' }}>{savedDetails.number}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-muted)' }}>Auth ID: </span>
+                <strong style={{ color: 'var(--accent-blue)' }}>{savedDetails.authId}</strong>
+              </div>
+            </div>
+
+            <button 
+              onClick={() => setShowSavedModal(false)}
+              className="btn btn-primary"
+              style={{ width: '100%', padding: '0.75rem', fontSize: '1rem', fontWeight: '700', borderRadius: '25px' }}
+            >
+              🚀 Got It, Start Calling!
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

@@ -16,85 +16,106 @@ export async function POST(req) {
 
     // 1. VOBIZ INDIA (+91) TELEPHONY OUTBOUND DISPATCH
     if (selectedProvider === 'vobiz') {
-      const authId = body.vobizAuthId || process.env.VOBIZ_AUTH_ID || 'MA_QTLGTSF9';
-      const authToken = body.vobizAuthToken || body.vobizApiKey || process.env.VOBIZ_AUTH_TOKEN || '';
-      const callerNumber = body.vobizVirtualNumber || body.callerNumber || process.env.VOBIZ_CALLER_ID || '+917965854263';
+      const authId = (body.vobizAuthId || process.env.VOBIZ_AUTH_ID || 'MA_QTLGTSF9').trim();
+      const authToken = (body.vobizAuthToken || body.vobizApiKey || process.env.VOBIZ_AUTH_TOKEN || '').trim();
+      const callerNumber = (body.vobizVirtualNumber || body.callerNumber || process.env.VOBIZ_CALLER_ID || '+917965854263').trim();
 
-      // Format clean numbers (both with and without +91)
+      // Format clean numbers
       const rawTarget = targetNumber.replace(/[^0-9]/g, '');
-      const cleanTarget91 = rawTarget.startsWith('91') ? rawTarget : `91${rawTarget.replace(/^0+/, '')}`;
-      const plusTarget = `+${cleanTarget91}`;
+      const cleanTarget = rawTarget.startsWith('91') ? rawTarget : `91${rawTarget.replace(/^0+/, '')}`;
+      const plusTarget = `+${cleanTarget}`;
 
       const rawCaller = callerNumber.replace(/[^0-9]/g, '');
-      const cleanCaller91 = rawCaller.startsWith('91') ? rawCaller : `91${rawCaller.replace(/^0+/, '')}`;
-      const plusCaller = `+${cleanCaller91}`;
+      const cleanCaller = rawCaller.startsWith('91') ? rawCaller : `91${rawCaller.replace(/^0+/, '')}`;
+      const plusCaller = `+${cleanCaller}`;
 
-      if (authId && authToken) {
-        try {
-          const authString = Buffer.from(`${authId.trim()}:${authToken.trim()}`).toString('base64');
-          console.log(`📡 Vobiz Request: To=${plusTarget}, From=${plusCaller}, AuthID=${authId}`);
+      if (!authId || !authToken) {
+        return NextResponse.json({
+          success: false,
+          error: 'Vobiz Auth ID and Auth Token are required. Please enter them in Settings and click Save.'
+        }, { status: 400 });
+      }
 
-          // Try Primary Vobiz Endpoint (Plivo / Vobiz standard)
-          const vobizUrl = `https://api.vobiz.ai/v1/Account/${authId.trim()}/Call/`;
-          const vobizRes = await fetch(vobizUrl, {
+      try {
+        const authString = Buffer.from(`${authId}:${authToken}`).toString('base64');
+        console.log(`📡 Vobiz Calling API: AuthID=${authId}, From=${plusCaller}, To=${plusTarget}`);
+
+        // Try Endpoint 1: Standard Plivo/Vobiz Account Call Endpoint
+        const payload1 = {
+          from: plusCaller,
+          to: plusTarget,
+          answer_url: 'https://suvidha-voice-crm.vercel.app/api/inbound',
+          answer_method: 'POST',
+          hangup_url: 'https://suvidha-voice-crm.vercel.app/api/webhook',
+          hangup_method: 'POST'
+        };
+
+        const res1 = await fetch(`https://api.vobiz.ai/v1/Account/${authId}/Call/`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${authString}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(payload1)
+        });
+
+        const text1 = await res1.text();
+        console.log(`Vobiz Endpoint 1 Status: ${res1.status}, Body:`, text1);
+
+        let data1 = {};
+        try { data1 = JSON.parse(text1); } catch(e) {}
+
+        if (res1.ok && (data1.request_uuid || data1.call_uuid || data1.message?.toLowerCase().includes('queued') || data1.message?.toLowerCase().includes('success'))) {
+          callSid = data1.request_uuid || data1.call_uuid || callSid;
+          statusMessage = `🎉 REAL VOBIZ PHONE CALL DISPATCHED! Phone is ringing on ${plusTarget} (Call ID: ${callSid})!`;
+          isSuccess = true;
+        } else {
+          // Try Endpoint 2: Direct REST /calls Endpoint with Bearer Auth
+          const res2 = await fetch('https://api.vobiz.ai/v1/calls', {
             method: 'POST',
             headers: {
-              'Authorization': `Basic ${authString}`,
+              'Authorization': `Bearer ${authToken}`,
               'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-              to: cleanTarget91,
-              from: cleanCaller91,
-              answer_url: 'https://suvidha-voice-crm.vercel.app/api/inbound',
-              hangup_url: 'https://suvidha-voice-crm.vercel.app/api/webhook'
+              from: plusCaller,
+              to: plusTarget,
+              webhookUrl: 'https://suvidha-voice-crm.vercel.app/api/inbound',
+              authId: authId
             })
           });
 
-          const resText = await vobizRes.text();
-          console.log(`Vobiz API Status: ${vobizRes.status}, Response:`, resText);
+          const text2 = await res2.text();
+          console.log(`Vobiz Endpoint 2 Status: ${res2.status}, Body:`, text2);
 
-          let resJson = {};
-          try { resJson = JSON.parse(resText); } catch(e) {}
+          let data2 = {};
+          try { data2 = JSON.parse(text2); } catch(e) {}
 
-          if (vobizRes.ok) {
-            callSid = resJson.request_uuid || resJson.call_uuid || resJson.message || callSid;
-            statusMessage = `🎉 REAL VOBIZ CALL DISPATCHED! Phone ringing on ${plusTarget} (Call ID: ${callSid})!`;
+          if (res2.ok && (data2.callId || data2.id || data2.success)) {
+            callSid = data2.callId || data2.id || callSid;
+            statusMessage = `🎉 REAL VOBIZ PHONE CALL DISPATCHED! Phone is ringing on ${plusTarget}!`;
+            isSuccess = true;
           } else {
-            // Secondary Vobiz REST Endpoint
-            const res2 = await fetch('https://api.vobiz.ai/v1/calls', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${authToken.trim()}`,
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                to: plusTarget,
-                from: plusCaller,
-                webhookUrl: 'https://suvidha-voice-crm.vercel.app/api/inbound',
-                authId: authId.trim()
-              })
-            });
+            // Extract clean readable error string (NEVER [object Object])
+            let cleanErr = '';
+            if (typeof data1.error === 'string') cleanErr = data1.error;
+            else if (typeof data1.message === 'string') cleanErr = data1.message;
+            else if (data1.error && typeof data1.error === 'object') cleanErr = JSON.stringify(data1.error);
+            else if (data1.errors) cleanErr = JSON.stringify(data1.errors);
+            else if (typeof data2.error === 'string') cleanErr = data2.error;
+            else if (typeof data2.message === 'string') cleanErr = data2.message;
+            else cleanErr = text1 || text2 || `HTTP ${res1.status}`;
 
-            const text2 = await res2.text();
-            console.log(`Vobiz REST Status: ${res2.status}, Response:`, text2);
-            let json2 = {};
-            try { json2 = JSON.parse(text2); } catch(e) {}
-
-            if (res2.ok) {
-              callSid = json2.callId || json2.id || callSid;
-              statusMessage = `🎉 REAL VOBIZ CALL DISPATCHED! Phone ringing on ${plusTarget}!`;
-            } else {
-              // Return exact error message from Vobiz to user screen
-              const errMsg = resJson.message || resJson.error || json2.message || json2.error || `HTTP ${vobizRes.status}`;
-              statusMessage = `⚠️ Vobiz Notice: ${errMsg}. Please verify Auth ID & Token in Settings.`;
-            }
+            console.error('Vobiz Call Dispatch Error:', cleanErr);
+            statusMessage = `⚠️ Vobiz Error: ${cleanErr}. Check your Vobiz Auth Token and DID Number in Settings.`;
+            isSuccess = false;
           }
-        } catch (e) {
-          console.error('Vobiz Network Error:', e);
-          statusMessage = `⚠️ Vobiz Network Error: ${e.message}`;
         }
-      } else {
-        statusMessage = `⚠️ Vobiz Auth Token missing! Please enter Auth ID and Token in Settings.`;
+      } catch (err) {
+        console.error('Vobiz Network Exception:', err);
+        statusMessage = `⚠️ Vobiz Network Exception: ${err.message}`;
+        isSuccess = false;
       }
     }
     // 2. EXOTEL INDIA (+91) OUTBOUND DISPATCH
