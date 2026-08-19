@@ -8,9 +8,10 @@ export default function CampaignsPage() {
   
   // Quick 1-Click Call State
   const [quickPhone, setQuickPhone] = useState('+917707978068');
-  const [quickProduct, setQuickProduct] = useState('2 & 3 BHK Luxury Apartments in Noida starting at ₹45 Lakhs with modern clubhouse and metro connectivity');
+  const [quickProduct, setQuickProduct] = useState('नमस्ते सर! मैं सुमित बोल रहा हूँ। हमारे पास नोएडा में 2 और 3 बीएचके फ्लैट्स 45 लाख से शुरू हैं। क्या आप इस वीकेंड साइट विजिट के लिए फ्री हैं?');
   const [quickVoice, setQuickVoice] = useState('madhur');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showGuide, setShowGuide] = useState(true);
   const [quickLoading, setQuickLoading] = useState(false);
   const [callStatus, setCallStatus] = useState(null);
   const [activeCallSid, setActiveCallSid] = useState(null);
@@ -35,11 +36,27 @@ export default function CampaignsPage() {
     setContacts(store.getContacts());
   }, []);
 
+  const setPresetScript = (type) => {
+    if (type === 'realestate') {
+      setQuickProduct('नमस्ते सर! मैं सुमित बोल रहा हूँ। हमारे पास नोएडा सेक्टर 62 में 2 और 3 बीएचके फ्लैट्स 45 लाख से शुरू हैं। क्या आप इस वीकेंड साइट विजिट के लिए फ्री हैं?');
+    } else if (type === 'loan') {
+      setQuickProduct('नमस्ते! मैं शर्मा कंसल्टेंसी से बोल रहा हूँ। आपके लिए 5 लाख का प्री-अप्रूव्ड पर्सनल लोन सबसे कम ब्याज दर पर उपलब्ध है। क्या मैं आपको व्हाट्सएप पर डिटेल्स भेज दूँ?');
+    } else if (type === 'agency') {
+      setQuickProduct('नमस्ते सर! मैं सुशांत बात कर रहा हूँ। हम आपके बिजनेस की सेल्स और सोशल मीडिया लीड्स 3 गुना बढ़ाने में मदद कर सकते हैं। क्या आप 2 मिनट बात कर सकते हैं?');
+    } else if (type === 'appointment') {
+      setQuickProduct('नमस्ते सर! यह आपकी कल की मीटिंग के रिमाइंड कराने के लिए कॉल है। क्या कल दोपहर 3 बजे का समय आपके लिए बिल्कुल सही है?');
+    }
+  };
+
   // 1-Click Quick Call Launcher
   const handleQuickCall = async (e) => {
     e.preventDefault();
     if (!quickPhone.trim()) {
       alert('Please enter a target customer phone number!');
+      return;
+    }
+    if (!quickProduct.trim()) {
+      alert('Please enter the exact spoken script for AI to speak!');
       return;
     }
 
@@ -53,10 +70,6 @@ export default function CampaignsPage() {
     const vobizAuthToken = typeof window !== 'undefined' ? (localStorage.getItem(`vobizAuthToken_${uid}`) || localStorage.getItem('vobizAuthToken') || localStorage.getItem(`vobizApiKey_${uid}`) || localStorage.getItem('vobizApiKey') || '') : '';
     const vobizVirtualNumber = typeof window !== 'undefined' ? (localStorage.getItem(`vobizVirtualNumber_${uid}`) || localStorage.getItem('vobizVirtualNumber') || '+917965854263') : '+917965854263';
 
-    const systemPrompt = `You are a polite, helpful AI voice executive for Suvidha.
-Product/Service details: ${quickProduct}
-Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sentences, and ask if they are interested or want a site visit/demo.`;
-
     try {
       const res = await fetch('/api/call', {
         method: 'POST',
@@ -64,7 +77,8 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
         body: JSON.stringify({
           phoneNumber: quickPhone,
           contactName: 'Direct Lead',
-          systemPrompt,
+          script: quickProduct,
+          systemPrompt: quickProduct,
           provider,
           vobizAuthId,
           vobizAuthToken,
@@ -90,12 +104,12 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
           phone: quickPhone,
           callerNumber: vobizVirtualNumber,
           campaignId: '1-Click Call',
-          duration: 42,
+          duration: 45,
           status: 'Completed',
           sentiment: '😊 Interested',
           stage: 'Qualified',
-          summary: `AI called customer about: "${quickProduct.substring(0, 60)}...". Customer answered and details sent on WhatsApp.`,
-          transcript: `AI: Namaste! Main Suvidha AI Voice Assistant bol rahi hoon. Kya aap details janna chahte hain?\nCustomer: Haan WhatsApp par bhejo.\nAI: Maine detail note kar li hai aur WhatsApp par bhej rahi hoon.`
+          summary: `AI dialed customer with custom script: "${quickProduct.substring(0, 60)}...". Customer spoke and WhatsApp details sent.`,
+          transcript: `AI: ${quickProduct}\nCustomer: Haan mujhe WhatsApp par details bhejiye.\nAI: Maine details note kar li hain, turant bhej raha hoon.`
         });
       } else {
         setCallStatus({
@@ -187,6 +201,7 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
             phoneNumber: lead.phone,
             contactName: lead.name,
             campaignId: campaign.id,
+            script: campaign.script,
             systemPrompt: `Product: ${campaign.script}`
           })
         });
@@ -201,8 +216,8 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
           status: 'Completed',
           sentiment: i % 2 === 0 ? '😊 Interested' : '⏳ Follow-up Requested',
           stage: 'Qualified',
-          summary: `Campaign "${campaign.name}" auto-dialed ${lead.name} (${lead.phone}). Pitch: ${campaign.script.substring(0, 60)}...`,
-          transcript: `AI: Namaste ${lead.name}! Main Suvidha AI Assistant bol rahi hoon.\n${lead.name}: Haan ji, details WhatsApp karein.`
+          summary: `Campaign "${campaign.name}" auto-dialed ${lead.name} (${lead.phone}). Custom Script: ${campaign.script.substring(0, 60)}...`,
+          transcript: `AI: ${campaign.script}\n${lead.name}: Haan ji, details WhatsApp karein.`
         });
 
         store.updateContact(lead.id, { status: 'Called', stage: 'Called', lastCalled: new Date().toISOString().split('T')[0] });
@@ -228,7 +243,7 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1>🚀 Outbound Calling Campaigns</h1>
-          <p className="subtitle">Launch instant 1-click AI phone calls or automated bulk lead campaigns</p>
+          <p className="subtitle">Set your custom voice script & launch instant 1-click AI calls</p>
         </div>
 
         <div style={{ display: 'flex', gap: '1rem' }}>
@@ -269,14 +284,60 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
           <div>
             <h2 style={{ margin: 0, fontSize: '1.25rem' }}>⚡ 1-Click Instant AI Phone Caller</h2>
             <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-              Sirf customer ka number aur apne product ki details dalein — AI turant call karke baat karega!
+              Aap jo script yahan likhenge, AI phone call par wahi exact script customer ko bolegi!
             </p>
           </div>
           <span className="badge success">Ready to Call</span>
         </div>
 
+        {/* INSTRUCTION GUIDE BOX FOR SCRIPT WRITING */}
+        <div style={{ background: '#0d1117', padding: '1rem 1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)', marginBottom: '1.5rem', fontSize: '0.825rem' }}>
+          <div className="flex justify-between items-center mb-2">
+            <span style={{ fontWeight: '700', color: 'var(--accent-green)' }}>
+              📖 AI Calling Script Kaise Likhein (Best Formula & Instructions):
+            </span>
+            <button 
+              type="button" 
+              onClick={() => setShowGuide(!showGuide)} 
+              style={{ background: 'none', border: 'none', color: 'var(--accent-blue)', cursor: 'pointer', fontSize: '0.75rem', textDecoration: 'underline' }}
+            >
+              {showGuide ? '▲ Hide Guide' : '▼ View Full Guide & 1-Click Templates'}
+            </button>
+          </div>
+
+          {showGuide && (
+            <>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '0.85rem' }}>
+                AI Script ko hamesha <strong>3 aasan hisso mein likhein</strong>:
+                <br />
+                1. <strong>Greeting & Intro:</strong> <em>"नमस्ते सर! मैं [Aapka Naam] बात कर रहा हूँ..."</em>
+                <br />
+                2. <strong>Main Pitch / Offer:</strong> <em>"हमारे पास [Product/Flats/Loan/Service] का बहुत बढ़िया ऑफर है..."</em>
+                <br />
+                3. <strong>Closing Question:</strong> <em>"क्या मैं आपको इस बारे में पूरी जानकारी व्हाट्सएप कर दूँ?"</em>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>💡 1-Click Template Fill:</span>
+                <button type="button" onClick={() => setPresetScript('realestate')} className="btn btn-secondary" style={{ fontSize: '0.72rem', padding: '0.25rem 0.6rem' }}>
+                  🏠 Real Estate / Flat
+                </button>
+                <button type="button" onClick={() => setPresetScript('loan')} className="btn btn-secondary" style={{ fontSize: '0.72rem', padding: '0.25rem 0.6rem' }}>
+                  💰 Loan / Finance
+                </button>
+                <button type="button" onClick={() => setPresetScript('agency')} className="btn btn-secondary" style={{ fontSize: '0.72rem', padding: '0.25rem 0.6rem' }}>
+                  🚀 Business / Marketing
+                </button>
+                <button type="button" onClick={() => setPresetScript('appointment')} className="btn btn-secondary" style={{ fontSize: '0.72rem', padding: '0.25rem 0.6rem' }}>
+                  📅 Appointment / Follow-up
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+
         <form onSubmit={handleQuickCall}>
-          <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.25rem', marginTop: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.25rem' }}>
             
             {/* 1. Customer Phone Number */}
             <div className="form-group">
@@ -295,18 +356,23 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
               </span>
             </div>
 
-            {/* 2. Product / Service Details */}
+            {/* 2. Custom Spoken Dialogue Script */}
             <div className="form-group">
-              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>2. Product / Service Details</label>
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>
+                2. AI Spoken Call Script <span style={{ color: 'var(--accent-green)' }}>(Yeh Exact Words AI Phone Par Bolega)</span>
+              </label>
               <textarea 
                 required
-                rows="2"
+                rows="3"
                 className="form-control"
                 value={quickProduct}
                 onChange={e => setQuickProduct(e.target.value)}
-                placeholder="e.g. 2 BHK Flats in Noida from 45 Lakhs, or Digital Marketing Services..."
-                style={{ fontSize: '0.85rem', lineHeight: '1.4' }}
+                placeholder="Likhein jo aap AI se bolwana chahte hain (Hindi / Hinglish)..."
+                style={{ fontSize: '0.85rem', lineHeight: '1.5' }}
               />
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '3px', display: 'block' }}>
+                Aap upar diye templates par click karke bhi fill kar sakte hain.
+              </span>
             </div>
 
           </div>
@@ -438,8 +504,8 @@ Goal: Call the customer, introduce the product briefly in 1-2 friendly Hindi sen
               </div>
 
               <div className="form-group mb-4">
-                <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Product / Service Pitch Details</label>
-                <textarea required rows="3" className="form-control" value={formData.productDetails} onChange={e => setFormData({ ...formData, productDetails: e.target.value })} placeholder="Describe what the AI agent should pitch..." />
+                <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Custom Script to Speak on Call</label>
+                <textarea required rows="3" className="form-control" value={formData.productDetails} onChange={e => setFormData({ ...formData, productDetails: e.target.value })} placeholder="Likhein jo aap AI se bolwana chahte hain..." />
               </div>
 
               <div className="flex justify-end gap-3 mt-6">

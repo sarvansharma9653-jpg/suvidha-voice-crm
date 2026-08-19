@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { phoneNumber, contactName, campaignId, systemPrompt, provider } = body;
+    const { phoneNumber, contactName, campaignId, systemPrompt, script, provider } = body;
 
     const selectedProvider = provider || 'vobiz';
     const targetNumber = phoneNumber || '+917707978068';
@@ -38,12 +38,26 @@ export async function POST(req) {
 
       try {
         const authString = Buffer.from(`${authId}:${authToken}`).toString('base64');
-        console.log(`📡 Vobiz API Call: AuthID=${authId}, From=${plusCaller}, To=${plusTarget}`);
+        
+        // Extract clean spoken dialogue script from input
+        let spokenScript = script || systemPrompt || body.productDetails || '';
+        spokenScript = spokenScript
+          .replace(/You are [^\n]*\n?/gi, '')
+          .replace(/Product\/Service details:[^\n]*\n?/gi, '')
+          .replace(/Goal:[^\n]*\n?/gi, '')
+          .trim();
+
+        const encodedScript = encodeURIComponent(spokenScript);
+        const answerUrl = encodedScript 
+          ? `https://suvidha-voice-crm.vercel.app/api/inbound?script=${encodedScript}`
+          : 'https://suvidha-voice-crm.vercel.app/api/inbound';
+
+        console.log(`📡 Vobiz API Call: AuthID=${authId}, From=${plusCaller}, To=${plusTarget}, AnswerUrl=${answerUrl}`);
 
         const payload = {
           from: plusCaller,
           to: plusTarget,
-          answer_url: 'https://suvidha-voice-crm.vercel.app/api/inbound',
+          answer_url: answerUrl,
           answer_method: 'POST',
           hangup_url: 'https://suvidha-voice-crm.vercel.app/api/webhook',
           hangup_method: 'POST'
