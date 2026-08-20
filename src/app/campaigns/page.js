@@ -19,13 +19,11 @@ export default function CampaignsPage() {
   const [activeCallSid, setActiveCallSid] = useState(null);
   const [hangingUp, setHangingUp] = useState(false);
 
-  // Bulk Campaign Modal State (With Individual Lead Selection - Step 2)
+  // Bulk Campaign Modal State (Clean 3-Step Creation: Name, Agent, Leads)
   const [showModal, setShowModal] = useState(false);
   const [formData, setFormData] = useState({ 
     name: '', 
     agentId: '',
-    productDetails: '',
-    voice: 'pooja',
     selectedLeadIds: []
   });
 
@@ -43,7 +41,11 @@ export default function CampaignsPage() {
     setAgents(loadedAgents);
 
     // Initialize all lead IDs selected by default in modal
-    setFormData(prev => ({ ...prev, selectedLeadIds: loadedContacts.map(c => c.id) }));
+    setFormData(prev => ({ 
+      ...prev, 
+      agentId: loadedAgents.length > 0 ? loadedAgents[0].id : '',
+      selectedLeadIds: loadedContacts.map(c => c.id) 
+    }));
 
     // Restore permanently saved draft inputs
     if (typeof window !== 'undefined') {
@@ -255,8 +257,14 @@ export default function CampaignsPage() {
     setFormData(prev => ({ ...prev, selectedLeadIds: [] }));
   };
 
+  // Clean 3-Step Campaign Creation (No redundant script box!)
   const handleCreateCampaign = (e) => {
     e.preventDefault();
+
+    if (!formData.agentId) {
+      alert('Please select a Voice Agent for this campaign!');
+      return;
+    }
 
     if (formData.selectedLeadIds.length === 0) {
       alert('Please select at least 1 lead to call in this campaign!');
@@ -268,8 +276,8 @@ export default function CampaignsPage() {
     store.addCampaign({
       name: formData.name,
       agentName: selectedAg?.name || 'Pooja',
-      script: formData.productDetails || selectedAg?.script,
-      voice: formData.voice,
+      script: selectedAg?.script || selectedAg?.description || 'नमस्ते! मैं सुविधा एआई से बात कर रही हूँ।',
+      voice: selectedAg?.voiceId || 'pooja',
       selectedLeadIds: formData.selectedLeadIds,
       totalContacts: formData.selectedLeadIds.length,
       completedCalls: 0,
@@ -279,7 +287,7 @@ export default function CampaignsPage() {
 
     setCampaigns(store.getCampaigns());
     setShowModal(false);
-    setFormData({ name: '', agentId: '', productDetails: '', voice: 'pooja', selectedLeadIds: contacts.map(c => c.id) });
+    setFormData({ name: '', agentId: agents.length > 0 ? agents[0].id : '', selectedLeadIds: contacts.map(c => c.id) });
   };
 
   // Launch Live Sequential Auto-Dialer Engine (DISPATCHES REAL CALLS VIA VOBIZ)
@@ -338,7 +346,7 @@ export default function CampaignsPage() {
           sentiment: i % 2 === 0 ? '😊 Interested' : '⏳ Follow-up Requested',
           stage: 'Qualified',
           recordingUrl: 'https://suvidha-voice-crm.vercel.app/audio/call_rec.mp3',
-          summary: `Campaign "${campaign.name}" auto-dialed ${lead.name} (${lead.phone}) via Vobiz with agent "${campaign.agentName}". AI pitched: ${campaign.script.substring(0, 60)}...`,
+          summary: `Campaign "${campaign.name}" auto-dialed ${lead.name} (${lead.phone}) via Vobiz with agent "${campaign.agentName}". AI pitched: ${(campaign.script || '').substring(0, 60)}...`,
           transcript: `AI (${campaign.agentName}): ${campaign.script}\n${lead.name}: Haan ji, details WhatsApp karein.\nAI: Maine WhatsApp par brochure aur price list bhej di hai!`
         });
 
@@ -603,46 +611,43 @@ export default function CampaignsPage() {
         </div>
       </div>
 
-      {/* Modal for creating bulk campaigns WITH INDIVIDUAL LEAD CHECKBOXES */}
+      {/* CLEAN 3-STEP BULK CAMPAIGN MODAL (NO REDUNDANT SCRIPT BOX!) */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: '620px', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div className="modal-content" style={{ maxWidth: '580px', maxHeight: '90vh', overflowY: 'auto' }}>
             <div className="flex justify-between items-center mb-4">
               <h2 style={{ margin: 0, fontSize: '1.25rem' }}>Create Bulk Calling Campaign</h2>
               <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: '1.2rem', cursor: 'pointer' }}>×</button>
             </div>
 
             <form onSubmit={handleCreateCampaign}>
+              {/* 1. Campaign Name */}
               <div className="form-group mb-4">
                 <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>1. Campaign Name</label>
                 <input required type="text" className="form-control" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. Noida Real Estate Luxury Leads" />
               </div>
 
+              {/* 2. Select Voice Agent */}
               <div className="form-group mb-4">
-                <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>2. Select Voice Agent (Persona & Voice)</label>
+                <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>2. Select Voice Agent (Agent Ki Voice & Script Use Hogi)</label>
                 <select 
                   required
                   className="form-control" 
                   value={formData.agentId} 
-                  onChange={e => {
-                    const selected = agents.find(a => a.id === e.target.value);
-                    setFormData({ 
-                      ...formData, 
-                      agentId: e.target.value,
-                      productDetails: selected?.script || formData.productDetails,
-                      voice: selected?.voiceId || formData.voice 
-                    });
-                  }}
+                  onChange={e => setFormData({ ...formData, agentId: e.target.value })}
                 >
                   <option value="">-- Choose Created Voice Agent --</option>
                   {agents.map(a => (
                     <option key={a.id} value={a.id}>{a.name} ({a.useCase})</option>
                   ))}
                 </select>
+                <span style={{ fontSize: '0.72rem', color: 'var(--accent-green)', marginTop: '3px', display: 'block' }}>
+                  ✓ Agent ki saved script, voice aur objection handling automatically use hogi.
+                </span>
               </div>
 
-              {/* STEP 2: INDIVIDUAL LEAD SELECTION CHECKBOXES */}
-              <div className="form-group mb-4">
+              {/* 3. Individual Lead Checkboxes */}
+              <div className="form-group mb-6">
                 <div className="flex justify-between items-center mb-2">
                   <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>
                     3. Select Specific Leads to Call ({formData.selectedLeadIds.length} Selected)
@@ -658,7 +663,7 @@ export default function CampaignsPage() {
                   </div>
                 </div>
 
-                <div style={{ maxHeight: '180px', overflowY: 'auto', background: '#0a0a12', border: '1px solid var(--border-light)', borderRadius: '8px', padding: '0.5rem' }}>
+                <div style={{ maxHeight: '200px', overflowY: 'auto', background: '#0a0a12', border: '1px solid var(--border-light)', borderRadius: '8px', padding: '0.5rem' }}>
                   {contacts.length === 0 ? (
                     <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', padding: '0.5rem', textAlign: 'center' }}>
                       No contacts imported yet. Go to "Lead Lists & CSV" to add leads.
@@ -674,7 +679,7 @@ export default function CampaignsPage() {
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'space-between',
-                            padding: '0.4rem 0.6rem',
+                            padding: '0.45rem 0.65rem',
                             borderRadius: '6px',
                             cursor: 'pointer',
                             background: isChecked ? 'rgba(16, 185, 129, 0.08)' : 'transparent',
@@ -699,14 +704,11 @@ export default function CampaignsPage() {
                 </div>
               </div>
 
-              <div className="form-group mb-4">
-                <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>4. Spoken Dialogue Script for this Campaign</label>
-                <textarea required rows="3" className="form-control" value={formData.productDetails} onChange={e => setFormData({ ...formData, productDetails: e.target.value })} placeholder="Likhein jo aap AI se bolwana chahte hain..." />
-              </div>
-
               <div className="flex justify-end gap-3 mt-6">
                 <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary">Cancel</button>
-                <button type="submit" className="btn btn-primary">🚀 Save Campaign & Prepare Dialing</button>
+                <button type="submit" className="btn btn-primary" style={{ fontWeight: '700' }}>
+                  🚀 Save Campaign & Prepare Dialing
+                </button>
               </div>
             </form>
           </div>

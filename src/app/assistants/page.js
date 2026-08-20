@@ -145,7 +145,7 @@ export default function VoiceAgentStudioPage() {
     setBargeIn(agent.bargeIn !== false);
     setCallType(agent.callType || 'Outbound (AI calls leads)');
     setUseCase(agent.useCase || '');
-    setScript(agent.script || '');
+    setScript(agent.script || agent.description || '');
     setObjections(agent.objections || '');
     window.scrollTo({ top: 380, behavior: 'smooth' });
   };
@@ -256,29 +256,29 @@ export default function VoiceAgentStudioPage() {
         <form onSubmit={handleSaveAgent}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.25rem', marginBottom: '1.25rem' }}>
             
-            {/* Agent Name */}
+            {/* Agent Custom Name */}
             <div className="form-group">
-              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>1. एजेंट का नाम</label>
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>1. एजेंट का नाम लिखें (Voice Agent Custom Name)</label>
               <input 
                 required
                 type="text" 
                 className="form-control" 
                 value={agentName}
                 onChange={e => setAgentName(e.target.value)} 
-                placeholder="e.g. Pooja - Real Estate Closer" 
+                placeholder="e.g. Pooja - Real Estate Closer, Priya - Clinic Receptionist, Aman - Loan Advisor" 
               />
             </div>
 
             {/* Core Industry Use Case */}
             <div className="form-group">
-              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>2. काम / बिजनेस</label>
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>2. काम / बिजनेस (Industry)</label>
               <input 
                 required
                 type="text" 
                 className="form-control" 
                 value={useCase}
                 onChange={e => setUseCase(e.target.value)} 
-                placeholder="e.g. Real Estate, Personal Loan, Doctor Clinic, Agency" 
+                placeholder="e.g. Real Estate, Personal Loan, Doctor Clinic, Marketing Agency" 
               />
             </div>
 
@@ -408,7 +408,7 @@ export default function VoiceAgentStudioPage() {
                 </div>
 
                 <div style={{ background: '#0a0a12', padding: '0.65rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.06)', margin: '0.65rem 0', fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                  "{ag.script}"
+                  "{ag.script || ag.description || 'नमस्ते! मैं सुविधा एआई से बात कर रही हूँ। हमारे पास आपके लिए बेस्ट ऑफर्स हैं।'}"
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.85rem' }}>
