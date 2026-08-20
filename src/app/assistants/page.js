@@ -21,14 +21,16 @@ export default function VoiceAgentStudioPage() {
   const [enableTransfer, setEnableTransfer] = useState(true);
   const [adminTransferNumber, setAdminTransferNumber] = useState('+917707978068');
 
-  // Live Q&A Simulation State (Connected to Real Gemini LLM)
-  const [testQuestion, setTestQuestion] = useState('Senior se baat karao');
+  // Live Q&A Simulation State
+  const [testQuestion, setTestQuestion] = useState('kon si property hai apke pass');
   const [testAnswer, setTestAnswer] = useState('');
   const [simulating, setSimulating] = useState(false);
 
   const [editingId, setEditingId] = useState(null);
   const [playingVoiceId, setPlayingVoiceId] = useState(null);
-  const [status, setStatus] = useState(null);
+  
+  // Modal Popup State (For Save Confirmation & Errors)
+  const [saveModal, setSaveModal] = useState(null); // { type: 'success'|'error', title: '', message: '' }
 
   const voiceLibrary = [
     { id: 'pooja', name: '👩 Pooja', title: 'Warm Sales Closer', gender: 'Female', desc: 'मीठी, विनम्र और भरोसेमंद आवाज (बोल रही हूँ)' },
@@ -80,9 +82,12 @@ export default function VoiceAgentStudioPage() {
     }
   };
 
-  // REAL LLM INTELLIGENT Q&A SIMULATION WITH CALL TRANSFER
+  // REAL LLM INTELLIGENT Q&A SIMULATION
   const handleTestAgentQuestion = async () => {
-    if (!testQuestion.trim()) return;
+    if (!testQuestion.trim()) {
+      setSaveModal({ type: 'error', title: 'सवाल लिखें', message: 'कृपया कस्टमर का कोई सवाल लिखें जैसे "kon si property hai" ya "price kitna hai"!' });
+      return;
+    }
     setSimulating(true);
     setTestAnswer('');
 
@@ -126,38 +131,65 @@ export default function VoiceAgentStudioPage() {
     }
   };
 
+  // SAVE VOICE AGENT HANDLER WITH HIGH-VISIBILITY POPUP
   const handleSaveAgent = (e) => {
-    e.preventDefault();
-    const vObj = voiceLibrary.find(v => v.id === selectedVoice) || voiceLibrary[0];
+    if (e) e.preventDefault();
 
-    const agentData = {
-      id: editingId || ('ag_' + Date.now()),
-      name: agentName.trim(),
-      voiceId: selectedVoice,
-      voice: `${vObj.name} (${vObj.title})`,
-      gender: vObj.gender,
-      speed,
-      pitch,
-      bargeIn,
-      enableTransfer,
-      adminTransferNumber: adminTransferNumber.trim(),
-      callType,
-      useCase: useCase.trim(),
-      script: script.trim(),
-      objections: objections.trim()
-    };
-
-    if (editingId) {
-      store.updateAgent(editingId, agentData);
-      setStatus({ type: 'success', message: `✅ Voice Agent "${agentName}" अपडेट हो गया!` });
-      setEditingId(null);
-    } else {
-      store.addAgent(agentData);
-      setStatus({ type: 'success', message: `🎉 Voice Agent "${agentName}" सफलतापूर्वक सेव हो गया!` });
+    if (!agentName.trim()) {
+      setSaveModal({ type: 'error', title: 'नाम जरूरी है', message: 'कृपया अपने वॉइस एजेंट का नाम लिखें!' });
+      return;
     }
 
-    setAgents(store.getAgents());
-    setTimeout(() => setStatus(null), 4000);
+    if (!script.trim()) {
+      setSaveModal({ type: 'error', title: 'स्क्रिप्ट जरूरी है', message: 'कृपया AI के बोलने की शुरुआती स्क्रिप्ट लिखें!' });
+      return;
+    }
+
+    try {
+      const vObj = voiceLibrary.find(v => v.id === selectedVoice) || voiceLibrary[0];
+
+      const agentData = {
+        id: editingId || ('ag_' + Date.now()),
+        name: agentName.trim(),
+        voiceId: selectedVoice,
+        voice: `${vObj.name} (${vObj.title})`,
+        gender: vObj.gender,
+        speed,
+        pitch,
+        bargeIn,
+        enableTransfer,
+        adminTransferNumber: adminTransferNumber.trim(),
+        callType,
+        useCase: useCase.trim() || 'Sales',
+        script: script.trim(),
+        objections: objections.trim()
+      };
+
+      if (editingId) {
+        store.updateAgent(editingId, agentData);
+        setSaveModal({
+          type: 'success',
+          title: '✅ वॉइस एजेंट अपडेट हो गया!',
+          message: `वॉइस एजेंट "${agentName}" की सभी सेटिंग्स और स्क्रिप्ट सुरक्षित रूप से सेव हो गई हैं।`
+        });
+        setEditingId(null);
+      } else {
+        store.addAgent(agentData);
+        setSaveModal({
+          type: 'success',
+          title: '🎉 नया वॉइस एजेंट सेव हो गया!',
+          message: `वॉइस एजेंट "${agentName}" सफलतापूर्वक सेव हो गया है। अब आप Campaigns में जाकर इससे कॉलिंग शुरू कर सकते हैं!`
+        });
+      }
+
+      setAgents(store.getAgents());
+    } catch (err) {
+      setSaveModal({
+        type: 'error',
+        title: '❌ सेव करने में त्रुटि',
+        message: 'त्रुटि: ' + err.message
+      });
+    }
   };
 
   const handleEdit = (agent) => {
@@ -181,8 +213,11 @@ export default function VoiceAgentStudioPage() {
       store.deleteAgent(id);
       setAgents(store.getAgents());
       if (editingId === id) setEditingId(null);
-      setStatus({ type: 'success', message: `🗑️ Voice Agent "${name}" डिलीट कर दिया गया।` });
-      setTimeout(() => setStatus(null), 3000);
+      setSaveModal({
+        type: 'success',
+        title: '🗑️ डिलीट कर दिया गया',
+        message: `वॉइस एजेंट "${name}" को हटा दिया गया है।`
+      });
     }
   };
 
@@ -206,9 +241,34 @@ export default function VoiceAgentStudioPage() {
         </Link>
       </div>
 
-      {status && (
-        <div className="card mb-6" style={{ padding: '1rem', borderColor: status.type === 'success' ? 'var(--accent-green)' : 'var(--accent-red)', background: status.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)' }}>
-          {status.message}
+      {/* POPUP MODAL FOR SAVE CONFIRMATION & ERRORS */}
+      {saveModal && (
+        <div className="modal-overlay" style={{ zIndex: 9999 }}>
+          <div className="modal-content" style={{ maxWidth: '440px', textAlign: 'center', padding: '2rem', background: '#12121c', border: `1px solid ${saveModal.type === 'success' ? 'var(--accent-green)' : 'var(--accent-red)'}` }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>
+              {saveModal.type === 'success' ? '🎉' : '⚠️'}
+            </div>
+            <h2 style={{ fontSize: '1.25rem', margin: '0 0 0.5rem', color: saveModal.type === 'success' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
+              {saveModal.title}
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: '1.5', marginBottom: '1.5rem' }}>
+              {saveModal.message}
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              {saveModal.type === 'success' && (
+                <Link href="/campaigns" className="btn btn-primary" style={{ fontSize: '0.85rem', padding: '0.5rem 1.25rem' }}>
+                  🚀 Go to Campaigns
+                </Link>
+              )}
+              <button 
+                onClick={() => setSaveModal(null)} 
+                className="btn btn-secondary"
+                style={{ fontSize: '0.85rem', padding: '0.5rem 1.25rem' }}
+              >
+                {saveModal.type === 'success' ? 'Got It' : 'ठीक है'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -401,12 +461,12 @@ export default function VoiceAgentStudioPage() {
           <div style={{ background: '#0a0a14', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)', marginBottom: '1.75rem' }}>
             <div className="flex justify-between items-center mb-2">
               <div style={{ fontWeight: '700', color: 'var(--accent-purple)', fontSize: '0.9rem' }}>
-                🧠 Step 3: लाइव AI LLM जवाब व कॉल ट्रांसफर टेस्ट करें:
+                🧠 Step 3: लाइव AI जवाब व कॉल ट्रांसफर टेस्ट करें:
               </div>
-              <span className="badge primary" style={{ fontSize: '0.68rem' }}>Google Gemini LLM Active</span>
+              <span className="badge primary" style={{ fontSize: '0.68rem' }}>Intelligent AI Active</span>
             </div>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
-              ऊपर आपके लिखे हुए स्क्रिप्ट, कंपनी डिटेल्स या कॉल ट्रांसफर (e.g. <em>"Senior se baat karao"</em>) टेस्ट करें:
+              ऊपर आपके लिखे हुए स्क्रिप्ट, कंपनी डिटेल्स (e.g. <em>"kon si property hai"</em>) या कॉल ट्रांसफर टेस्ट करें:
             </p>
 
             <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
@@ -415,7 +475,7 @@ export default function VoiceAgentStudioPage() {
                 className="form-control" 
                 value={testQuestion} 
                 onChange={e => setTestQuestion(e.target.value)} 
-                placeholder="कस्टमर का सवाल लिखें e.g. Senior se baat karao ya Price batao" 
+                placeholder="कस्टमर का सवाल लिखें e.g. kon si property hai ya price kitna hai" 
               />
               <button 
                 type="button" 
@@ -431,14 +491,28 @@ export default function VoiceAgentStudioPage() {
             {testAnswer && (
               <div style={{ background: 'rgba(139, 92, 246, 0.08)', padding: '0.75rem', borderRadius: '6px', border: '1px solid rgba(139, 92, 246, 0.3)', fontSize: '0.825rem' }}>
                 <strong style={{ color: 'var(--accent-purple)', display: 'block', marginBottom: '2px' }}>
-                  🤖 AI एजेंट का जवाब (LLM Brain):
+                  🤖 AI एजेंट का जवाब:
                 </strong>
                 <span style={{ color: '#fff', lineHeight: '1.4' }}>"{testAnswer}"</span>
               </div>
             )}
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.85rem', fontWeight: '700', fontSize: '1rem', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', boxShadow: '0 0 20px rgba(16,185,129,0.3)' }}>
+          <button 
+            type="button"
+            onClick={handleSaveAgent}
+            className="btn btn-primary" 
+            style={{ 
+              width: '100%', 
+              padding: '0.9rem', 
+              fontWeight: '700', 
+              fontSize: '1.05rem', 
+              background: 'linear-gradient(135deg, #10b981, #059669)', 
+              border: 'none', 
+              boxShadow: '0 0 20px rgba(16,185,129,0.3)',
+              cursor: 'pointer'
+            }}
+          >
             {editingId ? '💾 एजेंट अपडेट करें' : '🚀 एजेंट को सुरक्षित सेव करें (Save Agent)'}
           </button>
         </form>
