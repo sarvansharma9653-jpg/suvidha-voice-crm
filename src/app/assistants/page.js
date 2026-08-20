@@ -7,18 +7,18 @@ export default function VoiceAgentStudioPage() {
   const [agents, setAgents] = useState([]);
 
   // Voice Studio Form Fields
-  const [agentName, setAgentName] = useState('Pooja - Luxury Real Estate Closer');
+  const [agentName, setAgentName] = useState('Pooja - Real Estate Closer');
   const [selectedVoice, setSelectedVoice] = useState('pooja');
   const [speed, setSpeed] = useState('1.0x (Normal)');
   const [pitch, setPitch] = useState('Warm & Friendly');
   const [bargeIn, setBargeIn] = useState(true);
   const [callType, setCallType] = useState('Outbound (AI calls leads)');
   const [useCase, setUseCase] = useState('Real Estate Sales');
-  const [script, setScript] = useState('नमस्ते सर! मैं पूजा बात कर रही हूँ। हमारे पास 2 और 3 बीएचके लक्ज़री फ्लैट्स का एक्सक्लूसिव ऑफर है जो 45 लाख से शुरू है। क्या आप इस वीकेंड साइट विजिट के लिए फ्री हैं?');
-  const [objections, setObjections] = useState('अगर कस्टमर पूछे बजट कम है, तो 35 लाख वाले विकल्प बताएं। अगर पूछे WhatsApp पर भेजो, तो तुरंत सहमति देकर विवरण भेजने का वादा करें।');
+  const [script, setScript] = useState('नमस्कार जी! मैं Pooja, Shree Aangan Developer की तरफ से बात कर रही हूँ। आपने property से related information में interest दिखाया था, उसी के regarding आपसे बात कर रही हूँ। क्या अभी 2 मिनट बात करना convenient रहेगा?');
+  const [objections, setObjections] = useState('अगर Customer बात करने के लिए तैयार है: "Thank you जी। सबसे पहले मैं आपकी requirement समझना चाहूँगी ताकि आपको आपकी ज़रूरत के हिसाब से सही property option की जानकारी दी जा सके।" अगर पूछे प्राइस कितना है तो बताएं कि 45 लाख से शुरू है और व्हाट्सएप पर ब्रोशर भेजने को कहें।');
 
-  // Live Q&A Simulation State
-  const [testQuestion, setTestQuestion] = useState('Price kitna hai aur details kahan milegi?');
+  // Live Q&A Simulation State (Connected to Real Gemini LLM)
+  const [testQuestion, setTestQuestion] = useState('price batao');
   const [testAnswer, setTestAnswer] = useState('');
   const [simulating, setSimulating] = useState(false);
 
@@ -71,37 +71,37 @@ export default function VoiceAgentStudioPage() {
     }
   };
 
-  // Live Q&A Simulation
+  // REAL LLM INTELLIGENT Q&A SIMULATION
   const handleTestAgentQuestion = async () => {
     if (!testQuestion.trim()) return;
     setSimulating(true);
+    setTestAnswer('');
 
-    let reply = '';
-    const lower = testQuestion.toLowerCase();
-    const vObj = voiceLibrary.find(v => v.id === selectedVoice) || voiceLibrary[0];
-    const isMale = vObj.gender === 'Male';
+    try {
+      // Call Real LLM API with the user's custom script, intro and objections
+      const res = await fetch('/api/agent-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agentName: agentName.trim(),
+          useCase: useCase.trim(),
+          script: script.trim(),
+          objections: objections.trim(),
+          userQuestion: testQuestion.trim()
+        })
+      });
 
-    if (lower.includes('price') || lower.includes('cost') || lower.includes('budget') || lower.includes('kitna') || lower.includes('rate')) {
-      reply = isMale 
-        ? 'हाँ जी बिल्कुल सर! हमारे पैकेजेस बहुत ही किफायती हैं और 45 लाख से शुरू हैं। मैंने आपका नंबर नोट कर लिया है और ब्रोशर तुरंत आपको व्हाट्सएप कर रहा हूँ!'
-        : 'हाँ जी बिल्कुल सर! हमारे पैकेजेस बहुत ही किफायती हैं और 45 लाख से शुरू हैं। मैंने आपका नंबर नोट कर लिया है और ब्रोशर तुरंत आपको व्हाट्सएप कर रही हूँ!';
-    } else if (lower.includes('loan') || lower.includes('interest') || lower.includes('emi')) {
-      reply = isMale
-        ? 'जी! हमारे पास सभी प्रमुख बैंकों से 9.99% पर प्री-अप्रूव्ड लोन उपलब्ध है। क्या मैं आपको ईएमआई कैलकुलेटर भेज दूँ?'
-        : 'जी! हमारे पास सभी प्रमुख बैंकों से 9.99% पर प्री-अप्रूव्ड लोन उपलब्ध है। क्या मैं आपको ईएमआई कैलकुलेटर भेज दूँ?';
-    } else if (lower.includes('where') || lower.includes('location') || lower.includes('kahan') || lower.includes('address')) {
-      reply = isMale
-        ? 'यह प्रोजेक्ट नोएडा सेक्टर 62 में प्राइम लोकेशन पर स्थित है, मेट्रो स्टेशन से मात्र 5 मिनट की दूरी पर!'
-        : 'यह प्रोजेक्ट नोएडा सेक्टर 62 में प्राइम लोकेशन पर स्थित है, मेट्रो स्टेशन से मात्र 5 मिनट की दूरी पर!';
-    } else {
-      reply = isMale
-        ? `जी बिल्कुल सर, ${testQuestion} के बारे में मैं आपको पूरी सहायता दूंगा। क्या मैं आपकी मीटिंग हमारे सीनियर मैनेजर से फिक्स कर दूँ?`
-        : `जी बिल्कुल सर, ${testQuestion} के बारे में मैं आपको पूरी सहायता दूँगी। क्या मैं आपकी मीटिंग हमारे सीनियर मैनेजर से फिक्स कर दूँ?`;
+      const data = await res.json();
+      const reply = data.reply || 'जी बिल्कुल, मैं आपको पूरी जानकारी व्हाट्सएप कर रही हूँ!';
+      setTestAnswer(reply);
+      setSimulating(false);
+
+      // Speak back the LLM generated response in real-time
+      await playVoiceSample(selectedVoice, reply);
+    } catch (e) {
+      console.error('LLM Simulation Error:', e);
+      setSimulating(false);
     }
-
-    setTestAnswer(reply);
-    setSimulating(false);
-    await playVoiceSample(selectedVoice, reply);
   };
 
   const handleSaveAgent = (e) => {
@@ -162,17 +162,17 @@ export default function VoiceAgentStudioPage() {
 
   const cancelEdit = () => {
     setEditingId(null);
-    setAgentName('Pooja - Luxury Real Estate Closer');
+    setAgentName('Pooja - Real Estate Closer');
     setSelectedVoice('pooja');
-    setScript('नमस्ते सर! मैं पूजा बात कर रही हूँ। हमारे पास 2 और 3 बीएचके लक्ज़री फ्लैट्स का एक्सक्लूसिव ऑफर है। क्या मैं आपको व्हाट्सएप पर डिटेल्स भेज दूँ?');
+    setScript('नमस्कार जी! मैं Pooja, Shree Aangan Developer की तरफ से बात कर रही हूँ।');
   };
 
   return (
     <div style={{ maxWidth: '1050px' }}>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1>🤖 Voice Agent Studio</h1>
-          <p className="subtitle">सरल और आसान तरीके से अपना AI कॉलिंग एजेंट बनाएं और टेस्ट करें</p>
+          <h1>🤖 Voice Agent Studio (LLM Powered)</h1>
+          <p className="subtitle">सरल और आसान तरीके से अपना AI कॉलिंग एजेंट बनाएं — AI आपके लिखे हुए स्क्रिप्ट और नियमों के अनुसार ही बात करेगा</p>
         </div>
 
         <Link href="/campaigns" className="btn btn-primary" style={{ fontSize: '0.85rem' }}>
@@ -243,7 +243,7 @@ export default function VoiceAgentStudioPage() {
               {editingId ? '✏️ एजेंट एडिट करें' : '⚙️ Step 2: एजेंट का नाम और बोलने की स्क्रिप्ट लिखें'}
             </h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.825rem', margin: '0.25rem 0 0' }}>
-              यह वही स्क्रिप्ट है जो AI फोन कॉल रिसीव होते ही कस्टमर को बोलेगा।
+              यह वही स्क्रिप्ट और बिजनेस डिटेल्स हैं जिनके अनुसार AI LLM कस्टमर के हर सवाल का जवाब देगा।
             </p>
           </div>
           {editingId && (
@@ -265,20 +265,20 @@ export default function VoiceAgentStudioPage() {
                 className="form-control" 
                 value={agentName}
                 onChange={e => setAgentName(e.target.value)} 
-                placeholder="e.g. Pooja - Real Estate Closer, Priya - Clinic Receptionist, Aman - Loan Advisor" 
+                placeholder="e.g. Pooja - Shree Aangan Closer" 
               />
             </div>
 
             {/* Core Industry Use Case */}
             <div className="form-group">
-              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>2. काम / बिजनेस (Industry)</label>
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>2. काम / बिजनेस (Industry & Company Name)</label>
               <input 
                 required
                 type="text" 
                 className="form-control" 
                 value={useCase}
                 onChange={e => setUseCase(e.target.value)} 
-                placeholder="e.g. Real Estate, Personal Loan, Doctor Clinic, Marketing Agency" 
+                placeholder="e.g. Shree Aangan Developer Real Estate, Loans, Clinic" 
               />
             </div>
 
@@ -323,7 +323,7 @@ export default function VoiceAgentStudioPage() {
               className="form-control" 
               value={script}
               onChange={e => setScript(e.target.value)} 
-              placeholder="नमस्ते सर! मैं पूजा बोल रही हूँ..." 
+              placeholder="नमस्ते सर! मैं पूजा बोल रही हूँ श्री आँगन डेवलपर से..." 
               style={{ fontSize: '0.85rem', lineHeight: '1.5' }}
             />
           </div>
@@ -334,7 +334,7 @@ export default function VoiceAgentStudioPage() {
               6. कस्टमर के सवालों के जवाब (FAQ / Objection Rules)
             </label>
             <textarea 
-              rows="2"
+              rows="3"
               className="form-control" 
               value={objections}
               onChange={e => setObjections(e.target.value)} 
@@ -343,11 +343,17 @@ export default function VoiceAgentStudioPage() {
             />
           </div>
 
-          {/* Live Q&A Test Simulator */}
+          {/* LIVE LLM Q&A TEST SIMULATOR */}
           <div style={{ background: '#0a0a14', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)', marginBottom: '1.75rem' }}>
-            <div style={{ fontWeight: '700', color: 'var(--accent-purple)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-              🎙️ Step 3: एजेंट का लाइव जवाब सुनकर टेस्ट करें:
+            <div className="flex justify-between items-center mb-2">
+              <div style={{ fontWeight: '700', color: 'var(--accent-purple)', fontSize: '0.9rem' }}>
+                🧠 Step 3: लाइव AI LLM जवाब सुनकर टेस्ट करें:
+              </div>
+              <span className="badge primary" style={{ fontSize: '0.68rem' }}>Google Gemini 2.0 / 3.6 LLM Active</span>
             </div>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
+              ऊपर आपके लिखे हुए स्क्रिप्ट और कंपनी डिटेल्स के आधार पर AI लाइव सोचकर जवाब देगा:
+            </p>
 
             <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
               <input 
@@ -355,7 +361,7 @@ export default function VoiceAgentStudioPage() {
                 className="form-control" 
                 value={testQuestion} 
                 onChange={e => setTestQuestion(e.target.value)} 
-                placeholder="कस्टमर का सवाल लिखें e.g. Price kitna hai?" 
+                placeholder="कस्टमर का सवाल लिखें e.g. price batao" 
               />
               <button 
                 type="button" 
@@ -364,16 +370,16 @@ export default function VoiceAgentStudioPage() {
                 className="btn btn-secondary"
                 style={{ padding: '0.65rem 1.25rem', flexShrink: 0, fontWeight: '700', borderColor: 'var(--accent-purple)', color: 'var(--accent-purple)' }}
               >
-                {simulating ? 'सोच रहा है...' : '🔊 टेस्ट करें और सुनें'}
+                {simulating ? '🧠 AI सोच रहा है...' : '🔊 टेस्ट करें और सुनें'}
               </button>
             </div>
 
             {testAnswer && (
               <div style={{ background: 'rgba(139, 92, 246, 0.08)', padding: '0.75rem', borderRadius: '6px', border: '1px solid rgba(139, 92, 246, 0.3)', fontSize: '0.825rem' }}>
                 <strong style={{ color: 'var(--accent-purple)', display: 'block', marginBottom: '2px' }}>
-                  🤖 एजेंट का जवाब:
+                  🤖 AI एजेंट का जवाब (LLM Brain):
                 </strong>
-                <span style={{ color: '#fff' }}>"{testAnswer}"</span>
+                <span style={{ color: '#fff', lineHeight: '1.4' }}>"{testAnswer}"</span>
               </div>
             )}
           </div>

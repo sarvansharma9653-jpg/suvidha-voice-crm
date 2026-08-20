@@ -48,10 +48,9 @@ export default function WebCallPage() {
         body: JSON.stringify({ text, gender: gender || currentAgent.gender, voice: currentAgent.voiceId || 'pooja' })
       });
 
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const audio = new Audio(url);
+      const data = await res.json();
+      if (data.audioBase64) {
+        const audio = new Audio(data.audioBase64);
         audioRef.current = audio;
 
         audio.onended = () => {
@@ -118,28 +117,33 @@ export default function WebCallPage() {
     }
   };
 
-  const handleAICallResponse = (userText) => {
-    let reply = '';
-    const lower = userText.toLowerCase();
+  // REAL LLM RESPONSE IN WEBCALL
+  const handleAICallResponse = async (userText) => {
+    setStatusMsg('🧠 AI thinking...');
+    try {
+      const res = await fetch('/api/agent-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agentName: currentAgent.name,
+          useCase: currentAgent.useCase,
+          script: currentAgent.script,
+          objections: currentAgent.objections,
+          userQuestion: userText,
+          history: transcript
+        })
+      });
 
-    if (lower.includes('price') || lower.includes('cost') || lower.includes('rate') || lower.includes('budget') || lower.includes('kitna')) {
-      reply = currentAgent.gender === 'Male'
-        ? 'हाँ जी बिल्कुल सर! हमारे पैकेजेस बहुत ही किफायती हैं और 45 लाख से शुरू हैं। क्या मैं व्हाट्सएप पर ब्रोशर और प्राइस लिस्ट भेज दूँ?'
-        : 'हाँ जी बिल्कुल सर! हमारे पैकेजेस बहुत ही किफायती हैं और 45 लाख से शुरू हैं। क्या मैं व्हाट्सएप पर ब्रोशर और प्राइस लिस्ट भेज दूँ?';
-    } else if (lower.includes('yes') || lower.includes('haan') || lower.includes('theek') || lower.includes('interested') || lower.includes('send') || lower.includes('bhejo')) {
-      reply = currentAgent.gender === 'Male'
-        ? 'अरे बहुत ही बढ़िया सर! मैंने आपका नंबर नोट कर लिया है। मैं तुरंत आपको व्हाट्सएप पर सारी डिटेल भेज रहा हूँ!'
-        : 'अरे बहुत ही बढ़िया सर! मैंने आपका नंबर नोट कर लिया है। मैं तुरंत आपको व्हाट्सएप पर सारी डिटेल भेज रही हूँ!';
-    } else {
-      reply = currentAgent.gender === 'Male'
-        ? 'जी बिल्कुल, मैं आपकी बात समझ गया। बताइए, इस बारे में आपका क्या सवाल है?'
-        : 'जी बिल्कुल, मैं आपकी बात समझ गई। बताइए, इस बारे में आपका क्या सवाल है?';
-    }
+      const data = await res.json();
+      const reply = data.reply || 'जी बिल्कुल सर, मैं आपको तुरंत इस बारे में सहायता देती हूँ।';
 
-    setTimeout(() => {
       setTranscript(prev => [...prev, { speaker: currentAgent.name, text: reply }]);
       playAgentVoice(reply, currentAgent.gender);
-    }, 250);
+    } catch(e) {
+      const fallback = 'जी बिल्कुल, मैं समझ गई। क्या मैं आपको व्हाट्सएप पर डिटेल्स भेज दूँ?';
+      setTranscript(prev => [...prev, { speaker: currentAgent.name, text: fallback }]);
+      playAgentVoice(fallback, currentAgent.gender);
+    }
   };
 
   const endWebCall = () => {
@@ -169,7 +173,7 @@ export default function WebCallPage() {
     <div style={{ maxWidth: '900px' }}>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1>🌐 Instant Web Voice Call (No SIM/Telecom Needed)</h1>
+          <h1>🌐 Instant Web Voice Call (LLM Powered)</h1>
           <p className="subtitle">Speak live with your custom AI Voice Agent directly in the browser</p>
         </div>
 
@@ -206,7 +210,7 @@ export default function WebCallPage() {
                     </span>
                     <span className="badge primary" style={{ fontSize: '0.7rem' }}>{ag.gender}</span>
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                     {ag.useCase}
                   </div>
                 </div>
