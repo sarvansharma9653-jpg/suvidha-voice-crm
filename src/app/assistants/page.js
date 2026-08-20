@@ -14,15 +14,22 @@ export default function VoiceAgentStudioPage() {
   const [bargeIn, setBargeIn] = useState(true);
   const [callType, setCallType] = useState('Outbound (AI calls leads)');
   const [useCase, setUseCase] = useState('Real Estate & Property Investment');
-  const [script, setScript] = useState('नमस्कार जी! मैं Pooja बोल रही हूँ, The Shree Aangan Developers की तरफ से। आपने हमारे प्रोजेक्ट में interest दिखाया था — Chaksu, Tonk Road पर हमारे 85 Acres के JDA Approved और RERA Registered Gated Township प्रोजेक्ट के लिए। जहाँ Jaipur Metro Phase 2 का काम शुरू हो गया है और Property की कीमतें हर साल 18 से 25% बढ़ रही हैं! क्या इस वीकेंड आप हमारी Free Site Visit के लिए थोड़ा समय निकाल सकते हैं?');
-  const [objections, setObjections] = useState('अगर पूछे प्राइस कितना है तो बताएं कि JDA Approved Plots ₹800 से ₹2,750 प्रति वर्ग फुट से शुरू हैं EMI सुविधा के साथ। अगर पूछे लोकेशन कहाँ है तो बताएं कि Chaksu Tonk Road Jaipur NH-12 पर Sheetla Mata Mandir और Bombay Hospital के पास है। अगर पूछे RERA नंबर तो बताएं कि RAJ/P/2026/4660 है। अगर पूछे Metro तो बताएं कि Jaipur Metro Phase 2 का काम शुरू हो गया है जिससे कीमतें 40 से 60% बढ़ेंगी।');
+  
+  const defaultScript = 'नमस्कार जी! मैं Pooja बोल रही हूँ, The Shree Aangan Developers की तरफ से। आपने हमारे प्रोजेक्ट में interest दिखाया था — Chaksu, Tonk Road पर हमारे 85 Acres के JDA Approved और RERA Registered Gated Township प्रोजेक्ट के लिए। जहाँ Jaipur Metro Phase 2 का काम शुरू हो गया है और Property की कीमतें हर साल 18 से 25% बढ़ रही हैं! क्या इस वीकेंड आप हमारी Free Site Visit के लिए थोड़ा समय निकाल सकते हैं?';
+  const defaultObjections = 'अगर पूछे प्राइस कितना है तो बताएं कि JDA Approved Plots ₹800 से ₹2,750 प्रति वर्ग फुट से शुरू हैं EMI सुविधा के साथ। अगर पूछे लोकेशन कहाँ है तो बताएं कि Chaksu Tonk Road Jaipur NH-12 पर Sheetla Mata Mandir और Bombay Hospital के पास है। अगर पूछे RERA नंबर तो बताएं कि RAJ/P/2026/4660 है। अगर पूछे Metro तो बताएं कि Jaipur Metro Phase 2 का काम शुरू हो गया है जिससे कीमतें 40 से 60% बढ़ेंगी।';
+
+  const [script, setScript] = useState(defaultScript);
+  const [objections, setObjections] = useState(defaultObjections);
   
   // Call Transfer to Admin / Senior Manager
   const [enableTransfer, setEnableTransfer] = useState(true);
   const [adminTransferNumber, setAdminTransferNumber] = useState('+918739904737');
 
+  // ElevenLabs Key in Studio
+  const [elevenLabsKey, setElevenLabsKey] = useState('');
+
   // Live Q&A Simulation State
-  const [testQuestion, setTestQuestion] = useState('kon si property hai apke pass');
+  const [testQuestion, setTestQuestion] = useState('price kitna hai aur location kahan hai');
   const [testAnswer, setTestAnswer] = useState('');
   const [simulating, setSimulating] = useState(false);
 
@@ -30,25 +37,78 @@ export default function VoiceAgentStudioPage() {
   const [playingVoiceId, setPlayingVoiceId] = useState(null);
   
   // Modal Popup State (For Save Confirmation & Errors)
-  const [saveModal, setSaveModal] = useState(null); // { type: 'success'|'error', title: '', message: '' }
+  const [saveModal, setSaveModal] = useState(null);
 
   const voiceLibrary = [
-    { id: 'pooja', name: '👩 Pooja', title: 'Warm Sales Closer', gender: 'Female', desc: 'मीठी, विनम्र और भरोसेमंद आवाज (बो�?रही हू�?' },
-    { id: 'aarav', name: '👨 Aarav', title: 'Finance & Loan Specialist', gender: 'Male', desc: 'कॉन्फिडेंट और प्रोफेशन�?आवाज (बो�?रह�?हू�?' },
-    { id: 'swara', name: '👩 Swara', title: 'Luxury Consultant', gender: 'Female', desc: 'सॉफ्�?और प्रीमियम रियल एस्टेट एडवाइज�? },
-    { id: 'madhur', name: '👨 Madhur', title: 'Corporate B2B Executive', gender: 'Male', desc: 'कॉर्पोरे�?और बिजनेस डील्�?के लि�?बेस्�? },
-    { id: 'ananya', name: '👩 Ananya', title: 'Customer Support Lead', gender: 'Female', desc: 'मॉडर्न, ते�?और दोस्ताना हिंग्लिश आवाज' },
-    { id: 'rohan', name: '👨 Rohan', title: 'Senior Sales Director', gender: 'Male', desc: 'गंभी�?और असरदार आवाज' },
+    { id: 'pooja', name: '👩 Pooja', title: 'Warm Sales Closer', gender: 'Female', desc: 'मीठी, विनम्र और भरोसेमंद आवाज (बोल रही हूँ)' },
+    { id: 'aarav', name: '👨 Aarav', title: 'Finance & Loan Specialist', gender: 'Male', desc: 'कॉन्फिडेंट और प्रोफेशनल आवाज (बोल रहा हूँ)' },
+    { id: 'swara', name: '👩 Swara', title: 'Luxury Consultant', gender: 'Female', desc: 'सॉफ्ट और प्रीमियम रियल एस्टेट एडवाइजर' },
+    { id: 'madhur', name: '👨 Madhur', title: 'Corporate B2B Executive', gender: 'Male', desc: 'कॉर्पोरेट और बिजनेस डील्स के लिए बेस्ट' },
+    { id: 'ananya', name: '👩 Ananya', title: 'Customer Support Lead', gender: 'Female', desc: 'मॉडर्न, तेज और दोस्ताना हिंग्लिश आवाज' },
+    { id: 'rohan', name: '👨 Rohan', title: 'Senior Sales Director', gender: 'Male', desc: 'गंभीर और असरदार आवाज' },
   ];
 
   useEffect(() => {
-    setAgents(store.getAgents());
+    const loadedAgents = store.getAgents();
+    setAgents(loadedAgents);
+
+    const shreeAgent = loadedAgents.find(a => a.id === 'ag_pooja' || a.name?.includes('Shree Aangan'));
+    if (shreeAgent && !editingId) {
+      setAgentName(shreeAgent.name || 'Pooja - Shree Aangan Real Estate Closer');
+      setSelectedVoice(shreeAgent.voiceId || 'pooja');
+      setScript(shreeAgent.script || defaultScript);
+      setObjections(shreeAgent.objections || defaultObjections);
+      setUseCase(shreeAgent.useCase || 'Real Estate & Property Investment');
+      if (shreeAgent.adminTransferNumber) setAdminTransferNumber(shreeAgent.adminTransferNumber);
+    }
+
     if (typeof window !== 'undefined') {
       const uid = localStorage.getItem('suvidha_auth_user_id') || 'default';
       const savedAdmin = localStorage.getItem(`adminNumber_${uid}`) || localStorage.getItem('adminNumber');
       if (savedAdmin) setAdminTransferNumber(savedAdmin);
+      const savedKey = localStorage.getItem(`elevenLabsApiKey_${uid}`) || localStorage.getItem('elevenLabsApiKey') || '';
+      setElevenLabsKey(savedKey);
     }
   }, []);
+
+  const loadShreeAanganPreset = () => {
+    setEditingId(null);
+    setAgentName('Pooja - Shree Aangan Real Estate Closer');
+    setSelectedVoice('pooja');
+    setSpeed('1.0x (Normal)');
+    setPitch('Warm & Friendly');
+    setBargeIn(true);
+    setEnableTransfer(true);
+    setAdminTransferNumber('+918739904737');
+    setUseCase('Real Estate & Property Investment');
+    setScript(defaultScript);
+    setObjections(defaultObjections);
+
+    const poojaAgent = {
+      id: 'ag_pooja',
+      name: 'Pooja - Shree Aangan Real Estate Closer',
+      voiceId: 'pooja',
+      voice: '👩 Pooja (Warm Sales Closer)',
+      gender: 'Female',
+      speed: '1.0x (Normal)',
+      pitch: 'Warm & Friendly',
+      bargeIn: true,
+      callType: 'Outbound (AI calls leads)',
+      useCase: 'Real Estate & Property Investment',
+      script: defaultScript,
+      objections: defaultObjections,
+      adminTransferNumber: '+918739904737',
+      enableTransfer: true
+    };
+    store.addAgent(poojaAgent);
+    setAgents(store.getAgents());
+
+    setSaveModal({
+      type: 'success',
+      title: '🎉 Shree Aangan Setup Loaded & Saved!',
+      message: 'Shree Aangan Developers (Jaipur Metro Site Visit Script + 85 Acres JDA & RERA Rules + Admin Transfer) form mein load aur save ho gaya hai!'
+    });
+  };
 
   const playVoiceSample = async (voiceId, customText) => {
     try {
@@ -58,13 +118,18 @@ export default function VoiceAgentStudioPage() {
       const personaName = vObj.name.replace(/[^a-zA-Z]/g, '');
 
       const sampleText = customText || (isMale 
-        ? `नमस्ते! मै�?${personaName} बो�?रह�?हूँ। हमार�?पा�?आपके लि�?बेस्�?बिजनेस ऑफर्�?हैं। बताइ�? आज मै�?आपकी क्या सहायता करूँ?`
-        : `नमस्ते! मै�?${personaName} बो�?रही हूँ। हमार�?पा�?आपके लि�?बेस्�?बिजनेस ऑफर्�?हैं। बताइ�? आज मै�?आपकी क्या सहायता करूँ?`);
+        ? `नमस्ते! मैं ${personaName} बोल रहा हूँ, The Shree Aangan Developers की तरफ से। बताइये आज मैं आपकी क्या सहायता करूँ?`
+        : `नमस्ते! मैं ${personaName} बोल रही हूँ, The Shree Aangan Developers की तरफ से। बताइये आज मैं आपकी क्या सहायता करूँ?`);
 
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: sampleText, gender: vObj.gender, voice: voiceId })
+        body: JSON.stringify({ 
+          text: sampleText, 
+          gender: vObj.gender, 
+          voice: voiceId,
+          elevenLabsApiKey: elevenLabsKey 
+        })
       });
 
       const data = await res.json();
@@ -85,7 +150,7 @@ export default function VoiceAgentStudioPage() {
   // REAL LLM INTELLIGENT Q&A SIMULATION
   const handleTestAgentQuestion = async () => {
     if (!testQuestion.trim()) {
-      setSaveModal({ type: 'error', title: 'सवाल लिखे�?, message: 'कृपय�?कस्टमर का को�?सवाल लिखे�?जैसे "kon si property hai" ya "price kitna hai"!' });
+      setSaveModal({ type: 'error', title: 'सवाल लिखें', message: 'कृपया कस्टमर का कोई सवाल लिखें जैसे "price kitna hai" या "location kahan hai"!' });
       return;
     }
     setSimulating(true);
@@ -97,8 +162,8 @@ export default function VoiceAgentStudioPage() {
     if (enableTransfer && isTransferReq) {
       const vObj = voiceLibrary.find(v => v.id === selectedVoice) || voiceLibrary[0];
       const reply = vObj.gender === 'Male'
-        ? `जी बिल्कु�?सर! मै�?आपकी कॉ�?तुरं�?हमार�?सीनियर मैनेजर (${adminTransferNumber}) को ट्रांसफर कर रह�?हूँ। कृपय�?लाइन पर बन�?रहें!`
-        : `जी बिल्कु�?सर! मै�?आपकी कॉ�?तुरं�?हमार�?सीनियर मैनेजर (${adminTransferNumber}) को ट्रांसफर कर रही हूँ। कृपय�?लाइन पर बन�?रहें!`;
+        ? `जी बिल्कुल सर! मैं आपकी कॉल तुरंत हमारे सीनियर मैनेजर (${adminTransferNumber}) को ट्रांसफर कर रहा हूँ। कृपया लाइन पर बने रहें!`
+        : `जी बिल्कुल सर! मैं आपकी कॉल तुरंत हमारे सीनियर मैनेजर (${adminTransferNumber}) को ट्रांसफर कर रही हूँ। कृपया लाइन पर बने रहें!`;
       
       setTestAnswer(reply);
       setSimulating(false);
@@ -120,7 +185,7 @@ export default function VoiceAgentStudioPage() {
       });
 
       const data = await res.json();
-      const reply = data.reply || 'जी बिल्कु�? मै�?आपको पूरी जानकारी व्हाट्सए�?कर रही हू�?';
+      const reply = data.reply || 'जी बिल्कुल, मैं आपको पूरी जानकारी व्हाट्सएप कर रही हूँ।';
       setTestAnswer(reply);
       setSimulating(false);
 
@@ -131,17 +196,17 @@ export default function VoiceAgentStudioPage() {
     }
   };
 
-  // SAVE VOICE AGENT HANDLER WITH HIGH-VISIBILITY POPUP
+  // SAVE VOICE AGENT HANDLER
   const handleSaveAgent = (e) => {
     if (e) e.preventDefault();
 
     if (!agentName.trim()) {
-      setSaveModal({ type: 'error', title: 'ना�?जरूरी है', message: 'कृपय�?अपने वॉइस एजें�?का ना�?लिखे�?' });
+      setSaveModal({ type: 'error', title: 'नाम जरूरी है', message: 'कृपया अपने वॉइस एजेंट का नाम लिखें!' });
       return;
     }
 
     if (!script.trim()) {
-      setSaveModal({ type: 'error', title: 'स्क्रिप्�?जरूरी है', message: 'कृपय�?AI के बोलन�?की शुरुआती स्क्रिप्�?लिखे�?' });
+      setSaveModal({ type: 'error', title: 'स्क्रिप्ट जरूरी है', message: 'कृपया AI के बोलने की शुरुआती स्क्रिप्ट लिखें!' });
       return;
     }
 
@@ -160,7 +225,7 @@ export default function VoiceAgentStudioPage() {
         enableTransfer,
         adminTransferNumber: adminTransferNumber.trim(),
         callType,
-        useCase: useCase.trim() || 'Sales',
+        useCase: useCase.trim() || 'Real Estate & Property Investment',
         script: script.trim(),
         objections: objections.trim()
       };
@@ -169,16 +234,16 @@ export default function VoiceAgentStudioPage() {
         store.updateAgent(editingId, agentData);
         setSaveModal({
           type: 'success',
-          title: '�?वॉइस एजें�?अपडे�?हो गय�?',
-          message: `वॉइस एजें�?"${agentName}" की सभी सेटिंग्स और स्क्रिप्�?सुरक्षित रू�?से से�?हो गई हैं।`
+          title: '🎉 वॉइस एजेंट अपडेट हो गया!',
+          message: `वॉइस एजेंट "${agentName}" की सभी सेटिंग्स और स्क्रिप्ट सुरक्षित रूप से सेव हो गई हैं।`
         });
         setEditingId(null);
       } else {
         store.addAgent(agentData);
         setSaveModal({
           type: 'success',
-          title: '🎉 नय�?वॉइस एजें�?से�?हो गय�?',
-          message: `वॉइस एजें�?"${agentName}" सफलतापूर्व�?से�?हो गय�?है�?अब आप Campaigns मे�?जाकर इससे कॉलिंग शुरू कर सकते है�?`
+          title: '🎉 नया वॉइस एजेंट सेव हो गया!',
+          message: `वॉइस एजेंट "${agentName}" सफलतापूर्वक सेव हो गया है! अब आप Campaigns में जाकर इससे कॉलिंग शुरू कर सकते हैं।`
         });
       }
 
@@ -186,7 +251,7 @@ export default function VoiceAgentStudioPage() {
     } catch (err) {
       setSaveModal({
         type: 'error',
-        title: '�?से�?करने मे�?त्रुटि',
+        title: '⚠️ सेव करने में त्रुटि',
         message: 'त्रुटि: ' + err.message
       });
     }
@@ -209,23 +274,16 @@ export default function VoiceAgentStudioPage() {
   };
 
   const handleDelete = (id, name) => {
-    if (confirm(`क्या आप सच मे�?Voice Agent "${name}" को डिली�?करना चाहत�?है�?`)) {
+    if (confirm(`क्या आप सच में Voice Agent "${name}" को डिलीट करना चाहते हैं?`)) {
       store.deleteAgent(id);
       setAgents(store.getAgents());
       if (editingId === id) setEditingId(null);
       setSaveModal({
         type: 'success',
-        title: '🗑�?डिली�?कर दिया गय�?,
-        message: `वॉइस एजें�?"${name}" को हट�?दिया गय�?है।`
+        title: '🗑️ डिलीट कर दिया गया',
+        message: `वॉइस एजेंट "${name}" को हटा दिया गया है।`
       });
     }
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
-    setAgentName('Pooja - Real Estate Closer');
-    setSelectedVoice('pooja');
-    setScript('नमस्का�?जी! मै�?Pooja, Shree Aangan Developer की तर�?से बा�?कर रही हूँ।');
   };
 
   return (
@@ -233,12 +291,22 @@ export default function VoiceAgentStudioPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1>🤖 Voice Agent Studio (LLM Powered)</h1>
-          <p className="subtitle">सर�?और आसान तरीके से अपना AI कॉलिंग एजें�?बनाए�?�?AI आपके लिखे हु�?स्क्रिप्�?और नियमों के अनुसार ही बा�?करेग�?/p>
+          <p className="subtitle">सरल और आसान तरीके से अपना AI कॉलिंग एजेंट बनाएं — AI आपके लिखे हुए स्क्रिप्ट और नियमों के अनुसार ही बात करेगा</p>
         </div>
 
-        <Link href="/campaigns" className="btn btn-primary" style={{ fontSize: '0.85rem' }}>
-          🚀 Bulk Campaigns मे�?जाएं &rarr;
-        </Link>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button 
+            type="button" 
+            onClick={loadShreeAanganPreset}
+            className="btn btn-secondary"
+            style={{ fontSize: '0.85rem', borderColor: 'var(--accent-green)', color: 'var(--accent-green)', fontWeight: 'bold' }}
+          >
+            ✨ Load Shree Aangan Preset
+          </button>
+          <Link href="/campaigns" className="btn btn-primary" style={{ fontSize: '0.85rem' }}>
+            🚀 Bulk Campaigns में जाएं &rarr;
+          </Link>
+        </div>
       </div>
 
       {/* POPUP MODAL FOR SAVE CONFIRMATION & ERRORS */}
@@ -248,10 +316,10 @@ export default function VoiceAgentStudioPage() {
             <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>
               {saveModal.type === 'success' ? '🎉' : '⚠️'}
             </div>
-            <h2 style={{ fontSize: '1.25rem', margin: '0 0 0.5rem', color: saveModal.type === 'success' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
+            <h3 style={{ margin: '0 0 0.5rem', fontSize: '1.25rem', color: saveModal.type === 'success' ? 'var(--accent-green)' : 'var(--accent-red)' }}>
               {saveModal.title}
-            </h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: '1.5', marginBottom: '1.5rem' }}>
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.5', marginBottom: '1.5rem' }}>
               {saveModal.message}
             </p>
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
@@ -265,7 +333,7 @@ export default function VoiceAgentStudioPage() {
                 className="btn btn-secondary"
                 style={{ fontSize: '0.85rem', padding: '0.5rem 1.25rem' }}
               >
-                {saveModal.type === 'success' ? 'Got It' : 'ठी�?है'}
+                {saveModal.type === 'success' ? 'Got It' : 'ठीक है'}
               </button>
             </div>
           </div>
@@ -274,7 +342,7 @@ export default function VoiceAgentStudioPage() {
 
       {/* Step 1: Voice Selection */}
       <div className="mb-8">
-        <h2 style={{ fontSize: '1.15rem', marginBottom: '0.85rem' }}>🎧 Step 1: एजें�?की आवाज चुने�?(Male / Female)</h2>
+        <h2 style={{ fontSize: '1.15rem', marginBottom: '0.85rem' }}>🎧 Step 1: एजेंट की आवाज चुनें (Male / Female)</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
           {voiceLibrary.map(v => {
             const isSelected = selectedVoice === v.id;
@@ -311,9 +379,9 @@ export default function VoiceAgentStudioPage() {
                     className={`btn ${isPlaying ? 'btn-success' : 'btn-secondary'}`}
                     style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }}
                   >
-                    {isPlaying ? '🔊 आवाज बज रही है...' : '🔊 आवाज सुनक�?देखे�?}
+                    {isPlaying ? '🔊 आवाज बज रही है...' : '🔊 आवाज सुनकर देखें'}
                   </button>
-                  {isSelected && <span style={{ fontSize: '0.75rem', color: 'var(--accent-green)', fontWeight: 'bold' }}>�?चुनी हु�?/span>}
+                  {isSelected && <span style={{ fontSize: '0.75rem', color: 'var(--accent-green)', fontWeight: 'bold' }}>✅ चुनी हुई</span>}
                 </div>
               </div>
             );
@@ -326,16 +394,20 @@ export default function VoiceAgentStudioPage() {
         <div className="flex justify-between items-center mb-4">
           <div>
             <h2 style={{ margin: 0, fontSize: '1.25rem' }}>
-              {editingId ? '✏️ एजें�?एडिट करें' : '⚙️ Step 2: एजें�?का ना�?और बोलन�?की स्क्रिप्�?लिखे�?}
+              {editingId ? '✏️ एजेंट एडिट करें' : '⚙️ Step 2: एजेंट का नाम और बोलने की स्क्रिप्ट लिखें'}
             </h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.825rem', margin: '0.25rem 0 0' }}>
-              यह वही स्क्रिप्�?और बिजनेस डिटेल्�?है�?जिनक�?अनुसार AI LLM कस्टमर के हर सवाल का जवाब देगा�?            </p>
+              यह वही स्क्रिप्ट और बिजनेस डिटेल्स हैं जिनके अनुसार AI LLM कस्टमर के हर सवाल का जवाब देगा।
+            </p>
           </div>
-          {editingId && (
-            <button onClick={cancelEdit} className="btn btn-secondary" style={{ fontSize: '0.8rem' }}>
-              रद्द करें
-            </button>
-          )}
+          <button 
+            type="button" 
+            onClick={loadShreeAanganPreset}
+            className="btn btn-secondary" 
+            style={{ fontSize: '0.8rem', borderColor: 'var(--accent-green)', color: 'var(--accent-green)' }}
+          >
+            ✨ 1-Click Fill Shree Aangan
+          </button>
         </div>
 
         <form onSubmit={handleSaveAgent}>
@@ -343,7 +415,7 @@ export default function VoiceAgentStudioPage() {
             
             {/* Agent Custom Name */}
             <div className="form-group">
-              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>1. एजें�?का ना�?लिखे�?(Voice Agent Custom Name)</label>
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>1. एजेंट का नाम लिखें (Voice Agent Custom Name)</label>
               <input 
                 required
                 type="text" 
@@ -356,7 +428,7 @@ export default function VoiceAgentStudioPage() {
 
             {/* Core Industry Use Case */}
             <div className="form-group">
-              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>2. का�?/ बिजनेस (Industry & Company Name)</label>
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>2. काम / बिजनेस (Industry & Company Name)</label>
               <input 
                 required
                 type="text" 
@@ -369,20 +441,20 @@ export default function VoiceAgentStudioPage() {
 
             {/* Speaking Pace / Speed */}
             <div className="form-group">
-              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>3. बोलन�?की स्पी�?/label>
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>3. बोलने की स्पीड</label>
               <select className="form-control" value={speed} onChange={e => setSpeed(e.target.value)}>
-                <option value="0.8x (Slow & Clear)">🐢 0.8x (धीमी और सा�?आवाज)</option>
-                <option value="1.0x (Normal)">�?1.0x (सामान्�?स्पी�?- बेस्�?</option>
-                <option value="1.2x (Fast & Energetic)">🚀 1.2x (ते�?और एनर्जेटि�?</option>
+                <option value="0.8x (Slow & Clear)">🐢 0.8x (धीमी और साफ आवाज)</option>
+                <option value="1.0x (Normal)">⚡ 1.0x (सामान्य स्पीड - बेस्ट)</option>
+                <option value="1.2x (Fast & Energetic)">🚀 1.2x (तेज और एनर्जेटिक)</option>
               </select>
             </div>
 
             {/* Voice Tone & Pitch */}
             <div className="form-group">
-              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>4. बोलन�?का तरीका (Tone)</label>
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>4. बोलने का तरीका (Tone)</label>
               <select className="form-control" value={pitch} onChange={e => setPitch(e.target.value)}>
                 <option value="Warm & Friendly">🌸 दोस्ताना और मीठी आवाज (Warm & Friendly)</option>
-                <option value="Professional & Trustworthy">👔 प्रोफेशन�?और गंभी�?(Corporate & Banking)</option>
+                <option value="Professional & Trustworthy">👔 प्रोफेशनल और गंभीर (Corporate & Banking)</option>
                 <option value="Confident & High-Energy">🔥 जोशीली और कॉन्फिडेंट आवाज</option>
               </select>
             </div>
@@ -392,192 +464,207 @@ export default function VoiceAgentStudioPage() {
           {/* Interruption / Barge-in Notice */}
           <div style={{ background: 'rgba(16, 185, 129, 0.06)', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.25)', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ fontSize: '0.825rem', color: '#fff' }}>
-              🎙�?<strong>कस्टमर के बोलत�?ही AI चु�?हो जाएग�?</strong> जैसे ही कस्टमर सवाल पूछेगा, AI रु�?कर जवाब देगा�?            </div>
+              🎙️ <strong>कस्टमर के बोलते ही AI चुप हो जाएगा:</strong> जैसे ही कस्टमर सवाल पूछेगा, AI रुक कर जवाब देगा।
+            </div>
             <span className="badge success" style={{ fontSize: '0.72rem' }}>सक्रिय (Active)</span>
           </div>
 
           {/* CALL TRANSFER TO ADMIN / SENIOR MANAGER */}
           <div style={{ background: '#0a0a14', padding: '1.25rem', borderRadius: '10px', border: '1px solid rgba(59, 130, 246, 0.3)', marginBottom: '1.5rem' }}>
             <div className="flex justify-between items-center mb-2">
-              <div style={{ fontWeight: '700', fontSize: '0.925rem', color: 'var(--accent-blue)' }}>
-                📞 5. Live Call Transfer to Admin / Senior Manager (कॉ�?ट्रांसफर)
-              </div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--accent-green)', fontWeight: 'bold' }}>
-                <input type="checkbox" checked={enableTransfer} onChange={e => setEnableTransfer(e.target.checked)} />
-                सक्रिय (Active)
+              <label style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                📞 5. Live Call Transfer to Admin / Senior Manager
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--accent-green)', fontWeight: 'bold' }}>
+                <input 
+                  type="checkbox" 
+                  checked={enableTransfer} 
+                  onChange={e => setEnableTransfer(e.target.checked)} 
+                />
+                ट्रांसफर चालू रखें (Enabled)
               </label>
             </div>
-            
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '0.85rem' }}>
-              जब कस्टमर बोलेगा <em>"सीनियर/मैनेजर से बा�?कराओ"</em> ya <em>"कस्टमर केयर ट्रांसफर कर�?</em>, तो AI तुरं�?कॉ�?इस नंबर पर ट्रांसफर कर देगा:
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.75rem', lineHeight: '1.4' }}>
+              जब कस्टमर कॉल पर कहेगा <em>"सीनियर से बात कराओ"</em>, <em>"मैनेजर से बात करनी है"</em> या <em>"एडमिन को ट्रांसफर करो"</em>, तो AI कॉल को आपके इस एडमिन नंबर पर ट्रांसफर कर देगा:
             </p>
-
-            <div className="form-group" style={{ maxWidth: '350px' }}>
-              <label style={{ fontSize: '0.825rem', fontWeight: '600' }}>Admin Mobile Number (+91)</label>
+            <div className="form-group" style={{ margin: 0, maxWidth: '400px' }}>
               <input 
                 type="text" 
                 className="form-control" 
-                value={adminTransferNumber} 
-                onChange={e => setAdminTransferNumber(e.target.value)} 
+                value={adminTransferNumber}
+                onChange={e => setAdminTransferNumber(e.target.value)}
                 placeholder="e.g. +91 8739904737" 
+                style={{ borderColor: 'var(--accent-blue)', fontWeight: 'bold', letterSpacing: '0.5px' }}
               />
             </div>
           </div>
 
-          {/* Custom Call Script */}
+          {/* Opening Dialogue Script (Hindi / Hinglish) */}
           <div className="form-group mb-4">
-            <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>
-              6. AI क्या बोलेगा (Opening Call Script) <span style={{ color: 'var(--accent-green)' }}>*</span>
-            </label>
+            <div className="flex justify-between items-center mb-1">
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>
+                6. AI कॉल उठाते ही सबसे पहले क्या बोलेगा? (Opening Call Script in Hindi/Hinglish)
+              </label>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                {script.length} अक्षर
+              </span>
+            </div>
             <textarea 
               required
-              rows="3"
+              rows={4} 
               className="form-control" 
               value={script}
               onChange={e => setScript(e.target.value)} 
-              placeholder="नमस्ते सर! मै�?पूजा बो�?रही हू�?श्री आँगन डेवलपर से..." 
-              style={{ fontSize: '0.85rem', lineHeight: '1.5' }}
+              placeholder="e.g. नमस्कार जी! मैं Pooja बोल रही हूँ, The Shree Aangan Developers की तरफ से..."
+              style={{ lineHeight: '1.5', fontFamily: 'inherit' }}
             />
           </div>
 
-          {/* Objection Handling */}
+          {/* Intelligent FAQ & Objection Handling Rules */}
           <div className="form-group mb-6">
-            <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>
-              7. कस्टमर के सवालों के जवाब (FAQ / Objection Rules)
-            </label>
+            <div className="flex justify-between items-center mb-1">
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>
+                7. कस्टमर के सवालों के जवाब के नियम (FAQ & Objection Handling Rules)
+              </label>
+              <span style={{ fontSize: '0.75rem', color: 'var(--accent-green)' }}>
+                🧠 LLM Dynamic Reasoner Active
+              </span>
+            </div>
             <textarea 
-              rows="3"
+              rows={6} 
               className="form-control" 
               value={objections}
               onChange={e => setObjections(e.target.value)} 
-              placeholder="अग�?कस्टमर पूछे डिस्काउं�?कितन�?है... अग�?बोले बा�?मे�?कॉ�?कर�?.." 
-              style={{ fontSize: '0.85rem', lineHeight: '1.5' }}
+              placeholder="e.g. अगर पूछे प्राइस कितना है तो बताएं कि JDA Approved Plots ₹800 से शुरू हैं..."
+              style={{ lineHeight: '1.5', fontFamily: 'inherit' }}
             />
           </div>
 
-          {/* LIVE LLM Q&A TEST SIMULATOR */}
-          <div style={{ background: '#0a0a14', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)', marginBottom: '1.75rem' }}>
-            <div className="flex justify-between items-center mb-2">
-              <div style={{ fontWeight: '700', color: 'var(--accent-purple)', fontSize: '0.9rem' }}>
-                🧠 Step 3: लाइव AI जवाब �?कॉ�?ट्रांसफर टेस्�?करें:
-              </div>
-              <span className="badge primary" style={{ fontSize: '0.68rem' }}>Intelligent AI Active</span>
-            </div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
-              ऊप�?आपके लिखे हु�?स्क्रिप्�? कंपनी डिटेल्�?(e.g. <em>"kon si property hai"</em>) या कॉ�?ट्रांसफर टेस्�?करें:
-            </p>
-
-            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
-              <input 
-                type="text" 
-                className="form-control" 
-                value={testQuestion} 
-                onChange={e => setTestQuestion(e.target.value)} 
-                placeholder="कस्टमर का सवाल लिखे�?e.g. kon si property hai ya price kitna hai" 
-              />
-              <button 
-                type="button" 
-                onClick={handleTestAgentQuestion}
-                disabled={simulating}
-                className="btn btn-secondary"
-                style={{ padding: '0.65rem 1.25rem', flexShrink: 0, fontWeight: '700', borderColor: 'var(--accent-purple)', color: 'var(--accent-purple)' }}
-              >
-                {simulating ? '🧠 AI सो�?रह�?है...' : '🔊 टेस्�?करें और सुने�?}
-              </button>
-            </div>
-
-            {testAnswer && (
-              <div style={{ background: 'rgba(139, 92, 246, 0.08)', padding: '0.75rem', borderRadius: '6px', border: '1px solid rgba(139, 92, 246, 0.3)', fontSize: '0.825rem' }}>
-                <strong style={{ color: 'var(--accent-purple)', display: 'block', marginBottom: '2px' }}>
-                  🤖 AI एजें�?का जवाब:
-                </strong>
-                <span style={{ color: '#fff', lineHeight: '1.4' }}>"{testAnswer}"</span>
-              </div>
-            )}
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <button 
+              type="button" 
+              onClick={handleSaveAgent}
+              className="btn btn-primary" 
+              style={{ padding: '0.75rem 2rem', fontSize: '0.95rem', fontWeight: '700' }}
+            >
+              {editingId ? '💾 अपडेट सेव करें (Update Agent)' : '🎉 यह वॉइस एजेंट सेव करें (Save Agent)'}
+            </button>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              ✅ सेव करने पर यह एजेंट Campaigns में उपलब्ध हो जाएगा
+            </span>
           </div>
-
-          <button 
-            type="button"
-            onClick={handleSaveAgent}
-            className="btn btn-primary" 
-            style={{ 
-              width: '100%', 
-              padding: '0.9rem', 
-              fontWeight: '700', 
-              fontSize: '1.05rem', 
-              background: 'linear-gradient(135deg, #10b981, #059669)', 
-              border: 'none', 
-              boxShadow: '0 0 20px rgba(16,185,129,0.3)',
-              cursor: 'pointer'
-            }}
-          >
-            {editingId ? '💾 एजें�?अपडे�?करें' : '🚀 एजें�?को सुरक्षित से�?करें (Save Agent)'}
-          </button>
         </form>
       </div>
 
-      {/* Saved Agents List */}
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <h2 style={{ fontSize: '1.2rem', margin: 0 }}>
-            से�?कि�?हु�?Voice Agents ({agents.length})
-          </h2>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            पे�?रिफ्रे�?करने पर भी यह से�?रहेंगे�?          </span>
+      {/* Step 3: Real LLM Intelligent Q&A Simulation */}
+      <div className="card mb-8" style={{ padding: '2rem', background: '#0a0a14', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
+        <h2 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', color: 'var(--accent-blue)' }}>
+          🧪 Step 3: लाइव AI टेस्ट करें (Test Script & Objection Rules)
+        </h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.825rem', marginBottom: '1.25rem' }}>
+          कोई भी सवाल पूछकर देखें — AI आपकी ऊपर लिखी हुई Shree Aangan स्क्रिप्ट और नियमों के आधार पर बिल्कुल इंसान की तरह जवाब देगा:
+        </p>
+
+        <div className="form-group mb-3">
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <input 
+              type="text" 
+              className="form-control" 
+              value={testQuestion}
+              onChange={e => setTestQuestion(e.target.value)}
+              placeholder="e.g. price kitna hai ya metro kab tak aayegi"
+              onKeyDown={e => { if (e.key === 'Enter') handleTestAgentQuestion(); }}
+              style={{ flex: 1 }}
+            />
+            <button 
+              type="button"
+              onClick={handleTestAgentQuestion} 
+              disabled={simulating}
+              className="btn btn-primary"
+              style={{ padding: '0 1.5rem', whiteSpace: 'nowrap' }}
+            >
+              {simulating ? '⏳ सोच रहा है...' : '🎙️ पूछें और जवाब सुनें'}
+            </button>
+          </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
-          {agents.map(ag => (
-            <div className="card" key={ag.id} style={{ padding: '1.25rem', border: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-              <div>
-                <div className="flex justify-between items-start mb-1">
-                  <div>
-                    <h3 style={{ margin: 0, fontSize: '1.05rem', color: '#fff' }}>{ag.name}</h3>
-                    <span style={{ fontSize: '0.75rem', color: 'var(--accent-green)', fontWeight: '600' }}>{ag.useCase}</span>
-                  </div>
-                  <span className="badge primary" style={{ fontSize: '0.7rem' }}>{ag.voice}</span>
-                </div>
-
-                <div style={{ background: '#0a0a12', padding: '0.65rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.06)', margin: '0.65rem 0', fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                  "{ag.script || ag.description || 'नमस्ते! मै�?सुविधा एआ�?से बा�?कर रही हूँ। हमार�?पा�?आपके लि�?बेस्�?ऑफर्�?हैं।'}"
-                </div>
-
-                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.85rem' }}>
-                  <span className="badge warning">{ag.speed || '1.0x'}</span>
-                  <span className="badge info">{ag.pitch || 'Warm'}</span>
-                  {ag.adminTransferNumber && <span className="badge success">Transfer: {ag.adminTransferNumber}</span>}
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center pt-2" style={{ borderTop: '1px solid var(--border-light)' }}>
-                <Link 
-                  href={`/campaigns?agentId=${ag.id}`}
-                  className="btn btn-primary"
-                  style={{ fontSize: '0.72rem', padding: '0.3rem 0.65rem', fontWeight: '700' }}
-                >
-                  🚀 Use in Campaign
-                </Link>
-
-                <div style={{ display: 'flex', gap: '0.4rem' }}>
-                  <button 
-                    onClick={() => handleEdit(ag)}
-                    className="btn btn-secondary"
-                    style={{ fontSize: '0.72rem', padding: '0.3rem 0.55rem' }}
-                  >
-                    ✏️ Edit
-                  </button>
-                  <button 
-                    onClick={() => handleDelete(ag.id, ag.name)}
-                    className="btn btn-secondary"
-                    style={{ fontSize: '0.72rem', padding: '0.3rem 0.55rem', borderColor: 'var(--accent-red)', color: 'var(--accent-red)' }}
-                  >
-                    🗑�?Delete
-                  </button>
-                </div>
-              </div>
+        {testAnswer && (
+          <div style={{ background: '#12121c', padding: '1.25rem', borderRadius: '8px', border: '1px solid var(--accent-green)', marginTop: '1rem' }}>
+            <div className="flex justify-between items-center mb-2">
+              <span style={{ fontWeight: '700', fontSize: '0.85rem', color: 'var(--accent-green)' }}>
+                🤖 AI Agent Reply:
+              </span>
+              <button 
+                type="button"
+                onClick={() => playVoiceSample(selectedVoice, testAnswer)} 
+                className="btn btn-secondary" 
+                style={{ fontSize: '0.75rem', padding: '0.2rem 0.6rem' }}
+              >
+                🔊 फिर से सुनें
+              </button>
             </div>
-          ))}
-        </div>
+            <p style={{ margin: 0, fontSize: '0.95rem', lineHeight: '1.6', color: '#fff' }}>
+              "{testAnswer}"
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Saved Voice Agents List */}
+      <div>
+        <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>
+          📋 आपके सेव किए गए वॉइस एजेंट्स ({agents.length})
+        </h2>
+
+        {agents.length === 0 ? (
+          <div className="card text-center" style={{ padding: '3rem 1rem', color: 'var(--text-secondary)' }}>
+            <p>अभी तक कोई कस्टम वॉइस एजेंट सेव नहीं हुआ है। ऊपर फॉर्म भरकर "यह वॉइस एजेंट सेव करें" पर क्लिक करें।</p>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem' }}>
+            {agents.map(ag => (
+              <div key={ag.id} className="card" style={{ padding: '1.25rem', background: '#0e0e14', border: '1px solid var(--border-light)' }}>
+                <div className="flex justify-between items-center mb-2">
+                  <span style={{ fontWeight: '700', fontSize: '1rem', color: 'var(--accent-green)' }}>
+                    {ag.name}
+                  </span>
+                  <span className="badge primary">{ag.voiceId || 'pooja'}</span>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                  <strong>बिजनेस:</strong> {ag.useCase || 'Real Estate'}
+                </p>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.85rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                  <strong>स्क्रिप्ट:</strong> "{ag.script}"
+                </p>
+                <div className="flex justify-between items-center" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '0.75rem' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button 
+                      onClick={() => handleEdit(ag)} 
+                      className="btn btn-secondary" 
+                      style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }}
+                    >
+                      ✏️ एडिट
+                    </button>
+                    <button 
+                      onClick={() => handleDelete(ag.id, ag.name)} 
+                      className="btn btn-danger" 
+                      style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }}
+                    >
+                      🗑️ डिलीट
+                    </button>
+                  </div>
+                  <Link 
+                    href={`/campaigns?agentId=${ag.id}`}
+                    className="btn btn-primary" 
+                    style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+                  >
+                    🚀 Call with this Agent &rarr;
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

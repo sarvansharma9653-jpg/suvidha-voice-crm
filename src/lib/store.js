@@ -4,7 +4,8 @@ const isBrowser = typeof window !== 'undefined';
 
 let currentUserId = 'default';
 
-export const initialDefaultAgents = [  {
+export const initialDefaultAgents = [
+  {
     id: 'ag_pooja',
     name: 'Pooja - Shree Aangan Real Estate Closer',
     voiceId: 'pooja',
@@ -29,8 +30,8 @@ export const initialDefaultAgents = [  {
     bargeIn: true,
     callType: 'Outbound (AI calls leads)',
     useCase: 'Loans & Banking',
-    script: 'नमस्ते! मै�?आर�?बा�?कर रह�?हूँ। आपके नंबर पर 5 ला�?तक का प्री-अप्रूव्ड पर्सनल लो�?सबसे कम ब्या�?दर पर अप्रूव हु�?है�?क्या आपको फंड्�?की जरूर�?है?',
-    objections: 'अग�?कस्टमer पूछे ब्या�?दर क्या है, तो 9.99% से शुरू बताएं। अग�?इंटरेस्टेड हो, तो तुरं�?पै�?और आधार की डिटे�?व्हाट्सए�?करने को कहें�?
+    script: 'नमस्ते! मैं Aarav बात कर रहा हूँ। आपके नंबर पर 5 लाख तक का प्री-अप्रूव्ड पर्सनल लोन सबसे कम ब्याज दर पर अप्रूव हुआ है। क्या आपको फंड्स की जरूरत है?',
+    objections: 'अगर कस्टमर पूछे ब्याज दर क्या है, तो 9.99% से शुरू बताएं। अगर इंटरेस्टेड हो, तो तुरंत पैन और आधार की डिटेल व्हाट्सएप करने को कहें।'
   },
   {
     id: 'ag_swara',
@@ -43,8 +44,8 @@ export const initialDefaultAgents = [  {
     bargeIn: true,
     callType: 'Inbound & Outbound',
     useCase: 'Customer Support & Retention',
-    script: 'नमस्ते! मै�?स्वर�?बा�?कर रही हूँ। हम यह सुनिश्चि�?करने के लि�?कॉ�?कर रह�?है�?कि आपकी सर्विस पूरी तर�?से सही चल रही है�?क्या आपको किसी सहायता की आवश्यकता है?',
-    objections: 'अग�?को�?शिकायत हो तो तुरं�?टिकट नंबर दर्ज करें और प्रायोरिटी सपोर्ट का आश्वास�?दें।'
+    script: 'नमस्ते! मैं Swara बात कर रही हूँ। हम यह सुनिश्चित करने के लिए कॉल कर रहे हैं कि आपकी सर्विस पूरी तरह से सही चल रही है। क्या आपको किसी सहायता की आवश्यकता है?',
+    objections: 'अगर कोई शिकायत हो तो तुरंत टिकट नंबर दर्ज करें और प्रायोरिटी सपोर्ट का आश्वासन दें।'
   },
   {
     id: 'ag_madhur',
@@ -57,13 +58,12 @@ export const initialDefaultAgents = [  {
     bargeIn: true,
     callType: 'Outbound (AI calls leads)',
     useCase: 'B2B Sales & Digital Marketing',
-    script: 'नमस्ते सर! मै�?मधुर बा�?कर रह�?हूँ। हम आपके बिजनेस की सेल्�?और सोशल मीडिया लीड्�?को 3 गुना करने मे�?मद�?कर सकते हैं। क्या आप 2 मिनट बा�?कर सकते है�?',
-    objections: 'अग�?क्लाइं�?पूछे कंपनी का ना�? तो सुविधा ग्रो�?लैब्�?बताए�?और फ्री ऑडिट कॉ�?ऑफ�?करें�?
+    script: 'नमस्ते सर! मैं Madhur बात कर रहा हूँ। हम आपके बिजनेस की सेल्स और सोशल मीडिया लीड्स को 3 गुना करने में मदद कर सकते हैं। क्या आप 2 मिनट बात कर सकते हैं?',
+    objections: 'अगर क्लाइंट पूछे कंपनी का नाम, तो सुविधा ग्रोथ लैब्स बताएं और फ्री ऑडिट कॉल ऑफर करें।'
   }
 ];
 
 export const store = {
-  // Set active tenant user ID
   setUserId: (userId) => {
     if (userId) currentUserId = userId;
   },
@@ -76,7 +76,7 @@ export const store = {
     return currentUserId;
   },
 
-  // 1. Voice Agents (Scoped by User ID & Persisted Permanently)
+  // 1. Voice Agents with AUTO-UPGRADE to Shree Aangan
   getAgents: (userId) => {
     if (!isBrowser) return initialDefaultAgents;
     const uid = userId || store.getUserId();
@@ -89,7 +89,19 @@ export const store = {
       return initialDefaultAgents;
     }
     try {
-      return JSON.parse(data);
+      let parsed = JSON.parse(data);
+      // Auto-migrate: ensure Shree Aangan agent is present and updated
+      const poojaIdx = parsed.findIndex(a => a.id === 'ag_pooja');
+      if (poojaIdx === -1 || !parsed[poojaIdx].script?.includes('Shree Aangan')) {
+        if (poojaIdx >= 0) {
+          parsed[poojaIdx] = initialDefaultAgents[0];
+        } else {
+          parsed = [initialDefaultAgents[0], ...parsed];
+        }
+        localStorage.setItem(key, JSON.stringify(parsed));
+        localStorage.setItem('suvidha_custom_agents', JSON.stringify(parsed));
+      }
+      return parsed;
     } catch(e) {
       return initialDefaultAgents;
     }
@@ -221,6 +233,15 @@ export const store = {
     const campaigns = store.getCampaigns(uid);
     const updated = campaigns.map(c => c.id === id ? { ...c, ...updates } : c);
     localStorage.setItem(key, JSON.stringify(updated));
+  },
+
+  deleteCampaign: (id, userId) => {
+    if (!isBrowser) return;
+    const uid = userId || store.getUserId();
+    const key = `campaigns_${uid}`;
+    const campaigns = store.getCampaigns(uid);
+    const filtered = campaigns.filter(c => c.id !== id);
+    localStorage.setItem(key, JSON.stringify(filtered));
   },
 
   // 4. Calls & Transcripts (Scoped by User ID)

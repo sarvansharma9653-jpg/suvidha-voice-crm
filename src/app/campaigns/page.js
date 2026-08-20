@@ -92,7 +92,7 @@ export default function CampaignsPage() {
     const newCampaign = {
       name: formData.name.trim(),
       agentName: selectedAg?.name || 'Pooja (Closer)',
-      script: selectedAg?.script || selectedAg?.description || 'नमस्ते! मै�?सुविधा एआ�?से बा�?कर रही हूँ।',
+      script: selectedAg?.script || selectedAg?.description || 'नमस्ते! मै?सुविधा एआ?से बा?कर रही हूँ।',
       voice: selectedAg?.voiceId || 'pooja',
       selectedLeadIds: formData.selectedLeadIds,
       totalContacts: formData.selectedLeadIds.length,
@@ -164,7 +164,7 @@ export default function CampaignsPage() {
           campaignId: campaign.name,
           duration: Math.floor(Math.random() * 35) + 30,
           status: 'Completed',
-          sentiment: i % 2 === 0 ? '😊 Interested' : '�?Follow-up Requested',
+          sentiment: i % 2 === 0 ? '😊 Interested' : '?Follow-up Requested',
           stage: 'Qualified',
           recordingUrl: 'https://suvidha-voice-crm.vercel.app/audio/call_rec.mp3',
           summary: `Campaign "${campaign.name}" called ${lead.name} (${lead.phone}) with agent "${campaign.agentName}". AI completed sales qualification and WhatsApp brochure dispatched.`,
@@ -215,14 +215,14 @@ export default function CampaignsPage() {
             🤖 Voice Agent Studio
           </Link>
           <Link href="/calls" className="btn btn-secondary" style={{ fontSize: '0.85rem' }}>
-            🎙�?Call Transcripts & Audio
+            🎙?Call Transcripts & Audio
           </Link>
           <button 
             onClick={() => setShowModal(true)} 
             className="btn btn-primary" 
             style={{ fontSize: '0.85rem', fontWeight: '700' }}
           >
-            �?Create New Campaign
+            ?Create New Campaign
           </button>
         </div>
       </div>
@@ -242,7 +242,7 @@ export default function CampaignsPage() {
         <div className="card mb-6" style={{ background: '#0d1117', borderColor: 'var(--accent-blue)', padding: '1.5rem' }}>
           <div className="flex justify-between items-center mb-2">
             <span style={{ fontWeight: '600', color: 'var(--accent-blue)' }}>
-              �?Auto-Dialer Calling in Progress ({dialerProgress.current}/{dialerProgress.total})
+              ?Auto-Dialer Calling in Progress ({dialerProgress.current}/{dialerProgress.total})
             </span>
             <span className="badge warning">Calling: {dialerProgress.activeName}</span>
           </div>
@@ -271,7 +271,7 @@ export default function CampaignsPage() {
               Create your first campaign, pick 1 or more leads, and start AI voice calling!
             </p>
             <button onClick={() => setShowModal(true)} className="btn btn-primary">
-              �?Create Your First Campaign
+              ?Create Your First Campaign
             </button>
           </div>
         ) : (
@@ -311,7 +311,7 @@ export default function CampaignsPage() {
                       className={`btn ${isCalling ? 'btn-secondary' : 'btn-primary'}`}
                       style={{ fontSize: '0.8rem', padding: '0.45rem 1rem', fontWeight: '700', borderRadius: '20px' }}
                     >
-                      {isCalling ? '�?Calling Now...' : (leadCount === 1 ? '📞 Call 1 Lead Now' : `🚀 Call All ${leadCount} Leads`)}
+                      {isCalling ? '?Calling Now...' : (leadCount === 1 ? '📞 Call 1 Lead Now' : `🚀 Call All ${leadCount} Leads`)}
                     </button>
 
                     <button 
@@ -319,7 +319,7 @@ export default function CampaignsPage() {
                       className="btn btn-secondary"
                       style={{ fontSize: '0.75rem', padding: '0.35rem 0.6rem', borderColor: 'var(--accent-red)', color: 'var(--accent-red)' }}
                     >
-                      🗑�?Delete
+                      🗑?Delete
                     </button>
                   </div>
                 </div>
@@ -367,7 +367,7 @@ export default function CampaignsPage() {
                   ))}
                 </select>
                 <span style={{ fontSize: '0.72rem', color: 'var(--accent-green)', marginTop: '3px', display: 'block' }}>
-                  �?Agent ki saved script, voice aur rules automatically use honge.
+                  ?Agent ki saved script, voice aur rules automatically use honge.
                 </span>
               </div>
 
