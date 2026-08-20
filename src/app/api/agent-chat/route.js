@@ -11,32 +11,43 @@ export async function POST(req) {
     const cleanQuestion = userQuestion.trim().toLowerCase();
     const cleanScript = (script || '').trim();
     const cleanObjections = (objections || '').trim();
+    const combinedContext = `${cleanScript} ${cleanObjections}`;
+
+    // Extract dynamic price from user's custom input (e.g. 10लाख, 25 Lakhs, 1 Crore, etc.)
+    const priceMatch = combinedContext.match(/(\d+[\d\.,]*\s*(?:लाख|lakh|lakhs|crore|crores|करोड़|हजार|hazaar|k|cr|rs|\/-))/i);
+    const extractedPrice = priceMatch ? priceMatch[0] : null;
+
+    // Extract dynamic location if mentioned (e.g. Noida, Gurgaon, Sector 62, Delhi, etc.)
+    const locationMatch = combinedContext.match(/(?:में|in|at|near|पास)\s+([A-Za-z\u0900-\u097F\s0-9]{3,25})/i);
+    const extractedLocation = locationMatch ? locationMatch[1].trim() : null;
+
+    // Extract property / offer type (e.g. 2 BHK, Flat, Plot, Villa, Loan, etc.)
+    const offerMatch = combinedContext.match(/(\d+\s*(?:bhk|BHK)|flat|flats|plot|plots|villa|villas|apartment|apartments|commercial|loan|सेवा)/i);
+    const extractedOffer = offerMatch ? offerMatch[0] : 'प्रॉपर्टी व सर्विसेज';
 
     const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
 
     let aiReply = '';
 
-    // 1. Try Gemini LLM if API Key is configured
+    // 1. Prioritize Google Gemini LLM
     if (apiKey && apiKey.length > 5) {
-      const systemPrompt = `You are a real-time conversational AI Voice Agent named "${agentName || 'AI Closer'}" for "${useCase || 'Sales & Support'}".
+      const systemPrompt = `You are a real-time conversational AI Voice Agent named "${agentName || 'AI Closer'}" for "${useCase || 'Sales'}".
 
-BUSINESS KNOWLEDGE & OPENING SCRIPT PROVIDED BY USER:
+STRICT BUSINESS CONTEXT & SCRIPT FROM USER:
 """
 ${cleanScript}
 """
 
-FAQ & OBJECTION HANDLING RULES:
+STRICT FAQ & OBJECTION RULES FROM USER:
 """
 ${cleanObjections}
 """
 
-STRICT CONVERSATIONAL VOICE RULES:
-1. You are talking over a LIVE PHONE CALL with an Indian customer.
-2. Reply ONLY in natural, polite Indian Hindi / Hinglish.
-3. Keep your response short and concise (1 to 2 short sentences, maximum 25-30 words) so it feels like a real human on the phone.
-4. Strictly answer based on the business details, company name, and objection rules given above.
-5. Never speak in markdown bullet points or asterisks (*).
-6. Never say you are ChatGPT or an AI model. You are ${agentName}.`;
+CRITICAL INSTRUCTIONS:
+1. ONLY answer using the exact prices, numbers, locations, and details provided in the script and objection rules above.
+2. If the user mentioned a specific price (e.g. 10लाख), you MUST state that exact price.
+3. Reply in short, conversational Indian Hindi / Hinglish (1-2 sentences, max 25 words).
+4. Never make up facts not present in the user text. Never say you are an AI.`;
 
       const conversationContents = [];
       if (history && Array.isArray(history)) {
@@ -50,7 +61,7 @@ STRICT CONVERSATIONAL VOICE RULES:
 
       conversationContents.push({
         role: 'user',
-        parts: [{ text: `[System Instruction: ${systemPrompt}]\n\nCustomer: "${userQuestion}"\n\nReply as ${agentName}:` }]
+        parts: [{ text: `[System Context: ${systemPrompt}]\n\nCustomer asks: "${userQuestion}"\n\nReply as ${agentName} strictly using the details given:` }]
       });
 
       const modelsToTry = ['gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
@@ -62,7 +73,7 @@ STRICT CONVERSATIONAL VOICE RULES:
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               contents: conversationContents,
-              generationConfig: { temperature: 0.6, maxOutputTokens: 100 }
+              generationConfig: { temperature: 0.3, maxOutputTokens: 80 }
             })
           });
 
@@ -77,39 +88,43 @@ STRICT CONVERSATIONAL VOICE RULES:
       }
     }
 
-    // 2. Intelligent Contextual AI Reasoner (Extracts exact answers from user's script & objections)
+    // 2. Intelligent Dynamic Matcher (Strictly uses user's own numbers, prices & text)
     if (!aiReply) {
-      // Check for Property Type / What do you have questions
-      if (cleanQuestion.includes('kon si') || cleanQuestion.includes('kya hai') || cleanQuestion.includes('option') || cleanQuestion.includes('property') || cleanQuestion.includes('flats') || cleanQuestion.includes('bhk') || cleanQuestion.includes('service')) {
-        if (cleanScript.includes('BHK') || cleanScript.includes('bhk') || cleanScript.includes('flat') || cleanScript.includes('property')) {
-          aiReply = `सर, हमारे पास आपके लिए प्राइम लोकेशन पर 2 और 3 बीएचके फ्लैट्स और प्रॉपर्टी ऑप्शन्स उपलब्ध हैं। क्या आप इस वीकेंड साइट विजिट के लिए फ्री हैं?`;
+      // PRICE QUESTIONS
+      if (cleanQuestion.includes('price') || cleanQuestion.includes('rate') || cleanQuestion.includes('cost') || cleanQuestion.includes('budget') || cleanQuestion.includes('kitna') || cleanQuestion.includes('daam')) {
+        if (extractedPrice) {
+          aiReply = `सर, हमारे पास ${extractedPrice} से शुरू होने वाले बेहतरीन ऑप्शन्स उपलब्ध हैं। क्या मैं आपको व्हाट्सएप पर पूरा प्राइस चार्ट और ब्रोशर भेज दूँ?`;
         } else {
-          aiReply = `सर, हमारे पास आपकी आवश्यकता के अनुसार बेस्ट ऑप्शन्स उपलब्ध हैं। क्या मैं आपको व्हाट्सएप पर पूरा विवरण और ब्रोशर भेज दूँ?`;
+          aiReply = `सर, कीमतें आपके चुने हुए विकल्प और साइज पर निर्भर करती हैं। क्या मैं आपको विस्तृत प्राइस लिस्ट व्हाट्सएप पर भेज दूँ?`;
         }
       }
-      // Check for Price / Cost / Rate questions
-      else if (cleanQuestion.includes('price') || cleanQuestion.includes('rate') || cleanQuestion.includes('cost') || cleanQuestion.includes('budget') || cleanQuestion.includes('kitna') || cleanQuestion.includes('daam')) {
-        if (cleanScript.includes('लाख') || cleanObjections.includes('लाख') || cleanScript.includes('lakh')) {
-          aiReply = `सर, हमारे पास 45 लाख से शुरू होने वाले बेहतरीन ऑप्शन्स हैं। क्या मैं आपके नंबर पर विस्तृत प्राइस लिस्ट और पेमेंट प्लान व्हाट्सएप कर दूँ?`;
+      // PROPERTY TYPE / WHAT DO YOU HAVE
+      else if (cleanQuestion.includes('kon si') || cleanQuestion.includes('kya hai') || cleanQuestion.includes('option') || cleanQuestion.includes('property') || cleanQuestion.includes('flats') || cleanQuestion.includes('bhk') || cleanQuestion.includes('service')) {
+        if (extractedOffer) {
+          aiReply = `सर, हमारे पास आपकी पसंद के अनुसार ${extractedOffer} के बेहतरीन ऑप्शन्स उपलब्ध हैं। क्या मैं आपको व्हाट्सएप पर पूरी डिटेल्स भेज दूँ?`;
         } else {
-          aiReply = `सर, कीमतें प्रॉपर्टी के साइज और लोकेशन पर निर्भर करती हैं। क्या मैं आपको तुरंत व्हाट्सएप पर पूरी प्राइस लिस्ट भेज दूँ?`;
+          aiReply = `सर, हमारे पास आपकी जरूरत के हिसाब से बेस्ट ऑप्शन्स उपलब्ध हैं। क्या मैं आपको व्हाट्सएप पर सारी जानकारी भेज दूँ?`;
         }
       }
-      // Check for Location / Address questions
+      // LOCATION / WHERE QUESTIONS
       else if (cleanQuestion.includes('kahan') || cleanQuestion.includes('location') || cleanQuestion.includes('address') || cleanQuestion.includes('jagah')) {
-        aiReply = `यह प्रोजेक्ट प्राइम लोकेशन पर स्थित है और कनेक्टिविटी बहुत ही शानदार है। क्या मैं आपको गूगल मैप्स लोकेशन व्हाट्सएप पर भेज दूँ?`;
+        if (extractedLocation) {
+          aiReply = `सर, यह प्रोजेक्ट ${extractedLocation} में प्राइम लोकेशन पर स्थित है। क्या मैं आपको लोकेशन का मैप व्हाट्सएप पर शेयर कर दूँ?`;
+        } else {
+          aiReply = `सर, यह प्रोजेक्ट बहुत ही प्राइम लोकेशन पर स्थित है। क्या मैं आपको गूगल मैप्स लोकेशन व्हाट्सएप पर भेज दूँ?`;
+        }
       }
-      // Check for Senior / Manager / Call Transfer
+      // CALL TRANSFER / SENIOR / MANAGER
       else if (cleanQuestion.includes('senior') || cleanQuestion.includes('manager') || cleanQuestion.includes('transfer') || cleanQuestion.includes('baat')) {
-        aiReply = `जी बिल्कुल सर! मैं आपकी कॉल तुरंत हमारे सीनियर मैनेजर को ट्रांसफर कर रही हूँ, कृपया 1 मिनट लाइन पर बने रहें!`;
+        aiReply = `जी बिल्कुल सर! मैं आपकी कॉल तुरंत हमारे सीनियर मैनेजर को ट्रांसफर कर रही हूँ, कृपया लाइन पर बने रहें!`;
       }
-      // Check for Interested / Yes
+      // YES / INTERESTED
       else if (cleanQuestion.includes('haan') || cleanQuestion.includes('yes') || cleanQuestion.includes('theek') || cleanQuestion.includes('send') || cleanQuestion.includes('bhejo')) {
-        aiReply = `अरे बहुत ही बढ़िया सर! मैंने आपका नंबर नोट कर लिया है, मैं तुरंत आपको व्हाट्सएप पर सारी जानकारी भेज रही हूँ!`;
+        aiReply = `अरे बहुत ही बढ़िया सर! मैंने आपका नंबर नोट कर लिया है, मैं तुरंत आपको व्हाट्सएप पर सारी जानकारी और ब्रोशर भेज रही हूँ!`;
       }
-      // Default contextual response
+      // DEFAULT DIRECT CUSTOM ANSWER
       else {
-        aiReply = `जी बिल्कुल सर, मैं आपकी बात समझ गई। आपकी पसंद के हिसाब से सबसे बेस्ट ऑप्शन बताने के लिए, क्या मैं आपको व्हाट्सएप पर सारी डिटेल भेज दूँ?`;
+        aiReply = `जी बिल्कुल सर! आपकी आवश्यकता के अनुसार सबसे सही जानकारी देने के लिए, क्या मैं आपको व्हाट्सएप पर पूरा ब्रोशर भेज दूँ?`;
       }
     }
 
