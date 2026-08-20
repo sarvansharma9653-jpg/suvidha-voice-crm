@@ -7,7 +7,44 @@ export default function WhatsAppPage() {
   const defaultShreePrice = '₹800 – ₹2,750 / sq.ft (EMI Available)';
   const defaultShreeBrochure = 'https://drive.google.com/file/d/103owbyObLS3CVyerjrP_Ryr_OVlU2QDG/view?usp=sharing';
   const defaultShreeImg = 'https://theshreeaangan.com/images/og-image.jpg';
-  const defaultShreeTpl = `नमस्ते जी! 🙏\n\nमैं Pooja बोल रही हूँ, The Shree Aangan Developers की तरफ से।\n\nअभी आपसे बात हुई थी — जैसा वादा किया था, यह रही हमारे 85 Acres JDA & RERA Approved Township की पूरी जानकारी:\n\n🏡 *THE SHREE AANGAN DEVELOPERS*\n📍 Location: Chaksu, Tonk Road, Jaipur (NH-12 पर)\n✅ RERA Reg No: RAJ/P/2026/4660 | JDA Approved\n📐 Project Size: 85 Acres Gated Township\n💰 Price: ₹800 – ₹2,750 / sq.ft (EMI Available)\n📈 Annual Growth: 18% to 25% (Jaipur Metro Phase 2 & Ring Road Connected)\n\n📍 *Office Maps:* https://maps.app.goo.gl/1PG2inY6tC69u2br7\n📍 *Project Site Maps:* https://maps.app.goo.gl/XsLcKe4BaHuZFT759\n🌐 *Website:* https://www.theshreeaangan.com/\n📸 *Instagram:* https://www.instagram.com/shreeaangandevelopers/\n📄 *Brochure PDF:* https://drive.google.com/file/d/103owbyObLS3CVyerjrP_Ryr_OVlU2QDG/view?usp=sharing\n\n📞 Site Visit Free है — कोई Commitment नहीं! क्या इस वीकेंड आप आ सकते हैं? 🏡✨`;
+  const defaultShreeTpl = `नमस्ते जी! 🙏
+
+मैं Pooja, The Shree Aangan Developers से बोल रही हूँ।
+
+अभी हमारी बात हुई — जैसा वादा किया था:
+
+🏡 *THE SHREE AANGAN — Jaipur का GOLDEN INVESTMENT*
+
+📍 Location: Chaksu, Tonk Road, Jaipur (NH-12 पर)
+📐 Project: 85 Acres JDA Approved Gated Township
+✅ RERA No: RAJ/P/2026/4660
+💰 Price: ₹800 – ₹2,750/sq.ft (EMI Available)
+📈 Annual Growth: 18-25% Year-on-Year!
+
+🚇 *क्यों अभी खरीदना सबसे सही है?*
+✅ Jaipur Metro Phase 2 — Construction Started!
+✅ Jaipur Ring Road — Connected!
+✅ DMIC Influence Zone — Industrial Growth!
+✅ Chaksu Satellite City Master Plan — Government Backed!
+✅ Metro आने पर 40-60% और Price बढ़ेगी!
+
+📍 *Office Location:*
+https://maps.app.goo.gl/1PG2inY6tC69u2br7
+
+📍 *Project Site Location:*
+https://maps.app.goo.gl/XsLcKe4BaHuZFT759
+
+📂 *Brochure & Details:*
+https://drive.google.com/file/d/103owbyObLS3CVyerjrP_Ryr_OVlU2QDG/view
+
+🌐 *Website:*
+https://www.theshreeaangan.com/
+
+📸 *Instagram (Live Project Photos):*
+https://www.instagram.com/shreeaangandevelopers/
+
+📞 Site Visit Free है — कोई Commitment नहीं!
+एक बार देखिए, खुद फैसला कीजिए! 🏡✨`;
 
   const handleFillShreeAangan = () => {
     setProductName(defaultShreeName);
