@@ -4,20 +4,19 @@ const isBrowser = typeof window !== 'undefined';
 
 let currentUserId = 'default';
 
-export const initialDefaultAgents = [
-  {
+export const initialDefaultAgents = [  {
     id: 'ag_pooja',
-    name: 'Pooja - Real Estate & Luxury Sales Closer',
+    name: 'Pooja - Shree Aangan Real Estate Closer',
     voiceId: 'pooja',
-    voice: '👩 Pooja (Warm & Polite Closer)',
+    voice: '👩 Pooja (Warm Sales Closer)',
     gender: 'Female',
     speed: '1.0x (Normal)',
     pitch: 'Warm & Friendly',
     bargeIn: true,
     callType: 'Outbound (AI calls leads)',
-    useCase: 'Real Estate & Property',
-    script: 'नमस्ते सर! मै�?पूजा बा�?कर रही हूँ। हमार�?पा�?2 और 3 बीएचके लक्ज़री फ्लैट्�?का एक्सक्लूसि�?ऑफ�?है�?क्या मै�?आपको व्हाट्सए�?पर ब्रोशर और प्राइसिं�?भे�?दू�?',
-    objections: 'अग�?कस्टमर बोले बज�?कम है, तो 35 ला�?वाले अफोर्डेब�?विकल्प बताएं। अग�?बोले बिजी हू�? तो शा�?6 बज�?फॉलो-अप शेड्यू�?करें�?
+    useCase: 'Real Estate & Property Investment',
+    script: 'नमस्कार जी! मैं Pooja बोल रही हूँ, The Shree Aangan Developers की तरफ से। आपने हमारे प्रोजेक्ट में interest दिखाया था — Chaksu, Tonk Road पर हमारे 85 Acres के JDA Approved और RERA Registered Gated Township प्रोजेक्ट के लिए। जहाँ Jaipur Metro Phase 2 का काम शुरू हो गया है और Property की कीमतें हर साल 18 से 25% बढ़ रही हैं! क्या इस वीकेंड आप हमारी Free Site Visit के लिए थोड़ा समय निकाल सकते हैं?',
+    objections: 'अगर पूछे प्राइस कितना है तो बताएं कि JDA Approved Plots ₹800 से ₹2,750 प्रति वर्ग फुट से शुरू हैं EMI सुविधा के साथ। अगर पूछे लोकेशन कहाँ है तो बताएं कि Chaksu Tonk Road Jaipur NH-12 पर Sheetla Mata Mandir और Bombay Hospital के पास है। अगर पूछे RERA नंबर तो बताएं कि RAJ/P/2026/4660 है। अगर पूछे Metro तो बताएं कि Jaipur Metro Phase 2 का काम शुरू हो गया है जिससे कीमतें 40 से 60% बढ़ेंगी।'
   },
   {
     id: 'ag_aarav',
@@ -30,8 +29,8 @@ export const initialDefaultAgents = [
     bargeIn: true,
     callType: 'Outbound (AI calls leads)',
     useCase: 'Loans & Banking',
-    script: 'नमस्ते! मै�?आर�?बा�?कर रह�?हूँ। आपके नंबर पर 5 ला�?तक का प्री-अप्रूव्ड पर्सनल लो�?सबसे कम ब्या�?दर पर अप्रूव हु�?है�?क्या आपको फंड्�?की जरूर�?है?',
-    objections: 'अग�?कस्टमer पूछे ब्या�?दर क्या है, तो 9.99% से शुरू बताएं। अग�?इंटरेस्टेड हो, तो तुरं�?पै�?और आधार की डिटे�?व्हाट्सए�?करने को कहें�?
+    script: 'नमस्ते! मै�?आर�?बा�?कर रह�?हूँ। आपके नंबर पर 5 ला�?तक का प्री-अप्रूव्ड पर्सनल लो�?सबसे कम ब्या�?दर पर अप्रूव हु�?है�?क्या आपको फंड्�?की जरूर�?है?',
+    objections: 'अग�?कस्टमer पूछे ब्या�?दर क्या है, तो 9.99% से शुरू बताएं। अग�?इंटरेस्टेड हो, तो तुरं�?पै�?और आधार की डिटे�?व्हाट्सए�?करने को कहें�?
   },
   {
     id: 'ag_swara',
@@ -44,8 +43,8 @@ export const initialDefaultAgents = [
     bargeIn: true,
     callType: 'Inbound & Outbound',
     useCase: 'Customer Support & Retention',
-    script: 'नमस्ते! मै�?स्वर�?बा�?कर रही हूँ। हम यह सुनिश्चि�?करने के लि�?कॉ�?कर रह�?है�?कि आपकी सर्विस पूरी तर�?से सही चल रही है�?क्या आपको किसी सहायता की आवश्यकता है?',
-    objections: 'अग�?को�?शिकायत हो तो तुरं�?टिकट नंबर दर्ज करें और प्रायोरिटी सपोर्ट का आश्वास�?दें।'
+    script: 'नमस्ते! मै�?स्वर�?बा�?कर रही हूँ। हम यह सुनिश्चि�?करने के लि�?कॉ�?कर रह�?है�?कि आपकी सर्विस पूरी तर�?से सही चल रही है�?क्या आपको किसी सहायता की आवश्यकता है?',
+    objections: 'अग�?को�?शिकायत हो तो तुरं�?टिकट नंबर दर्ज करें और प्रायोरिटी सपोर्ट का आश्वास�?दें।'
   },
   {
     id: 'ag_madhur',
@@ -58,8 +57,8 @@ export const initialDefaultAgents = [
     bargeIn: true,
     callType: 'Outbound (AI calls leads)',
     useCase: 'B2B Sales & Digital Marketing',
-    script: 'नमस्ते सर! मै�?मधुर बा�?कर रह�?हूँ। हम आपके बिजनेस की सेल्�?और सोशल मीडिया लीड्�?को 3 गुना करने मे�?मद�?कर सकते हैं। क्या आप 2 मिनट बा�?कर सकते है�?',
-    objections: 'अग�?क्लाइं�?पूछे कंपनी का ना�? तो सुविधा ग्रो�?लैब्�?बताए�?और फ्री ऑडिट कॉ�?ऑफ�?करें�?
+    script: 'नमस्ते सर! मै�?मधुर बा�?कर रह�?हूँ। हम आपके बिजनेस की सेल्�?और सोशल मीडिया लीड्�?को 3 गुना करने मे�?मद�?कर सकते हैं। क्या आप 2 मिनट बा�?कर सकते है�?',
+    objections: 'अग�?क्लाइं�?पूछे कंपनी का ना�? तो सुविधा ग्रो�?लैब्�?बताए�?और फ्री ऑडिट कॉ�?ऑफ�?करें�?
   }
 ];
 

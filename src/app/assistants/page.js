@@ -7,15 +7,15 @@ export default function VoiceAgentStudioPage() {
   const [agents, setAgents] = useState([]);
 
   // Voice Studio Form Fields
-  const [agentName, setAgentName] = useState('Pooja - Real Estate Closer');
+  const [agentName, setAgentName] = useState('Pooja - Shree Aangan Real Estate Closer');
   const [selectedVoice, setSelectedVoice] = useState('pooja');
   const [speed, setSpeed] = useState('1.0x (Normal)');
   const [pitch, setPitch] = useState('Warm & Friendly');
   const [bargeIn, setBargeIn] = useState(true);
   const [callType, setCallType] = useState('Outbound (AI calls leads)');
-  const [useCase, setUseCase] = useState('Real Estate Sales');
-  const [script, setScript] = useState('नमस्का�?जी! मै�?Pooja, Shree Aangan Developer की तर�?से बा�?कर रही हूँ। आपने property से related information मे�?interest दिखाया था, उसी के regarding आपसे बा�?कर रही हूँ। क्या अभी 2 मिनट बा�?करना convenient रहेग�?');
-  const [objections, setObjections] = useState('अग�?Customer बा�?करने के लि�?तैया�?है: "Thank you जी�?सबसे पहले मै�?आपकी requirement समझन�?चाहूँगी ताकि आपको आपकी ज़रूरत के हिसा�?से सही property option की जानकारी दी जा सके।" अग�?पूछे प्राइस कितन�?है तो बताए�?कि 45 ला�?से शुरू है�?);
+  const [useCase, setUseCase] = useState('Real Estate & Property Investment');
+  const [script, setScript] = useState('नमस्कार जी! मैं Pooja बोल रही हूँ, The Shree Aangan Developers की तरफ से। आपने हमारे प्रोजेक्ट में interest दिखाया था — Chaksu, Tonk Road पर हमारे 85 Acres के JDA Approved और RERA Registered Gated Township प्रोजेक्ट के लिए। जहाँ Jaipur Metro Phase 2 का काम शुरू हो गया है और Property की कीमतें हर साल 18 से 25% बढ़ रही हैं! क्या इस वीकेंड आप हमारी Free Site Visit के लिए थोड़ा समय निकाल सकते हैं?');
+  const [objections, setObjections] = useState('अगर पूछे प्राइस कितना है तो बताएं कि JDA Approved Plots ₹800 से ₹2,750 प्रति वर्ग फुट से शुरू हैं EMI सुविधा के साथ। अगर पूछे लोकेशन कहाँ है तो बताएं कि Chaksu Tonk Road Jaipur NH-12 पर Sheetla Mata Mandir और Bombay Hospital के पास है। अगर पूछे RERA नंबर तो बताएं कि RAJ/P/2026/4660 है। अगर पूछे Metro तो बताएं कि Jaipur Metro Phase 2 का काम शुरू हो गया है जिससे कीमतें 40 से 60% बढ़ेंगी।');
   
   // Call Transfer to Admin / Senior Manager
   const [enableTransfer, setEnableTransfer] = useState(true);
@@ -33,12 +33,12 @@ export default function VoiceAgentStudioPage() {
   const [saveModal, setSaveModal] = useState(null); // { type: 'success'|'error', title: '', message: '' }
 
   const voiceLibrary = [
-    { id: 'pooja', name: '👩 Pooja', title: 'Warm Sales Closer', gender: 'Female', desc: 'मीठी, विनम्र और भरोसेमंद आवाज (बो�?रही हू�?' },
-    { id: 'aarav', name: '👨 Aarav', title: 'Finance & Loan Specialist', gender: 'Male', desc: 'कॉन्फिडेंट और प्रोफेशन�?आवाज (बो�?रह�?हू�?' },
-    { id: 'swara', name: '👩 Swara', title: 'Luxury Consultant', gender: 'Female', desc: 'सॉफ्�?और प्रीमियम रियल एस्टेट एडवाइज�? },
-    { id: 'madhur', name: '👨 Madhur', title: 'Corporate B2B Executive', gender: 'Male', desc: 'कॉर्पोरे�?और बिजनेस डील्�?के लि�?बेस्�? },
-    { id: 'ananya', name: '👩 Ananya', title: 'Customer Support Lead', gender: 'Female', desc: 'मॉडर्न, ते�?और दोस्ताना हिंग्लिश आवाज' },
-    { id: 'rohan', name: '👨 Rohan', title: 'Senior Sales Director', gender: 'Male', desc: 'गंभी�?और असरदार आवाज' },
+    { id: 'pooja', name: '👩 Pooja', title: 'Warm Sales Closer', gender: 'Female', desc: 'मीठी, विनम्र और भरोसेमंद आवाज (बो�?रही हू�?' },
+    { id: 'aarav', name: '👨 Aarav', title: 'Finance & Loan Specialist', gender: 'Male', desc: 'कॉन्फिडेंट और प्रोफेशन�?आवाज (बो�?रह�?हू�?' },
+    { id: 'swara', name: '👩 Swara', title: 'Luxury Consultant', gender: 'Female', desc: 'सॉफ्�?और प्रीमियम रियल एस्टेट एडवाइज�? },
+    { id: 'madhur', name: '👨 Madhur', title: 'Corporate B2B Executive', gender: 'Male', desc: 'कॉर्पोरे�?और बिजनेस डील्�?के लि�?बेस्�? },
+    { id: 'ananya', name: '👩 Ananya', title: 'Customer Support Lead', gender: 'Female', desc: 'मॉडर्न, ते�?और दोस्ताना हिंग्लिश आवाज' },
+    { id: 'rohan', name: '👨 Rohan', title: 'Senior Sales Director', gender: 'Male', desc: 'गंभी�?और असरदार आवाज' },
   ];
 
   useEffect(() => {
@@ -58,8 +58,8 @@ export default function VoiceAgentStudioPage() {
       const personaName = vObj.name.replace(/[^a-zA-Z]/g, '');
 
       const sampleText = customText || (isMale 
-        ? `नमस्ते! मै�?${personaName} बो�?रह�?हूँ। हमार�?पा�?आपके लि�?बेस्�?बिजनेस ऑफर्�?हैं। बताइ�? आज मै�?आपकी क्या सहायता करूँ?`
-        : `नमस्ते! मै�?${personaName} बो�?रही हूँ। हमार�?पा�?आपके लि�?बेस्�?बिजनेस ऑफर्�?हैं। बताइ�? आज मै�?आपकी क्या सहायता करूँ?`);
+        ? `नमस्ते! मै�?${personaName} बो�?रह�?हूँ। हमार�?पा�?आपके लि�?बेस्�?बिजनेस ऑफर्�?हैं। बताइ�? आज मै�?आपकी क्या सहायता करूँ?`
+        : `नमस्ते! मै�?${personaName} बो�?रही हूँ। हमार�?पा�?आपके लि�?बेस्�?बिजनेस ऑफर्�?हैं। बताइ�? आज मै�?आपकी क्या सहायता करूँ?`);
 
       const res = await fetch('/api/tts', {
         method: 'POST',
@@ -85,7 +85,7 @@ export default function VoiceAgentStudioPage() {
   // REAL LLM INTELLIGENT Q&A SIMULATION
   const handleTestAgentQuestion = async () => {
     if (!testQuestion.trim()) {
-      setSaveModal({ type: 'error', title: 'सवाल लिखे�?, message: 'कृपय�?कस्टमर का को�?सवाल लिखे�?जैसे "kon si property hai" ya "price kitna hai"!' });
+      setSaveModal({ type: 'error', title: 'सवाल लिखे�?, message: 'कृपय�?कस्टमर का को�?सवाल लिखे�?जैसे "kon si property hai" ya "price kitna hai"!' });
       return;
     }
     setSimulating(true);
@@ -97,8 +97,8 @@ export default function VoiceAgentStudioPage() {
     if (enableTransfer && isTransferReq) {
       const vObj = voiceLibrary.find(v => v.id === selectedVoice) || voiceLibrary[0];
       const reply = vObj.gender === 'Male'
-        ? `जी बिल्कु�?सर! मै�?आपकी कॉ�?तुरं�?हमार�?सीनियर मैनेजर (${adminTransferNumber}) को ट्रांसफर कर रह�?हूँ। कृपय�?लाइन पर बन�?रहें!`
-        : `जी बिल्कु�?सर! मै�?आपकी कॉ�?तुरं�?हमार�?सीनियर मैनेजर (${adminTransferNumber}) को ट्रांसफर कर रही हूँ। कृपय�?लाइन पर बन�?रहें!`;
+        ? `जी बिल्कु�?सर! मै�?आपकी कॉ�?तुरं�?हमार�?सीनियर मैनेजर (${adminTransferNumber}) को ट्रांसफर कर रह�?हूँ। कृपय�?लाइन पर बन�?रहें!`
+        : `जी बिल्कु�?सर! मै�?आपकी कॉ�?तुरं�?हमार�?सीनियर मैनेजर (${adminTransferNumber}) को ट्रांसफर कर रही हूँ। कृपय�?लाइन पर बन�?रहें!`;
       
       setTestAnswer(reply);
       setSimulating(false);
@@ -120,7 +120,7 @@ export default function VoiceAgentStudioPage() {
       });
 
       const data = await res.json();
-      const reply = data.reply || 'जी बिल्कु�? मै�?आपको पूरी जानकारी व्हाट्सए�?कर रही हू�?';
+      const reply = data.reply || 'जी बिल्कु�? मै�?आपको पूरी जानकारी व्हाट्सए�?कर रही हू�?';
       setTestAnswer(reply);
       setSimulating(false);
 
@@ -136,12 +136,12 @@ export default function VoiceAgentStudioPage() {
     if (e) e.preventDefault();
 
     if (!agentName.trim()) {
-      setSaveModal({ type: 'error', title: 'ना�?जरूरी है', message: 'कृपय�?अपने वॉइस एजें�?का ना�?लिखे�?' });
+      setSaveModal({ type: 'error', title: 'ना�?जरूरी है', message: 'कृपय�?अपने वॉइस एजें�?का ना�?लिखे�?' });
       return;
     }
 
     if (!script.trim()) {
-      setSaveModal({ type: 'error', title: 'स्क्रिप्�?जरूरी है', message: 'कृपय�?AI के बोलन�?की शुरुआती स्क्रिप्�?लिखे�?' });
+      setSaveModal({ type: 'error', title: 'स्क्रिप्�?जरूरी है', message: 'कृपय�?AI के बोलन�?की शुरुआती स्क्रिप्�?लिखे�?' });
       return;
     }
 
@@ -169,16 +169,16 @@ export default function VoiceAgentStudioPage() {
         store.updateAgent(editingId, agentData);
         setSaveModal({
           type: 'success',
-          title: '�?वॉइस एजें�?अपडे�?हो गय�?',
-          message: `वॉइस एजें�?"${agentName}" की सभी सेटिंग्स और स्क्रिप्�?सुरक्षित रू�?से से�?हो गई हैं।`
+          title: '�?वॉइस एजें�?अपडे�?हो गय�?',
+          message: `वॉइस एजें�?"${agentName}" की सभी सेटिंग्स और स्क्रिप्�?सुरक्षित रू�?से से�?हो गई हैं।`
         });
         setEditingId(null);
       } else {
         store.addAgent(agentData);
         setSaveModal({
           type: 'success',
-          title: '🎉 नय�?वॉइस एजें�?से�?हो गय�?',
-          message: `वॉइस एजें�?"${agentName}" सफलतापूर्व�?से�?हो गय�?है�?अब आप Campaigns मे�?जाकर इससे कॉलिंग शुरू कर सकते है�?`
+          title: '🎉 नय�?वॉइस एजें�?से�?हो गय�?',
+          message: `वॉइस एजें�?"${agentName}" सफलतापूर्व�?से�?हो गय�?है�?अब आप Campaigns मे�?जाकर इससे कॉलिंग शुरू कर सकते है�?`
         });
       }
 
@@ -186,7 +186,7 @@ export default function VoiceAgentStudioPage() {
     } catch (err) {
       setSaveModal({
         type: 'error',
-        title: '�?से�?करने मे�?त्रुटि',
+        title: '�?से�?करने मे�?त्रुटि',
         message: 'त्रुटि: ' + err.message
       });
     }
@@ -209,14 +209,14 @@ export default function VoiceAgentStudioPage() {
   };
 
   const handleDelete = (id, name) => {
-    if (confirm(`क्या आप सच मे�?Voice Agent "${name}" को डिली�?करना चाहत�?है�?`)) {
+    if (confirm(`क्या आप सच मे�?Voice Agent "${name}" को डिली�?करना चाहत�?है�?`)) {
       store.deleteAgent(id);
       setAgents(store.getAgents());
       if (editingId === id) setEditingId(null);
       setSaveModal({
         type: 'success',
-        title: '🗑�?डिली�?कर दिया गय�?,
-        message: `वॉइस एजें�?"${name}" को हट�?दिया गय�?है।`
+        title: '🗑�?डिली�?कर दिया गय�?,
+        message: `वॉइस एजें�?"${name}" को हट�?दिया गय�?है।`
       });
     }
   };
@@ -225,7 +225,7 @@ export default function VoiceAgentStudioPage() {
     setEditingId(null);
     setAgentName('Pooja - Real Estate Closer');
     setSelectedVoice('pooja');
-    setScript('नमस्का�?जी! मै�?Pooja, Shree Aangan Developer की तर�?से बा�?कर रही हूँ।');
+    setScript('नमस्का�?जी! मै�?Pooja, Shree Aangan Developer की तर�?से बा�?कर रही हूँ।');
   };
 
   return (
@@ -233,11 +233,11 @@ export default function VoiceAgentStudioPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1>🤖 Voice Agent Studio (LLM Powered)</h1>
-          <p className="subtitle">सर�?और आसान तरीके से अपना AI कॉलिंग एजें�?बनाए�?�?AI आपके लिखे हु�?स्क्रिप्�?और नियमों के अनुसार ही बा�?करेग�?/p>
+          <p className="subtitle">सर�?और आसान तरीके से अपना AI कॉलिंग एजें�?बनाए�?�?AI आपके लिखे हु�?स्क्रिप्�?और नियमों के अनुसार ही बा�?करेग�?/p>
         </div>
 
         <Link href="/campaigns" className="btn btn-primary" style={{ fontSize: '0.85rem' }}>
-          🚀 Bulk Campaigns मे�?जाएं &rarr;
+          🚀 Bulk Campaigns मे�?जाएं &rarr;
         </Link>
       </div>
 
@@ -265,7 +265,7 @@ export default function VoiceAgentStudioPage() {
                 className="btn btn-secondary"
                 style={{ fontSize: '0.85rem', padding: '0.5rem 1.25rem' }}
               >
-                {saveModal.type === 'success' ? 'Got It' : 'ठी�?है'}
+                {saveModal.type === 'success' ? 'Got It' : 'ठी�?है'}
               </button>
             </div>
           </div>
@@ -274,7 +274,7 @@ export default function VoiceAgentStudioPage() {
 
       {/* Step 1: Voice Selection */}
       <div className="mb-8">
-        <h2 style={{ fontSize: '1.15rem', marginBottom: '0.85rem' }}>🎧 Step 1: एजें�?की आवाज चुने�?(Male / Female)</h2>
+        <h2 style={{ fontSize: '1.15rem', marginBottom: '0.85rem' }}>🎧 Step 1: एजें�?की आवाज चुने�?(Male / Female)</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
           {voiceLibrary.map(v => {
             const isSelected = selectedVoice === v.id;
@@ -311,9 +311,9 @@ export default function VoiceAgentStudioPage() {
                     className={`btn ${isPlaying ? 'btn-success' : 'btn-secondary'}`}
                     style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }}
                   >
-                    {isPlaying ? '🔊 आवाज बज रही है...' : '🔊 आवाज सुनक�?देखे�?}
+                    {isPlaying ? '🔊 आवाज बज रही है...' : '🔊 आवाज सुनक�?देखे�?}
                   </button>
-                  {isSelected && <span style={{ fontSize: '0.75rem', color: 'var(--accent-green)', fontWeight: 'bold' }}>�?चुनी हु�?/span>}
+                  {isSelected && <span style={{ fontSize: '0.75rem', color: 'var(--accent-green)', fontWeight: 'bold' }}>�?चुनी हु�?/span>}
                 </div>
               </div>
             );
@@ -326,10 +326,10 @@ export default function VoiceAgentStudioPage() {
         <div className="flex justify-between items-center mb-4">
           <div>
             <h2 style={{ margin: 0, fontSize: '1.25rem' }}>
-              {editingId ? '✏️ एजें�?एडिट करें' : '⚙️ Step 2: एजें�?का ना�?और बोलन�?की स्क्रिप्�?लिखे�?}
+              {editingId ? '✏️ एजें�?एडिट करें' : '⚙️ Step 2: एजें�?का ना�?और बोलन�?की स्क्रिप्�?लिखे�?}
             </h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.825rem', margin: '0.25rem 0 0' }}>
-              यह वही स्क्रिप्�?और बिजनेस डिटेल्�?है�?जिनक�?अनुसार AI LLM कस्टमर के हर सवाल का जवाब देगा�?            </p>
+              यह वही स्क्रिप्�?और बिजनेस डिटेल्�?है�?जिनक�?अनुसार AI LLM कस्टमर के हर सवाल का जवाब देगा�?            </p>
           </div>
           {editingId && (
             <button onClick={cancelEdit} className="btn btn-secondary" style={{ fontSize: '0.8rem' }}>
@@ -343,7 +343,7 @@ export default function VoiceAgentStudioPage() {
             
             {/* Agent Custom Name */}
             <div className="form-group">
-              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>1. एजें�?का ना�?लिखे�?(Voice Agent Custom Name)</label>
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>1. एजें�?का ना�?लिखे�?(Voice Agent Custom Name)</label>
               <input 
                 required
                 type="text" 
@@ -356,7 +356,7 @@ export default function VoiceAgentStudioPage() {
 
             {/* Core Industry Use Case */}
             <div className="form-group">
-              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>2. का�?/ बिजनेस (Industry & Company Name)</label>
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>2. का�?/ बिजनेस (Industry & Company Name)</label>
               <input 
                 required
                 type="text" 
@@ -369,20 +369,20 @@ export default function VoiceAgentStudioPage() {
 
             {/* Speaking Pace / Speed */}
             <div className="form-group">
-              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>3. बोलन�?की स्पी�?/label>
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>3. बोलन�?की स्पी�?/label>
               <select className="form-control" value={speed} onChange={e => setSpeed(e.target.value)}>
-                <option value="0.8x (Slow & Clear)">🐢 0.8x (धीमी और सा�?आवाज)</option>
-                <option value="1.0x (Normal)">�?1.0x (सामान्�?स्पी�?- बेस्�?</option>
-                <option value="1.2x (Fast & Energetic)">🚀 1.2x (ते�?और एनर्जेटि�?</option>
+                <option value="0.8x (Slow & Clear)">🐢 0.8x (धीमी और सा�?आवाज)</option>
+                <option value="1.0x (Normal)">�?1.0x (सामान्�?स्पी�?- बेस्�?</option>
+                <option value="1.2x (Fast & Energetic)">🚀 1.2x (ते�?और एनर्जेटि�?</option>
               </select>
             </div>
 
             {/* Voice Tone & Pitch */}
             <div className="form-group">
-              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>4. बोलन�?का तरीका (Tone)</label>
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>4. बोलन�?का तरीका (Tone)</label>
               <select className="form-control" value={pitch} onChange={e => setPitch(e.target.value)}>
                 <option value="Warm & Friendly">🌸 दोस्ताना और मीठी आवाज (Warm & Friendly)</option>
-                <option value="Professional & Trustworthy">👔 प्रोफेशन�?और गंभी�?(Corporate & Banking)</option>
+                <option value="Professional & Trustworthy">👔 प्रोफेशन�?और गंभी�?(Corporate & Banking)</option>
                 <option value="Confident & High-Energy">🔥 जोशीली और कॉन्फिडेंट आवाज</option>
               </select>
             </div>
@@ -392,7 +392,7 @@ export default function VoiceAgentStudioPage() {
           {/* Interruption / Barge-in Notice */}
           <div style={{ background: 'rgba(16, 185, 129, 0.06)', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.25)', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ fontSize: '0.825rem', color: '#fff' }}>
-              🎙�?<strong>कस्टमर के बोलत�?ही AI चु�?हो जाएग�?</strong> जैसे ही कस्टमर सवाल पूछेगा, AI रु�?कर जवाब देगा�?            </div>
+              🎙�?<strong>कस्टमर के बोलत�?ही AI चु�?हो जाएग�?</strong> जैसे ही कस्टमर सवाल पूछेगा, AI रु�?कर जवाब देगा�?            </div>
             <span className="badge success" style={{ fontSize: '0.72rem' }}>सक्रिय (Active)</span>
           </div>
 
@@ -400,7 +400,7 @@ export default function VoiceAgentStudioPage() {
           <div style={{ background: '#0a0a14', padding: '1.25rem', borderRadius: '10px', border: '1px solid rgba(59, 130, 246, 0.3)', marginBottom: '1.5rem' }}>
             <div className="flex justify-between items-center mb-2">
               <div style={{ fontWeight: '700', fontSize: '0.925rem', color: 'var(--accent-blue)' }}>
-                📞 5. Live Call Transfer to Admin / Senior Manager (कॉ�?ट्रांसफर)
+                📞 5. Live Call Transfer to Admin / Senior Manager (कॉ�?ट्रांसफर)
               </div>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--accent-green)', fontWeight: 'bold' }}>
                 <input type="checkbox" checked={enableTransfer} onChange={e => setEnableTransfer(e.target.checked)} />
@@ -409,7 +409,7 @@ export default function VoiceAgentStudioPage() {
             </div>
             
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '0.85rem' }}>
-              जब कस्टमर बोलेगा <em>"सीनियर/मैनेजर से बा�?कराओ"</em> ya <em>"कस्टमर केयर ट्रांसफर कर�?</em>, तो AI तुरं�?कॉ�?इस नंबर पर ट्रांसफर कर देगा:
+              जब कस्टमर बोलेगा <em>"सीनियर/मैनेजर से बा�?कराओ"</em> ya <em>"कस्टमर केयर ट्रांसफर कर�?</em>, तो AI तुरं�?कॉ�?इस नंबर पर ट्रांसफर कर देगा:
             </p>
 
             <div className="form-group" style={{ maxWidth: '350px' }}>
@@ -435,7 +435,7 @@ export default function VoiceAgentStudioPage() {
               className="form-control" 
               value={script}
               onChange={e => setScript(e.target.value)} 
-              placeholder="नमस्ते सर! मै�?पूजा बो�?रही हू�?श्री आँगन डेवलपर से..." 
+              placeholder="नमस्ते सर! मै�?पूजा बो�?रही हू�?श्री आँगन डेवलपर से..." 
               style={{ fontSize: '0.85rem', lineHeight: '1.5' }}
             />
           </div>
@@ -450,7 +450,7 @@ export default function VoiceAgentStudioPage() {
               className="form-control" 
               value={objections}
               onChange={e => setObjections(e.target.value)} 
-              placeholder="अग�?कस्टमर पूछे डिस्काउं�?कितन�?है... अग�?बोले बा�?मे�?कॉ�?कर�?.." 
+              placeholder="अग�?कस्टमर पूछे डिस्काउं�?कितन�?है... अग�?बोले बा�?मे�?कॉ�?कर�?.." 
               style={{ fontSize: '0.85rem', lineHeight: '1.5' }}
             />
           </div>
@@ -459,12 +459,12 @@ export default function VoiceAgentStudioPage() {
           <div style={{ background: '#0a0a14', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)', marginBottom: '1.75rem' }}>
             <div className="flex justify-between items-center mb-2">
               <div style={{ fontWeight: '700', color: 'var(--accent-purple)', fontSize: '0.9rem' }}>
-                🧠 Step 3: लाइव AI जवाब �?कॉ�?ट्रांसफर टेस्�?करें:
+                🧠 Step 3: लाइव AI जवाब �?कॉ�?ट्रांसफर टेस्�?करें:
               </div>
               <span className="badge primary" style={{ fontSize: '0.68rem' }}>Intelligent AI Active</span>
             </div>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
-              ऊप�?आपके लिखे हु�?स्क्रिप्�? कंपनी डिटेल्�?(e.g. <em>"kon si property hai"</em>) या कॉ�?ट्रांसफर टेस्�?करें:
+              ऊप�?आपके लिखे हु�?स्क्रिप्�? कंपनी डिटेल्�?(e.g. <em>"kon si property hai"</em>) या कॉ�?ट्रांसफर टेस्�?करें:
             </p>
 
             <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
@@ -473,7 +473,7 @@ export default function VoiceAgentStudioPage() {
                 className="form-control" 
                 value={testQuestion} 
                 onChange={e => setTestQuestion(e.target.value)} 
-                placeholder="कस्टमर का सवाल लिखे�?e.g. kon si property hai ya price kitna hai" 
+                placeholder="कस्टमर का सवाल लिखे�?e.g. kon si property hai ya price kitna hai" 
               />
               <button 
                 type="button" 
@@ -482,14 +482,14 @@ export default function VoiceAgentStudioPage() {
                 className="btn btn-secondary"
                 style={{ padding: '0.65rem 1.25rem', flexShrink: 0, fontWeight: '700', borderColor: 'var(--accent-purple)', color: 'var(--accent-purple)' }}
               >
-                {simulating ? '🧠 AI सो�?रह�?है...' : '🔊 टेस्�?करें और सुने�?}
+                {simulating ? '🧠 AI सो�?रह�?है...' : '🔊 टेस्�?करें और सुने�?}
               </button>
             </div>
 
             {testAnswer && (
               <div style={{ background: 'rgba(139, 92, 246, 0.08)', padding: '0.75rem', borderRadius: '6px', border: '1px solid rgba(139, 92, 246, 0.3)', fontSize: '0.825rem' }}>
                 <strong style={{ color: 'var(--accent-purple)', display: 'block', marginBottom: '2px' }}>
-                  🤖 AI एजें�?का जवाब:
+                  🤖 AI एजें�?का जवाब:
                 </strong>
                 <span style={{ color: '#fff', lineHeight: '1.4' }}>"{testAnswer}"</span>
               </div>
@@ -511,7 +511,7 @@ export default function VoiceAgentStudioPage() {
               cursor: 'pointer'
             }}
           >
-            {editingId ? '💾 एजें�?अपडे�?करें' : '🚀 एजें�?को सुरक्षित से�?करें (Save Agent)'}
+            {editingId ? '💾 एजें�?अपडे�?करें' : '🚀 एजें�?को सुरक्षित से�?करें (Save Agent)'}
           </button>
         </form>
       </div>
@@ -520,10 +520,10 @@ export default function VoiceAgentStudioPage() {
       <div>
         <div className="flex justify-between items-center mb-4">
           <h2 style={{ fontSize: '1.2rem', margin: 0 }}>
-            से�?कि�?हु�?Voice Agents ({agents.length})
+            से�?कि�?हु�?Voice Agents ({agents.length})
           </h2>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            पे�?रिफ्रे�?करने पर भी यह से�?रहेंगे�?          </span>
+            पे�?रिफ्रे�?करने पर भी यह से�?रहेंगे�?          </span>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
@@ -539,7 +539,7 @@ export default function VoiceAgentStudioPage() {
                 </div>
 
                 <div style={{ background: '#0a0a12', padding: '0.65rem', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.06)', margin: '0.65rem 0', fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
-                  "{ag.script || ag.description || 'नमस्ते! मै�?सुविधा एआ�?से बा�?कर रही हूँ। हमार�?पा�?आपके लि�?बेस्�?ऑफर्�?हैं।'}"
+                  "{ag.script || ag.description || 'नमस्ते! मै�?सुविधा एआ�?से बा�?कर रही हूँ। हमार�?पा�?आपके लि�?बेस्�?ऑफर्�?हैं।'}"
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.85rem' }}>
@@ -571,7 +571,7 @@ export default function VoiceAgentStudioPage() {
                     className="btn btn-secondary"
                     style={{ fontSize: '0.72rem', padding: '0.3rem 0.55rem', borderColor: 'var(--accent-red)', color: 'var(--accent-red)' }}
                   >
-                    🗑�?Delete
+                    🗑�?Delete
                   </button>
                 </div>
               </div>
