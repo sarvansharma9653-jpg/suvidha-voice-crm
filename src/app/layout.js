@@ -16,29 +16,45 @@ export default function RootLayout({ children }) {
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      const u = session?.user ?? null;
-      setUser(u);
-      if (u) {
-        store.setUserId(u.id);
-        if (typeof window !== 'undefined') localStorage.setItem('suvidha_auth_user_id', u.id);
+    useEffect(() => {
+    // Check if user already logged in locally
+    if (typeof window !== 'undefined') {
+      const savedUid = localStorage.getItem('suvidha_auth_user_id');
+      const savedCompany = localStorage.getItem('suvidha_client_company') || 'The Shree Aangan Developers';
+      if (savedUid) {
+        setUser({ id: savedUid, email: 'admin@shreeaangan.com', user_metadata: { company_name: savedCompany } });
+        store.setUserId(savedUid);
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      const u = session?.user ?? null;
-      setUser(u);
-      if (u) {
-        store.setUserId(u.id);
-        if (typeof window !== 'undefined') localStorage.setItem('suvidha_auth_user_id', u.id);
-      }
-      setLoading(false);
-    });
+    try {
+      supabase.auth.getSession().then(({ data }) => {
+        const session = data?.session;
+        const u = session?.user ?? null;
+        if (u) {
+          setUser(u);
+          store.setUserId(u.id);
+          if (typeof window !== 'undefined') localStorage.setItem('suvidha_auth_user_id', u.id);
+        }
+        setLoading(false);
+      }).catch(() => setLoading(false));
 
-    setNotifications(store.getNotifications());
-    return () => subscription.unsubscribe();
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const u = session?.user ?? null;
+        if (u) {
+          setUser(u);
+          store.setUserId(u.id);
+          if (typeof window !== 'undefined') localStorage.setItem('suvidha_auth_user_id', u.id);
+        }
+        setLoading(false);
+      });
+
+      setNotifications(store.getNotifications());
+      return () => subscription?.unsubscribe?.();
+    } catch(e) {
+      setLoading(false);
+    }
   }, []);
 
   const handleLogout = async () => {

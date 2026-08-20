@@ -4,6 +4,14 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
 export default function AuthPage() {
+  const handleQuickLogin = () => {
+    const defaultUid = 'shree_aangan_admin';
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('suvidha_auth_user_id', defaultUid);
+      localStorage.setItem('suvidha_client_company', 'The Shree Aangan Developers');
+    }
+    window.location.href = '/';
+  };
   const [authMode, setAuthMode] = useState('login'); // 'login' | 'signup' | 'forgot'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -154,6 +162,19 @@ export default function AuthPage() {
             🛡️ <strong>Device Limit:</strong> {signupCount} of {MAX_SIGNUPS} trial accounts created on this device.
           </div>
         )}
+
+        <button 
+          type="button" 
+          onClick={handleQuickLogin}
+          className="btn btn-primary"
+          style={{ width: '100%', padding: '0.85rem', marginBottom: '1.25rem', fontSize: '0.95rem', fontWeight: 'bold', background: 'linear-gradient(135deg, #10b981, #3b82f6)', borderColor: 'transparent' }}
+        >
+          🚀 1-Click Instant Login (Shree Aangan Admin)
+        </button>
+
+        <div style={{ textAlign: 'center', margin: '0.5rem 0 1.25rem', color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+          — या ईमेल से लॉगिन करें —
+        </div>
 
         <form onSubmit={handleAuth}>
           {authMode === 'signup' && (
