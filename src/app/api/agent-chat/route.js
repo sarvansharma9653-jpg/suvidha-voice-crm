@@ -13,7 +13,7 @@ export async function POST(req) {
     const cleanObjections = (objections || '').trim();
     const combinedContext = `${cleanScript} ${cleanObjections}`.trim();
 
-    // 1. Extract Name from Script (e.g. "mai sarvan baat kar rha hu" -> "Sarvan", "मैं पूजा बोल रही हूँ" -> "Pooja")
+    // 1. Extract Name from Script (e.g. "mai sarvan baat kar rha hu" -> "Sarvan")
     const nameMatch = cleanScript.match(/(?:mai|main|मैं|naam|name|here is)\s+([A-Za-z\u0900-\u097F]+)/i);
     const extractedName = nameMatch ? nameMatch[1] : (agentName ? agentName.split(' ')[0] : 'AI Assistant');
 
@@ -39,7 +39,7 @@ export async function POST(req) {
 
     // === HUMAN BRAIN CONVERSATIONAL REASONING ENGINE ===
 
-    // INTENT 1: WHO ARE YOU? / IDENTIFICATION ("tum kon ho", "naam kya hai", "kahan se bol rahe ho", "who are you")
+    // INTENT 1: WHO ARE YOU? ("tum kon ho", "naam kya hai", "kahan se bol rahe ho")
     if (cleanQuestion.includes('kon ho') || cleanQuestion.includes('koun ho') || cleanQuestion.includes('kaun ho') || cleanQuestion.includes('naam') || cleanQuestion.includes('who are you') || cleanQuestion.includes('kahan se')) {
       if (extractedLocation) {
         aiReply = `नमस्ते! मैं ${extractedName} बात कर रहा हूँ ${extractedLocation} से। मैंने आपको हमारे स्पेशल ऑफर्स की जानकारी देने के लिए कॉल किया है।`;
@@ -48,7 +48,16 @@ export async function POST(req) {
       }
     }
 
-    // INTENT 2: WHAT PRODUCTS / OFFERS DO YOU HAVE? ("kya hai", "kya bechte ho", "kya offer hai", "kon sa product", "details")
+    // INTENT 2: PRICE / COST / RATE ("price", "rate", "cost", "kitne", "paisa", "daam")
+    else if (cleanQuestion.includes('price') || cleanQuestion.includes('rate') || cleanQuestion.includes('cost') || cleanQuestion.includes('kitne') || cleanQuestion.includes('daam') || cleanQuestion.includes('paisa')) {
+      if (extractedPriceText) {
+        aiReply = `सर, हमारे पास ${extractedPriceText} में स्पेशल डिस्काउंट ऑफर्स उपलब्ध हैं। क्या मैं आपको व्हाट्सएप पर सारी डिटेल भेज दूँ?`;
+      } else {
+        aiReply = `सर, हमारे प्राइसेज बहुत ही किफायती हैं और बेस्ट डिस्काउंट पर उपलब्ध हैं। क्या मैं आपको व्हाट्सएप पर प्राइस लिस्ट भेज दूँ?`;
+      }
+    }
+
+    // INTENT 3: WHAT PRODUCTS / OFFERS DO YOU HAVE? ("kya hai", "kya bechte ho", "kya offer hai", "product", "details")
     else if (cleanQuestion.includes('kya hai') || cleanQuestion.includes('kya bechte') || cleanQuestion.includes('kya offer') || cleanQuestion.includes('product') || cleanQuestion.includes('service') || cleanQuestion.includes('details') || cleanQuestion.includes('item')) {
       if (productKeywords.length > 0) {
         aiReply = `हमारे पास ${productKeywords.join(' और ')} के शानदार ऑफर्स उपलब्ध हैं${extractedLocation ? ' ' + extractedLocation + ' में' : ''}। क्या आप पूरी डिटेल जानना चाहते हैं?`;
@@ -56,15 +65,6 @@ export async function POST(req) {
         aiReply = `हमारे पास ${cleanObjections.substring(0, 60)} के बेहतरीन ऑफर्स उपलब्ध हैं। क्या मैं आपको व्हाट्सएप पर डिटेल्स भेज दूँ?`;
       } else {
         aiReply = `हमारे पास आपके लिए बेस्ट डिस्काउंटेड ऑफर्स उपलब्ध हैं। क्या मैं आपको व्हाट्सएप पर पूरा कैटलॉग भेज दूँ?`;
-      }
-    }
-
-    // INTENT 3: PRICE / COST / RATE ("price", "rate", "cost", "kitne ka", "kitna hai", "paisa", "daam")
-    else if (cleanQuestion.includes('price') || cleanQuestion.includes('rate') || cleanQuestion.includes('cost') || cleanQuestion.includes('kitne') || cleanQuestion.includes('kitna') || cleanQuestion.includes('daam') || cleanQuestion.includes('paisa')) {
-      if (extractedPriceText) {
-        aiReply = `सर, हमारे पास ${extractedPriceText} में स्पेशल डिस्काउंट ऑफर्स उपलब्ध हैं। क्या मैं आपको व्हाट्सएप पर सारी डिटेल भेज दूँ?`;
-      } else {
-        aiReply = `सर, हमारे प्राइसेज बहुत ही किफायती हैं और बेस्ट डिस्काउंट पर उपलब्ध हैं। क्या मैं आपको व्हाट्सएप पर प्राइस लिस्ट भेज दूँ?`;
       }
     }
 
@@ -82,7 +82,7 @@ export async function POST(req) {
       aiReply = `जी बिल्कुल सर! मैं आपकी कॉल तुरंत हमारे सीनियर मैनेजर को ट्रांसफर कर रहा हूँ, कृपया लाइन पर बने रहें!`;
     }
 
-    // INTENT 6: YES / SEND / INTERESTED ("haan", "yes", "theek hai", "bhejo", "send karo", "sahi hai")
+    // INTENT 6: YES / SEND / INTERESTED ("haan", "yes", "theek hai", "bhejo", "send karo")
     else if (cleanQuestion.includes('haan') || cleanQuestion.includes('yes') || cleanQuestion.includes('theek') || cleanQuestion.includes('bhejo') || cleanQuestion.includes('send') || cleanQuestion.includes('batao')) {
       aiReply = `अरे बहुत ही बढ़िया सर! मैंने आपका नंबर नोट कर लिया है, मैं तुरंत आपको व्हाट्सएप पर सारी जानकारी और फोटो भेज रहा हूँ!`;
     }
