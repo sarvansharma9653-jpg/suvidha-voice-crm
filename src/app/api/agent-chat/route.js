@@ -13,17 +13,17 @@ export async function POST(req) {
     const cleanObjections = (objections || '').trim();
     const combinedContext = `${cleanScript} ${cleanObjections}`;
 
-    // Extract dynamic price from user's custom input (e.g. 10लाख, 25 Lakhs, 1 Crore, etc.)
+    // 1. Extract dynamic exact price from user's custom text (e.g. 10लाख, 25 Lakhs, 1 Crore, etc.)
     const priceMatch = combinedContext.match(/(\d+[\d\.,]*\s*(?:लाख|lakh|lakhs|crore|crores|करोड़|हजार|hazaar|k|cr|rs|\/-))/i);
     const extractedPrice = priceMatch ? priceMatch[0] : null;
 
-    // Extract dynamic location if mentioned (e.g. Noida, Gurgaon, Sector 62, Delhi, etc.)
-    const locationMatch = combinedContext.match(/(?:में|in|at|near|पास)\s+([A-Za-z\u0900-\u097F\s0-9]{3,25})/i);
-    const extractedLocation = locationMatch ? locationMatch[1].trim() : null;
+    // 2. Extract dynamic location (e.g. नोएडा, सेक्टर 62, Gurgaon, Delhi, etc.)
+    const locationMatch = combinedContext.match(/(नोएडा|ग्रेटर नोएडा|गुड़गांव|दिल्ली|मुंबई|जयपुर|लखनऊ|गाजियाबाद|फरीदाबाद|सेक्टर\s*\d+|Noida|Gurgaon|Delhi|Mumbai|Jaipur|Lucknow|Ghaziabad|Sector\s*\d+)/i);
+    const extractedLocation = locationMatch ? locationMatch[0].trim() : null;
 
-    // Extract property / offer type (e.g. 2 BHK, Flat, Plot, Villa, Loan, etc.)
-    const offerMatch = combinedContext.match(/(\d+\s*(?:bhk|BHK)|flat|flats|plot|plots|villa|villas|apartment|apartments|commercial|loan|सेवा)/i);
-    const extractedOffer = offerMatch ? offerMatch[0] : 'प्रॉपर्टी व सर्विसेज';
+    // 3. Extract property / offer type (e.g. 1 BHK, 2 BHK, Flat, Plot, Villa, Loan, etc.)
+    const offerMatch = combinedContext.match(/(\d+\s*(?:bhk|BHK)|flat|flats|plot|plots|villa|villas|apartment|apartments|commercial|loan|फ्लैट|प्लॉट|विला)/i);
+    const extractedOffer = offerMatch ? offerMatch[0] : null;
 
     const apiKey = process.env.GEMINI_API_KEY || process.env.NEXT_PUBLIC_GEMINI_API_KEY || '';
 
