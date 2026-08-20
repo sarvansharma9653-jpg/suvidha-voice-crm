@@ -58,7 +58,7 @@ export default function RootLayout({ children }) {
   };
 
   const unreadCount = notifications.filter(n => !n.read).length;
-  const companyTitle = user?.user_metadata?.company_name || user?.email?.split('@')[0] || "Sarvan's Team";
+  const companyTitle = user?.user_metadata?.company_name || user?.email?.split('@')[0] || "Sarvan's Workspace";
 
   if (loading) {
     return (
@@ -88,13 +88,24 @@ export default function RootLayout({ children }) {
         <div className={`app-container ${isSidebarCollapsed ? 'collapsed' : ''}`}>
           {/* Collapsible Sidebar */}
           <aside className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
-            <div className="sidebar-logo">
-              <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, #10b981, #3b82f6)', display: 'inline-block', flexShrink: 0 }}></div>
-              {!isSidebarCollapsed && <span>Suvidha AI</span>}
+            <div className="flex justify-between items-center mb-4">
+              <div className="sidebar-logo" style={{ margin: 0, padding: 0 }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'linear-gradient(135deg, #10b981, #3b82f6)', display: 'inline-block', flexShrink: 0 }}></div>
+                {!isSidebarCollapsed && <span>Suvidha AI</span>}
+              </div>
+              
+              <button 
+                className="sidebar-toggle-btn"
+                onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                title={isSidebarCollapsed ? "Expand Menu" : "Collapse Menu"}
+                style={{ fontSize: '0.85rem' }}
+              >
+                {isSidebarCollapsed ? '▶' : '◀'}
+              </button>
             </div>
 
             {!isSidebarCollapsed && (
-              <div style={{ padding: '0 1rem 1rem 1.25rem', borderBottom: '1px solid var(--border-light)', marginBottom: '1.25rem', fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ padding: '0 0 1rem 0', borderBottom: '1px solid var(--border-light)', marginBottom: '1.25rem', fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 Workspace: <strong style={{ color: 'var(--text-primary)' }}>{companyTitle}</strong>
               </div>
             )}
@@ -104,17 +115,17 @@ export default function RootLayout({ children }) {
               <ul className="nav-links">
                 <li>
                   <Link href="/" className="nav-item">
-                    <span>🏠</span> {!isSidebarCollapsed && <span>Overview & Playground</span>}
+                    <span>🏠</span> {!isSidebarCollapsed && <span>Overview & Studio</span>}
                   </Link>
                 </li>
                 <li>
                   <Link href="/webcall" className="nav-item">
-                    <span>🌐</span> {!isSidebarCollapsed && <span>Instant Web Call (No SIM/Telephony)</span>}
+                    <span>🌐</span> {!isSidebarCollapsed && <span>Instant Web Call (Free)</span>}
                   </Link>
                 </li>
               </ul>
 
-              {!isSidebarCollapsed && <div className="nav-section-title" style={{ marginTop: '1.25rem' }}>BUILD</div>}
+              {!isSidebarCollapsed && <div className="nav-section-title" style={{ marginTop: '1.25rem' }}>BUILD & CAMPAIGNS</div>}
               <ul className="nav-links">
                 <li>
                   <Link href="/assistants" className="nav-item">
@@ -123,7 +134,7 @@ export default function RootLayout({ children }) {
                 </li>
                 <li>
                   <Link href="/campaigns" className="nav-item">
-                    <span>🎯</span> {!isSidebarCollapsed && <span>Campaigns</span>}
+                    <span>🎯</span> {!isSidebarCollapsed && <span>Campaigns & Bulk Dialer</span>}
                   </Link>
                 </li>
                 <li>
@@ -133,11 +144,16 @@ export default function RootLayout({ children }) {
                 </li>
               </ul>
 
-              {!isSidebarCollapsed && <div className="nav-section-title" style={{ marginTop: '1rem' }}>DEPLOY & TELEPHONY</div>}
+              {!isSidebarCollapsed && <div className="nav-section-title" style={{ marginTop: '1.25rem' }}>AUTOMATION & WHATSAPP</div>}
               <ul className="nav-links">
                 <li>
+                  <Link href="/whatsapp" className="nav-item" style={{ color: 'var(--accent-green)' }}>
+                    <span>💬</span> {!isSidebarCollapsed && <span>WhatsApp Automation</span>}
+                  </Link>
+                </li>
+                <li>
                   <Link href="/settings" className="nav-item">
-                    <span>⚙️</span> {!isSidebarCollapsed && <span>Settings & API Keys</span>}
+                    <span>⚙️</span> {!isSidebarCollapsed && <span>Telephony Settings</span>}
                   </Link>
                 </li>
                 <li>
@@ -147,11 +163,11 @@ export default function RootLayout({ children }) {
                 </li>
               </ul>
 
-              {!isSidebarCollapsed && <div className="nav-section-title" style={{ marginTop: '1.25rem' }}>MONITOR & LOGS</div>}
+              {!isSidebarCollapsed && <div className="nav-section-title" style={{ marginTop: '1.25rem' }}>MONITOR & RECORDINGS</div>}
               <ul className="nav-links">
                 <li>
                   <Link href="/calls" className="nav-item">
-                    <span>🎙️</span> {!isSidebarCollapsed && <span>Call Transcripts</span>}
+                    <span>🎙️</span> {!isSidebarCollapsed && <span>Call Transcripts & Audio</span>}
                   </Link>
                 </li>
                 <li>
@@ -168,15 +184,15 @@ export default function RootLayout({ children }) {
             </nav>
 
             {/* User Profile & Sign Out Footer */}
-            <div style={{ borderTop: '1px solid var(--border-light)', padding: '1rem 0.75rem', marginTop: 'auto' }}>
+            <div style={{ borderTop: '1px solid var(--border-light)', padding: '1rem 0.5rem 0', marginTop: 'auto' }}>
               <div className="flex justify-between items-center">
                 {!isSidebarCollapsed && (
                   <div style={{ overflow: 'hidden', marginRight: '0.5rem' }}>
-                    <div style={{ fontSize: '0.8rem', fontWeight: '600', color: '#fff', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: '0.78rem', fontWeight: '600', color: '#fff', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                       {user?.email}
                     </div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--accent-green)' }}>
-                      🟢 Client Workspace Active
+                    <div style={{ fontSize: '0.68rem', color: 'var(--accent-green)' }}>
+                      🟢 Active
                     </div>
                   </div>
                 )}
@@ -184,7 +200,7 @@ export default function RootLayout({ children }) {
                   onClick={handleLogout}
                   title="Sign Out"
                   className="btn btn-secondary"
-                  style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', flexShrink: 0 }}
+                  style={{ padding: '0.35rem 0.55rem', fontSize: '0.75rem', flexShrink: 0 }}
                 >
                   🚪 {!isSidebarCollapsed && 'Sign Out'}
                 </button>
@@ -193,27 +209,31 @@ export default function RootLayout({ children }) {
           </aside>
 
           {/* Main App Content Area */}
-          <div className="content-area">
+          <div className={`content-area`}>
             {/* Top Navigation Bar */}
             <header className="topbar">
               <div className="topbar-left">
                 <button 
                   className="sidebar-toggle-btn"
                   onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                  title="Toggle Sidebar"
+                  title="Toggle Sidebar Slide"
                 >
                   ☰
                 </button>
                 <div className="topbar-chip">
-                  <span style={{ fontSize: '0.75rem' }}>🎙️ Suvidha Voice v1.45</span>
+                  <span style={{ fontSize: '0.75rem' }}>🎙️ Suvidha Voice v1.50</span>
                 </div>
                 <div className="topbar-status">
                   <span className="pulse-dot"></span>
-                  <span>OmniDimension & Neural TTS Online</span>
+                  <span>Vobiz + Gemini + WhatsApp Engine Active</span>
                 </div>
               </div>
 
               <div className="topbar-right">
+                <Link href="/whatsapp" className="btn btn-secondary" style={{ fontSize: '0.78rem', padding: '0.35rem 0.75rem', borderColor: 'var(--accent-green)', color: 'var(--accent-green)' }}>
+                  💬 WhatsApp Active
+                </Link>
+
                 {/* Notification Dropdown */}
                 <div style={{ position: 'relative' }}>
                   <button 
@@ -250,7 +270,7 @@ export default function RootLayout({ children }) {
             </header>
 
             {/* Page Router Body */}
-            <main className="main-content">
+            <main className={`main-content ${isSidebarCollapsed ? 'collapsed' : ''}`}>
               {children}
             </main>
           </div>

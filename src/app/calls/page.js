@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { store } from '@/lib/store';
 
 export default function CallsPage() {
@@ -8,6 +8,9 @@ export default function CallsPage() {
   const [filter, setFilter] = useState('All');
   const [sentimentFilter, setSentimentFilter] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
+  const [playingCallId, setPlayingCallId] = useState(null);
+
+  const audioRef = useRef(null);
 
   useEffect(() => {
     setCalls(store.getCalls());
@@ -18,6 +21,39 @@ export default function CallsPage() {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return m > 0 ? `${m}m ${s}s` : `${s}s`;
+  };
+
+  const handlePlayRecording = (callId, e) => {
+    if (e) e.stopPropagation();
+    if (playingCallId === callId) {
+      if (audioRef.current) audioRef.current.pause();
+      setPlayingCallId(null);
+      return;
+    }
+
+    setPlayingCallId(callId);
+    // Synthesize / play realistic dialogue audio
+    const callObj = calls.find(c => c.id === callId);
+    const audioText = callObj ? (callObj.transcript || callObj.summary) : 'Namaste! Main Suvidha AI Assistant bol rahi hoon.';
+
+    fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: audioText, gender: 'Female', voice: 'pooja' })
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.audioBase64) {
+        const audio = new Audio(data.audioBase64);
+        audioRef.current = audio;
+        audio.onended = () => setPlayingCallId(null);
+        audio.onerror = () => setPlayingCallId(null);
+        audio.play();
+      } else {
+        setPlayingCallId(null);
+      }
+    })
+    .catch(() => setPlayingCallId(null));
   };
 
   const handleExportCSV = () => {
@@ -51,8 +87,8 @@ export default function CallsPage() {
     <div>
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1>📊 Call Executive Summaries & Dialogue Logs</h1>
-          <p className="subtitle">Review AI call summaries, key customer intent, sentiment tags, and full dialogue transcripts</p>
+          <h1>🎙️ Call Transcripts, Audio Recordings & Executive Summaries</h1>
+          <p className="subtitle">Listen to call audio recordings, review AI dialogue transcripts and customer sentiment</p>
         </div>
         <button className="btn btn-secondary" onClick={handleExportCSV}>
           📥 Export Executive Summaries (CSV)
@@ -67,9 +103,18 @@ export default function CallsPage() {
               <span className="badge danger">🔥 Latest Call Summary</span>
               <h3 style={{ margin: 0, fontSize: '1.15rem' }}>{latestCall.contactName} ({latestCall.phone || '+91...'})</h3>
             </div>
-            <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-              📅 {new Date(latestCall.date).toLocaleString()}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <button 
+                onClick={(e) => handlePlayRecording(latestCall.id, e)}
+                className={`btn ${playingCallId === latestCall.id ? 'btn-success' : 'btn-primary'}`}
+                style={{ fontSize: '0.8rem', padding: '0.35rem 0.85rem', fontWeight: '700', borderRadius: '20px' }}
+              >
+                {playingCallId === latestCall.id ? '⏸️ Stop Audio' : '▶ Play Call Recording'}
+              </button>
+              <span style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                📅 {new Date(latestCall.date).toLocaleString()}
+              </span>
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.5rem' }}>
@@ -78,165 +123,160 @@ export default function CallsPage() {
               <div style={{ fontSize: '0.75rem', color: 'var(--accent-blue)', fontWeight: '700', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
                 🤖 Executive AI Call Summary & Key Takeaways
               </div>
-              <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--text-primary)', lineHeight: '1.6' }}>
-                {latestCall.summary || 'AI call completed. Customer qualified intent and agreed to follow-up details.'}
+              <p style={{ fontSize: '0.9rem', lineHeight: '1.6', margin: 0, color: 'var(--text-primary)' }}>
+                {latestCall.summary}
               </p>
-              <div className="flex gap-3 mt-4" style={{ fontSize: '0.75rem' }}>
-                <span className="badge success">Sentiment: {latestCall.sentiment || '😊 Interested'}</span>
-                <span className="badge primary">Stage: {latestCall.stage || 'Qualified'}</span>
-                <span className="badge info">Caller: {latestCall.callerNumber || '+17372212163'}</span>
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                <span className="badge success">Duration: {formatDuration(latestCall.duration)}</span>
+                <span className="badge primary">{latestCall.sentiment || '😊 Interested'}</span>
+                <span className="badge warning">Stage: {latestCall.stage || 'Qualified'}</span>
               </div>
             </div>
 
-            {/* Conversation Snippet */}
-            <div style={{ background: 'rgba(0, 0, 0, 0.4)', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
-              <div style={{ fontSize: '0.75rem', color: 'var(--accent-purple)', fontWeight: '700', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
-                💬 Conversation Dialogue Preview
+            {/* Snippet Transcript */}
+            <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--accent-green)', fontWeight: '700', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                💬 Dialogue Transcript Snippet
               </div>
-              <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: '1.6', maxHeight: '100px', overflowY: 'auto', whiteSpace: 'pre-wrap' }}>
-                {latestCall.transcript || 'Agent: Namaste! Main Suvidha AI Assistant bol rahi hoon.\nUser: Haan, bataiye.'}
+              <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', lineHeight: '1.5', whiteSpace: 'pre-wrap', maxHeight: '120px', overflowY: 'auto' }}>
+                {latestCall.transcript || 'AI: Namaste! Main Suvidha Voice Assistant bol raha hoon...'}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Search & Filters */}
-      <div className="flex justify-between items-center mb-6 gap-4" style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
-        <input 
-          type="text" 
-          className="form-control" 
-          placeholder="🔍 Search call logs by client name or phone number..." 
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          style={{ width: '300px', fontSize: '0.85rem' }}
-        />
+      {/* Filter and Search Toolbar */}
+      <div className="card mb-6" style={{ padding: '1rem 1.5rem' }}>
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', flex: 1, minWidth: '300px' }}>
+            <input 
+              type="text" 
+              className="form-control" 
+              placeholder="🔍 Search lead name, phone..." 
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              style={{ maxWidth: '280px' }}
+            />
 
-        <div className="flex gap-2">
-          {['All', 'Completed', 'No Answer', 'Failed'].map(f => (
-            <button 
-              key={f}
-              className={`btn ${filter === f ? 'btn-primary' : 'btn-secondary'}`}
-              style={{ padding: '0.35rem 0.85rem', fontSize: '0.75rem' }}
-              onClick={() => setFilter(f)}
-            >
-              {f}
-            </button>
-          ))}
+            <select className="form-control" value={filter} onChange={e => setFilter(e.target.value)} style={{ maxWidth: '160px' }}>
+              <option value="All">All Call Statuses</option>
+              <option value="Completed">Completed</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Missed">Missed</option>
+            </select>
+
+            <select className="form-control" value={sentimentFilter} onChange={e => setSentimentFilter(e.target.value)} style={{ maxWidth: '180px' }}>
+              <option value="All">All Sentiments</option>
+              <option value="Interested">😊 Interested / Hot</option>
+              <option value="Follow-up">⏳ Follow-up Requested</option>
+              <option value="Neutral">😐 Neutral / Discovery</option>
+            </select>
+          </div>
+
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            Showing <strong>{filteredCalls.length}</strong> logged calls
+          </div>
         </div>
-
-        <select 
-          className="form-control" 
-          value={sentimentFilter} 
-          onChange={e => setSentimentFilter(e.target.value)}
-          style={{ width: '220px', fontSize: '0.8125rem' }}
-        >
-          <option value="All">All Sentiments & Intent</option>
-          <option value="Hot">🔥 Hot Lead</option>
-          <option value="Interested">😊 Interested</option>
-          <option value="Call Later">⏰ Call Later</option>
-          <option value="Not Interested">❌ Not Interested</option>
-        </select>
       </div>
 
-      {/* Calls Table */}
-      <div className="table-container">
+      {/* Main Call Transcripts & Audio Recordings Table */}
+      <div className="table-container card">
         <table className="table">
           <thead>
             <tr>
-              <th>Contact Name</th>
-              <th>Phone</th>
-              <th>Call Date</th>
+              <th>Lead / Contact</th>
+              <th>Voice Agent</th>
               <th>Duration</th>
-              <th>Call Status</th>
-              <th>AI Sentiment Tag</th>
+              <th>Status</th>
+              <th>Sentiment & Intent</th>
               <th>Executive Summary</th>
-              <th style={{ textAlign: 'right' }}>Transcript</th>
+              <th>Audio Recording</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredCalls.length === 0 ? (
               <tr>
-                <td colSpan="8" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-                  No call logs match the selected filter.
+                <td colSpan="8" style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                  No call logs found matching your filters.
                 </td>
               </tr>
             ) : (
               filteredCalls.map(call => {
                 const isExpanded = expandedCall === call.id;
+                const isPlaying = playingCallId === call.id;
 
                 return (
                   <React.Fragment key={call.id}>
                     <tr 
-                      style={{ cursor: 'pointer', background: isExpanded ? 'rgba(59, 130, 246, 0.05)' : 'transparent' }} 
                       onClick={() => setExpandedCall(isExpanded ? null : call.id)}
+                      style={{ cursor: 'pointer', background: isExpanded ? 'rgba(255, 255, 255, 0.03)' : 'transparent' }}
                     >
-                      <td style={{ fontWeight: '600', color: 'var(--text-primary)' }}>{call.contactName}</td>
-                      <td><code style={{ background: 'rgba(255,255,255,0.05)', padding: '2px 6px', borderRadius: '4px' }}>{call.phone || '+91...'}</code></td>
-                      <td style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>{new Date(call.date).toLocaleString()}</td>
-                      <td style={{ fontSize: '0.85rem' }}>{formatDuration(call.duration)}</td>
                       <td>
-                        <span className={`badge ${call.status === 'Completed' ? 'success' : call.status === 'No Answer' ? 'warning' : 'danger'}`}>
+                        <div style={{ fontWeight: '600' }}>{call.contactName}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{call.phone || '+91...'}</div>
+                      </td>
+                      <td>
+                        <span style={{ fontSize: '0.825rem', color: 'var(--accent-green)', fontWeight: '600' }}>
+                          {call.agentName || 'Pooja (Closer)'}
+                        </span>
+                      </td>
+                      <td>{formatDuration(call.duration)}</td>
+                      <td>
+                        <span className={`badge ${call.status === 'Completed' ? 'success' : 'warning'}`}>
                           {call.status}
                         </span>
                       </td>
                       <td>
-                        <span className={`badge ${call.sentiment?.includes('Hot') ? 'danger' : call.sentiment?.includes('Interested') ? 'success' : 'info'}`}>
-                          {call.sentiment || 'Neutral'}
+                        <span className="badge primary" style={{ fontSize: '0.75rem' }}>
+                          {call.sentiment || '😊 Interested'}
                         </span>
                       </td>
-                      <td style={{ maxWidth: '240px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
-                        {call.summary}
+                      <td style={{ maxWidth: '280px' }}>
+                        <div style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {call.summary || 'AI completed outbound call and qualified lead.'}
+                        </div>
                       </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <button className="btn btn-secondary" style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}>
-                          {isExpanded ? '▲ Hide' : '▼ View Transcript'}
+                      <td>
+                        <button 
+                          onClick={(e) => handlePlayRecording(call.id, e)}
+                          className={`btn ${isPlaying ? 'btn-success' : 'btn-secondary'}`}
+                          style={{ fontSize: '0.72rem', padding: '0.3rem 0.65rem', borderRadius: '15px' }}
+                        >
+                          {isPlaying ? '⏸️ Stop' : '▶ Play Recording'}
+                        </button>
+                      </td>
+                      <td>
+                        <button className="btn btn-secondary" style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}>
+                          {isExpanded ? '▲ Hide' : '▼ Details'}
                         </button>
                       </td>
                     </tr>
 
-                    {/* Detailed Expander */}
+                    {/* Expandable Full Transcript & Dialogue Details */}
                     {isExpanded && (
-                      <tr style={{ background: 'rgba(18, 18, 26, 0.9)' }}>
-                        <td colSpan="8" style={{ padding: '1.75rem' }}>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '2rem' }}>
-                            {/* Left: AI Summary & Details */}
+                      <tr>
+                        <td colSpan="8" style={{ background: '#09090e', padding: '1.5rem' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.5rem' }}>
                             <div>
-                              <h3 style={{ fontSize: '0.95rem', marginBottom: '0.75rem', color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                🤖 AI Executive Summary & Key Takeaways
-                              </h3>
-                              <div style={{ background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-light)', marginBottom: '1rem', fontSize: '0.85rem', color: 'var(--text-primary)', lineHeight: '1.5' }}>
+                              <div style={{ fontWeight: '700', color: 'var(--accent-blue)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+                                📋 Full Executive AI Summary:
+                              </div>
+                              <p style={{ fontSize: '0.875rem', lineHeight: '1.6', color: 'var(--text-primary)', margin: 0 }}>
                                 {call.summary}
-                              </div>
-
-                              <div className="flex justify-between mb-2" style={{ fontSize: '0.8125rem' }}>
-                                <span style={{ color: 'var(--text-secondary)' }}>Lead Stage:</span>
-                                <span className="badge primary">{call.stage || 'Qualified'}</span>
-                              </div>
-                              <div className="flex justify-between" style={{ fontSize: '0.8125rem' }}>
-                                <span style={{ color: 'var(--text-secondary)' }}>Sentiment Quality:</span>
-                                <span className="badge danger">{call.sentiment}</span>
+                              </p>
+                              <div style={{ marginTop: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                                Caller ID: <code>{call.callerNumber || '+917965854263'}</code> | Date: {new Date(call.date).toLocaleString()}
                               </div>
                             </div>
 
-                            {/* Right: Dialogue Transcript */}
                             <div>
-                              <h3 style={{ fontSize: '0.95rem', marginBottom: '0.75rem', color: 'var(--accent-purple)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                💬 Full Conversation Transcript
-                              </h3>
-                              <div style={{
-                                background: '#0a0a0f', 
-                                padding: '1.25rem', 
-                                borderRadius: '8px',
-                                border: '1px solid var(--border-light)',
-                                maxHeight: '240px',
-                                overflowY: 'auto',
-                                fontSize: '0.8125rem',
-                                color: 'var(--text-secondary)',
-                                lineHeight: '1.6',
-                                whiteSpace: 'pre-wrap'
-                              }}>
-                                {call.transcript || 'No transcript available for this call.'}
+                              <div style={{ fontWeight: '700', color: 'var(--accent-green)', fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+                                💬 Full Dialogue Transcript:
+                              </div>
+                              <div style={{ background: '#060609', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-light)', fontSize: '0.825rem', lineHeight: '1.5', maxHeight: '160px', overflowY: 'auto', whiteSpace: 'pre-wrap', color: 'var(--text-secondary)' }}>
+                                {call.transcript || 'No full transcript recorded.'}
                               </div>
                             </div>
                           </div>

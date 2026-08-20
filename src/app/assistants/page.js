@@ -15,7 +15,12 @@ export default function VoiceAgentStudioPage() {
   const [callType, setCallType] = useState('Outbound (AI calls leads)');
   const [useCase, setUseCase] = useState('Real Estate Sales & Discovery');
   const [script, setScript] = useState('नमस्ते सर! मैं पूजा बात कर रही हूँ। हमारे पास 2 और 3 बीएचके लक्ज़री फ्लैट्स का एक्सक्लूसिव ऑफर है जो 45 लाख से शुरू है। क्या आप इस वीकेंड साइट विजिट के लिए फ्री हैं?');
-  const [objections, setObjections] = useState('अगर कस्टमर बोले बजट कम है, तो 35 लाख वाले विकल्प बताएं। अगर बोले WhatsApp पर भेजो, तो तुरंत सहमति देकर विवरण भेजने का वादा करें।');
+  const [objections, setObjections] = useState('अगर कस्टमर पूछे बजट कम है, तो 35 लाख वाले विकल्प बताएं। अगर पूछे WhatsApp पर भेजो, तो तुरंत सहमति देकर विवरण भेजने का वादा करें।');
+
+  // Live Q&A Simulation State (Step 6)
+  const [testQuestion, setTestQuestion] = useState('Price kitna hai aur details kahan milegi?');
+  const [testAnswer, setTestAnswer] = useState('');
+  const [simulating, setSimulating] = useState(false);
 
   const [editingId, setEditingId] = useState(null);
   const [playingVoiceId, setPlayingVoiceId] = useState(null);
@@ -35,16 +40,16 @@ export default function VoiceAgentStudioPage() {
     setAgents(store.getAgents());
   }, []);
 
-  const playVoiceSample = async (voiceId) => {
+  const playVoiceSample = async (voiceId, customText) => {
     try {
       setPlayingVoiceId(voiceId);
       const vObj = voiceLibrary.find(v => v.id === voiceId) || voiceLibrary[0];
       const isMale = vObj.gender === 'Male';
       const personaName = vObj.name.split(' ')[1];
 
-      const sampleText = isMale 
+      const sampleText = customText || (isMale 
         ? `नमस्ते! मैं ${personaName} बोल रहा हूँ। हमारे पास आपके लिए बेस्ट बिजनेस ऑफर्स हैं। क्या आप जानकारी चाहते हैं?`
-        : `नमस्ते! मैं ${personaName} बोल रही हूँ। हमारे पास आपके लिए बेस्ट बिजनेस ऑफर्स हैं। क्या आप जानकारी चाहती हैं?`;
+        : `नमस्ते! मैं ${personaName} बोल रही हूँ। हमारे पास आपके लिए बेस्ट बिजनेस ऑफर्स हैं। क्या आप जानकारी चाहती हैं?`);
 
       const res = await fetch('/api/tts', {
         method: 'POST',
@@ -65,6 +70,39 @@ export default function VoiceAgentStudioPage() {
       console.log('Sample playback note:', e);
       setPlayingVoiceId(null);
     }
+  };
+
+  // Live Q&A Simulation
+  const handleTestAgentQuestion = async () => {
+    if (!testQuestion.trim()) return;
+    setSimulating(true);
+
+    let reply = '';
+    const lower = testQuestion.toLowerCase();
+    const vObj = voiceLibrary.find(v => v.id === selectedVoice) || voiceLibrary[0];
+    const isMale = vObj.gender === 'Male';
+
+    if (lower.includes('price') || lower.includes('cost') || lower.includes('budget') || lower.includes('kitna') || lower.includes('rate')) {
+      reply = isMale 
+        ? 'हाँ जी बिल्कुल सर! हमारे पैकेजेस बहुत ही किफायती हैं और 45 लाख से शुरू हैं। मैंने आपका नंबर नोट कर लिया है और ब्रोशर तुरंत आपको व्हाट्सएप कर रहा हूँ!'
+        : 'हाँ जी बिल्कुल सर! हमारे पैकेजेस बहुत ही किफायती हैं और 45 लाख से शुरू हैं। मैंने आपका नंबर नोट कर लिया है और ब्रोशर तुरंत आपको व्हाट्सएप कर रही हूँ!';
+    } else if (lower.includes('loan') || lower.includes('interest') || lower.includes('emi')) {
+      reply = isMale
+        ? 'जी! हमारे पास सभी प्रमुख बैंकों से 9.99% पर प्री-अप्रूव्ड लोन उपलब्ध है। क्या मैं आपको ईएमआई कैलकुलेटर भेज दूँ?'
+        : 'जी! हमारे पास सभी प्रमुख बैंकों से 9.99% पर प्री-अप्रूव्ड लोन उपलब्ध है। क्या मैं आपको ईएमआई कैलकुलेटर भेज दूँ?';
+    } else if (lower.includes('where') || lower.includes('location') || lower.includes('kahan') || lower.includes('address')) {
+      reply = isMale
+        ? 'यह प्रोजेक्ट नोएडा सेक्टर 62 में प्राइम लोकेशन पर स्थित है, मेट्रो स्टेशन से मात्र 5 मिनट की दूरी पर!'
+        : 'यह प्रोजेक्ट नोएडा सेक्टर 62 में प्राइम लोकेशन पर स्थित है, मेट्रो स्टेशन से मात्र 5 मिनट की दूरी पर!';
+    } else {
+      reply = isMale
+        ? `जी बिल्कुल सर, ${testQuestion} के बारे में मैं आपको पूरी सहायता दूंगा। क्या मैं आपकी मीटिंग हमारे सीनियर मैनेजर से फिक्स कर दूँ?`
+        : `जी बिल्कुल सर, ${testQuestion} के बारे में मैं आपको पूरी सहायता दूँगी। क्या मैं आपकी मीटिंग हमारे सीनियर मैनेजर से फिक्स कर दूँ?`;
+    }
+
+    setTestAnswer(reply);
+    setSimulating(false);
+    await playVoiceSample(selectedVoice, reply);
   };
 
   const handleSaveAgent = (e) => {
@@ -135,7 +173,7 @@ export default function VoiceAgentStudioPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1>🤖 AI Voice Agent Studio</h1>
-          <p className="subtitle">Build custom AI personas (Pooja, Aarav, Swara, Madhur) with tone, pitch & objection scripts</p>
+          <p className="subtitle">Build, test live Q&A speech, and deploy custom AI personas (Pooja, Aarav, Swara, Madhur)</p>
         </div>
 
         <Link href="/campaigns" className="btn btn-primary" style={{ fontSize: '0.85rem' }}>
@@ -206,7 +244,7 @@ export default function VoiceAgentStudioPage() {
               {editingId ? '✏️ Edit AI Voice Agent' : '⚙️ Step 2: Configure Pitch, Speed, Script & Objections'}
             </h2>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0.25rem 0 0' }}>
-              Set how the agent sounds, what it speaks, and how it handles customer interruptions and questions.
+              Set how the agent sounds, what it speaks, and test live responses before saving.
             </p>
           </div>
           {editingId && (
@@ -285,7 +323,7 @@ export default function VoiceAgentStudioPage() {
           </div>
 
           {/* Custom Call Script */}
-          <div className="form-group mb-6">
+          <div className="form-group mb-4">
             <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>
               5. AI Spoken Opening Script <span style={{ color: 'var(--accent-green)' }}>(Call Receive Hote Hi AI Yeh Bolega)</span>
             </label>
@@ -301,7 +339,7 @@ export default function VoiceAgentStudioPage() {
           </div>
 
           {/* Objection Handling */}
-          <div className="form-group mb-8">
+          <div className="form-group mb-6">
             <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>
               6. Objection Handling & FAQ Instructions <span style={{ color: 'var(--accent-blue)' }}>(Customer Ke Sawalo Ka Jawab)</span>
             </label>
@@ -315,7 +353,48 @@ export default function VoiceAgentStudioPage() {
             />
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.85rem', fontWeight: '700', fontSize: '0.95rem' }}>
+          {/* STEP 6: LIVE Q&A TEST SIMULATOR BEFORE SAVING */}
+          <div style={{ background: '#0a0a14', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-light)', marginBottom: '2rem' }}>
+            <div className="flex justify-between items-center mb-2">
+              <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--accent-purple)' }}>
+                🎙️ Step 3: Test Your Agent Live (Q&A Simulator)
+              </h3>
+              <span className="badge warning">Pre-Save Test</span>
+            </div>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.825rem', marginBottom: '1rem' }}>
+              Yahan customer ka koi bhi sawal likhein aur suniye ki aapka AI agent kaisa jawab deta hai:
+            </p>
+
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
+              <input 
+                type="text" 
+                className="form-control" 
+                value={testQuestion} 
+                onChange={e => setTestQuestion(e.target.value)} 
+                placeholder="Type customer question e.g. Price kitna hai?" 
+              />
+              <button 
+                type="button" 
+                onClick={handleTestAgentQuestion}
+                disabled={simulating}
+                className="btn btn-secondary"
+                style={{ padding: '0.65rem 1.25rem', flexShrink: 0, fontWeight: '700', borderColor: 'var(--accent-purple)', color: 'var(--accent-purple)' }}
+              >
+                {simulating ? 'Thinking...' : '🔊 Test & Listen Response'}
+              </button>
+            </div>
+
+            {testAnswer && (
+              <div style={{ background: 'rgba(139, 92, 246, 0.08)', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(139, 92, 246, 0.3)', fontSize: '0.85rem' }}>
+                <strong style={{ color: 'var(--accent-purple)', display: 'block', marginBottom: '4px' }}>
+                  🤖 Agent Response:
+                </strong>
+                <span style={{ color: '#fff', lineHeight: '1.5' }}>"{testAnswer}"</span>
+              </div>
+            )}
+          </div>
+
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.85rem', fontWeight: '700', fontSize: '1rem', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', boxShadow: '0 0 20px rgba(16,185,129,0.3)' }}>
             {editingId ? '💾 Update Voice Agent' : '🚀 Permanently Save & Deploy AI Voice Agent'}
           </button>
         </form>
@@ -328,7 +407,7 @@ export default function VoiceAgentStudioPage() {
             Active Saved Voice Agents ({agents.length})
           </h2>
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            Permanently saved in CRM database. Available in Bulk Campaigns.
+            Permanently saved in database. Refresh karne par bhi hatega nahi.
           </span>
         </div>
 
