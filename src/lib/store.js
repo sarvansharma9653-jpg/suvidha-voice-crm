@@ -91,7 +91,7 @@ export const store = {
       let parsed = JSON.parse(data);
       // Auto-migrate: ensure Shree Aangan agent is present and updated
       const poojaIdx = parsed.findIndex(a => a.id === 'ag_pooja');
-      if (poojaIdx === -1 || !parsed[poojaIdx].script?.includes('Shree Aangan')) {
+      if (poojaIdx === -1 || !parsed[poojaIdx].script?.includes('महत्वपूर्ण जानकारी')) {
         if (poojaIdx >= 0) {
           parsed[poojaIdx] = initialDefaultAgents[0];
         } else {

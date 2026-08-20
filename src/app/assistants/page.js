@@ -53,13 +53,13 @@ export default function VoiceAgentStudioPage() {
     setAgents(loadedAgents);
 
     const shreeAgent = loadedAgents.find(a => a.id === 'ag_pooja' || a.name?.includes('Shree Aangan'));
-    if (shreeAgent && !editingId) {
-      setAgentName(shreeAgent.name || 'Pooja - Shree Aangan Real Estate Closer');
-      setSelectedVoice(shreeAgent.voiceId || 'pooja');
-      setScript(shreeAgent.script || defaultScript);
-      setObjections(shreeAgent.objections || defaultObjections);
-      setUseCase(shreeAgent.useCase || 'Real Estate & Property Investment');
-      if (shreeAgent.adminTransferNumber) setAdminTransferNumber(shreeAgent.adminTransferNumber);
+    if (!editingId) {
+      setAgentName('Pooja — Shree Aangan Investment Advisor');
+      setSelectedVoice(shreeAgent?.voiceId || 'pooja');
+      setScript(defaultScript);
+      setObjections(defaultObjections);
+      setUseCase('The Shree Aangan Developers — Jaipur Real Estate');
+      if (shreeAgent?.adminTransferNumber) setAdminTransferNumber(shreeAgent.adminTransferNumber);
     }
 
     if (typeof window !== 'undefined') {
