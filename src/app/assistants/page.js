@@ -6,6 +6,10 @@ import Link from 'next/link';
 export default function VoiceAgentStudioPage() {
   const [agents, setAgents] = useState([]);
 
+  // ElevenLabs Key in Studio
+  const [elevenLabsApiKey, setElevenLabsApiKey] = useState('');
+  const [showKeyInput, setShowKeyInput] = useState(false);
+
   // Voice Studio Form Fields
   const [agentName, setAgentName] = useState('Pooja - Luxury Real Estate Closer');
   const [selectedVoice, setSelectedVoice] = useState('pooja');
@@ -38,7 +42,29 @@ export default function VoiceAgentStudioPage() {
 
   useEffect(() => {
     setAgents(store.getAgents());
+
+    if (typeof window !== 'undefined') {
+      const uid = localStorage.getItem('suvidha_auth_user_id') || 'default';
+      const savedKey = localStorage.getItem(`elevenLabsApiKey_${uid}`) || localStorage.getItem('elevenLabsApiKey') || '';
+      setElevenLabsApiKey(savedKey);
+    }
   }, []);
+
+  const handleSaveElevenLabsKey = (e) => {
+    e.preventDefault();
+    if (!elevenLabsApiKey.trim()) {
+      alert('Please enter a valid ElevenLabs API key');
+      return;
+    }
+    if (typeof window !== 'undefined') {
+      const uid = localStorage.getItem('suvidha_auth_user_id') || 'default';
+      localStorage.setItem(`elevenLabsApiKey_${uid}`, elevenLabsApiKey.trim());
+      localStorage.setItem('elevenLabsApiKey', elevenLabsApiKey.trim());
+    }
+    setStatus({ type: 'success', message: '🎉 ElevenLabs API Key Saved Successfully! All Voice Agents will now use ElevenLabs Studio Audio.' });
+    setShowKeyInput(false);
+    setTimeout(() => setStatus(null), 4000);
+  };
 
   const playVoiceSample = async (voiceId, customText) => {
     try {
@@ -54,7 +80,12 @@ export default function VoiceAgentStudioPage() {
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: sampleText, gender: vObj.gender, voice: voiceId })
+        body: JSON.stringify({ 
+          text: sampleText, 
+          gender: vObj.gender, 
+          voice: voiceId,
+          elevenLabsApiKey 
+        })
       });
 
       const data = await res.json();
@@ -176,10 +207,49 @@ export default function VoiceAgentStudioPage() {
           <p className="subtitle">Build, test live Q&A speech, and deploy custom AI personas (Pooja, Aarav, Swara, Madhur)</p>
         </div>
 
-        <Link href="/campaigns" className="btn btn-primary" style={{ fontSize: '0.85rem' }}>
-          🚀 Launch in Bulk Campaigns &rarr;
-        </Link>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button 
+            onClick={() => setShowKeyInput(!showKeyInput)}
+            className="btn btn-secondary" 
+            style={{ fontSize: '0.825rem', borderColor: 'var(--accent-purple)', color: 'var(--accent-purple)' }}
+          >
+            🔑 ElevenLabs API Key {elevenLabsApiKey ? '🟢 (Active)' : '🔴 (Enter Key)'}
+          </button>
+          <Link href="/campaigns" className="btn btn-primary" style={{ fontSize: '0.85rem' }}>
+            🚀 Launch in Bulk Campaigns &rarr;
+          </Link>
+        </div>
       </div>
+
+      {/* ElevenLabs API Key Quick Setup Modal / Box */}
+      {showKeyInput && (
+        <div className="card mb-6" style={{ padding: '1.5rem', background: '#0e0e18', border: '1px solid var(--accent-purple)' }}>
+          <div className="flex justify-between items-center mb-2">
+            <h3 style={{ margin: 0, fontSize: '1.05rem', color: 'var(--accent-purple)' }}>
+              🔑 ElevenLabs API Key Configuration
+            </h3>
+            <span className="badge primary">Ultra-Human Voice Engine</span>
+          </div>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.825rem', marginBottom: '1rem' }}>
+            Enter your ElevenLabs API Key so all your Voice Agents speak with 100% realistic human emotion:
+          </p>
+
+          <form onSubmit={handleSaveElevenLabsKey} style={{ display: 'flex', gap: '0.75rem' }}>
+            <input 
+              required
+              type="password"
+              className="form-control"
+              value={elevenLabsApiKey}
+              onChange={e => setElevenLabsApiKey(e.target.value)}
+              placeholder="Paste your ElevenLabs API Key (sk_...)"
+              style={{ flex: 1 }}
+            />
+            <button type="submit" className="btn btn-primary" style={{ flexShrink: 0, padding: '0.65rem 1.5rem', fontWeight: '700' }}>
+              💾 Save Key
+            </button>
+          </form>
+        </div>
+      )}
 
       {status && (
         <div className="card mb-6" style={{ padding: '1rem', borderColor: status.type === 'success' ? 'var(--accent-green)' : 'var(--accent-red)', background: status.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)' }}>
