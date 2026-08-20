@@ -1,11 +1,13 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { store } from '@/lib/store';
 
 export default function WebCallPage() {
   const [callActive, setCallActive] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
-  const [selectedAgent, setSelectedAgent] = useState('swara');
+  const [selectedAgentId, setSelectedAgentId] = useState('ag_pooja');
+  const [agentsList, setAgentsList] = useState([]);
   const [transcript, setTranscript] = useState([]);
   const [statusMsg, setStatusMsg] = useState('Click Start Call to speak with AI');
   const [copied, setCopied] = useState(false);
@@ -14,14 +16,13 @@ export default function WebCallPage() {
   const audioRef = useRef(null);
   const timerRef = useRef(null);
 
-  const agents = {
-    swara: { name: 'Swara', gender: 'Female', title: 'Real Estate & Sales Specialist', greeting: 'नमस्ते! मैं स्वरा बोल रही हूँ। सुविधा में आपका स्वागत है। बताइए आज मैं आपकी क्या सहायता कर सकती हूँ?' },
-    madhur: { name: 'Madhur', gender: 'Male', title: 'Financial & Loan Advisor', greeting: 'नमस्ते! मैं मधुर बोल रहा हूँ। सुविधा में आपका स्वागत है। बताइए आज मैं आपकी क्या मदद कर सकता हूँ?' },
-    ananya: { name: 'Ananya', gender: 'Female', title: 'Customer Support Lead', greeting: 'नमस्ते! मैं अनन्या बोल रही हूँ। सुविधा कस्टमर केयर में आपका स्वागत है।' },
-    rohan: { name: 'Rohan', gender: 'Male', title: 'Corporate Consultant', greeting: 'नमस्ते! मैं रोहन बोल रहा हूँ। सुविधा कंसल्टेंसी में आपका स्वागत है।' }
-  };
-
   useEffect(() => {
+    const list = store.getAgents();
+    setAgentsList(list);
+    if (list.length > 0) {
+      setSelectedAgentId(list[0].id);
+    }
+
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       if (recognitionRef.current) recognitionRef.current.stop();
@@ -29,7 +30,12 @@ export default function WebCallPage() {
     };
   }, []);
 
-  const currentAgent = agents[selectedAgent] || agents.swara;
+  const currentAgent = agentsList.find(a => a.id === selectedAgentId) || agentsList[0] || {
+    name: 'Pooja (AI Closer)',
+    gender: 'Female',
+    useCase: 'Real Estate Closer',
+    script: 'नमस्ते! मैं पूजा बोल रही हूँ। हमारे पास 2 और 3 बीएचके फ्लैट्स के बेस्ट ऑफर्स हैं। क्या आप डिटेल्स जानना चाहते हैं?'
+  };
 
   const playAgentVoice = async (text, gender) => {
     try {
@@ -39,7 +45,7 @@ export default function WebCallPage() {
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, gender, voice: selectedAgent })
+        body: JSON.stringify({ text, gender: gender || currentAgent.gender, voice: currentAgent.voiceId || 'pooja' })
       });
 
       if (res.ok) {
@@ -64,14 +70,15 @@ export default function WebCallPage() {
   const startWebCall = () => {
     setCallActive(true);
     setCallDuration(0);
-    setTranscript([{ speaker: currentAgent.name, text: currentAgent.greeting }]);
+    const greeting = currentAgent.script || 'नमस्ते! मैं आपकी क्या सहायता करूँ?';
+    setTranscript([{ speaker: currentAgent.name, text: greeting }]);
     setStatusMsg(`${currentAgent.name} is speaking...`);
 
     timerRef.current = setInterval(() => {
       setCallDuration(prev => prev + 1);
     }, 1000);
 
-    playAgentVoice(currentAgent.greeting, currentAgent.gender);
+    playAgentVoice(greeting, currentAgent.gender);
 
     if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -80,9 +87,26 @@ export default function WebCallPage() {
       recognition.interimResults = false;
       recognition.lang = 'hi-IN';
 
+      // Instant Interruption Handling (Barge-in): Stop AI voice immediately when user talks
+      recognition.onspeechstart = () => {
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+        }
+        setIsSpeaking(false);
+        setStatusMsg('Listening to your question...');
+      };
+
       recognition.onresult = (event) => {
         const text = event.results[event.results.length - 1][0].transcript;
         if (text.trim()) {
+          // Double check audio is paused
+          if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+          }
+          setIsSpeaking(false);
+
           setTranscript(prev => [...prev, { speaker: 'You', text }]);
           handleAICallResponse(text);
         }
@@ -98,24 +122,24 @@ export default function WebCallPage() {
     let reply = '';
     const lower = userText.toLowerCase();
 
-    if (lower.includes('price') || lower.includes('cost') || lower.includes('rate') || lower.includes('budget')) {
+    if (lower.includes('price') || lower.includes('cost') || lower.includes('rate') || lower.includes('budget') || lower.includes('kitna')) {
       reply = currentAgent.gender === 'Male'
-        ? 'हाँ जी बिल्कुल सर! हमारे पैकेजेस बहुत ही कस्टमाइज़्ड और अफोर्डेबल हैं। क्या मैं आपकी जरूरत के हिसाब से सबसे बेस्ट प्लान बताऊँ?'
-        : 'हाँ जी बिल्कुल सर! हमारे पैकेजेस बहुत ही कस्टमाइज़्ड और अफोर्डेबल हैं। क्या मैं आपकी जरूरत के हिसाब से सबसे बेस्ट प्लान बताऊँ?';
-    } else if (lower.includes('yes') || lower.includes('haan') || lower.includes('theek') || lower.includes('interested')) {
+        ? 'हाँ जी बिल्कुल सर! हमारे पैकेजेस बहुत ही किफायती हैं और 45 लाख से शुरू हैं। क्या मैं व्हाट्सएप पर ब्रोशर और प्राइस लिस्ट भेज दूँ?'
+        : 'हाँ जी बिल्कुल सर! हमारे पैकेजेस बहुत ही किफायती हैं और 45 लाख से शुरू हैं। क्या मैं व्हाट्सएप पर ब्रोशर और प्राइस लिस्ट भेज दूँ?';
+    } else if (lower.includes('yes') || lower.includes('haan') || lower.includes('theek') || lower.includes('interested') || lower.includes('send') || lower.includes('bhejo')) {
       reply = currentAgent.gender === 'Male'
-        ? 'अरे बहुत ही बढ़िया सर! मैंने आपका टाइम लॉक कर दिया है। मैं तुरंत आपको व्हाट्सएप पर सारी डिटेल भेज रहा हूँ!'
-        : 'अरे बहुत ही बढ़िया सर! मैंने आपका टाइम लॉक कर दिया है। मैं तुरंत आपको व्हाट्सएप पर सारी डिटेल भेज रही हूँ!';
+        ? 'अरे बहुत ही बढ़िया सर! मैंने आपका नंबर नोट कर लिया है। मैं तुरंत आपको व्हाट्सएप पर सारी डिटेल भेज रहा हूँ!'
+        : 'अरे बहुत ही बढ़िया सर! मैंने आपका नंबर नोट कर लिया है। मैं तुरंत आपको व्हाट्सएप पर सारी डिटेल भेज रही हूँ!';
     } else {
       reply = currentAgent.gender === 'Male'
-        ? 'जी बिल्कुल, मैं आपकी बात समझ रहा हूँ। आप बेझिझक बताइए, मैं आपकी किस प्रकार सहायता कर सकता हूँ?'
-        : 'जी बिल्कुल, मैं आपकी बात समझ रही हूँ। आप बेझिझक बताइए, मैं आपकी किस प्रकार सहायता कर सकती हूँ?';
+        ? 'जी बिल्कुल, मैं आपकी बात समझ गया। बताइए, इस बारे में आपका क्या सवाल है?'
+        : 'जी बिल्कुल, मैं आपकी बात समझ गई। बताइए, इस बारे में आपका क्या सवाल है?';
     }
 
     setTimeout(() => {
       setTranscript(prev => [...prev, { speaker: currentAgent.name, text: reply }]);
       playAgentVoice(reply, currentAgent.gender);
-    }, 300);
+    }, 250);
   };
 
   const endWebCall = () => {
@@ -142,133 +166,155 @@ export default function WebCallPage() {
   };
 
   return (
-    <div style={{ maxWidth: '1100px' }}>
-      {/* Top Header */}
+    <div style={{ maxWidth: '900px' }}>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1>🌐 Instant Web Call Room (Zero Telephony / No SIM)</h1>
-          <p className="subtitle">High-Definition In-Browser 2-Way Voice Call Room powered by WebRTC & Neural AI</p>
+          <h1>🌐 Instant Web Voice Call (No SIM/Telecom Needed)</h1>
+          <p className="subtitle">Speak live with your custom AI Voice Agent directly in the browser</p>
         </div>
 
-        <button 
-          onClick={copyShareLink}
-          className="btn btn-secondary"
-          style={{ fontSize: '0.8125rem' }}
-        >
-          {copied ? '✅ Link Copied!' : '🔗 Copy Shareable Web Call Link'}
+        <button onClick={copyShareLink} className="btn btn-secondary" style={{ fontSize: '0.85rem' }}>
+          {copied ? '✅ Link Copied!' : '🔗 Share WebCall Link'}
         </button>
       </div>
 
-      {/* Step-by-Step Guide Banner */}
-      <div className="card mb-6" style={{ padding: '1.25rem 1.5rem', background: 'rgba(59, 130, 246, 0.05)', borderColor: 'rgba(59, 130, 246, 0.2)' }}>
-        <div style={{ fontWeight: '600', fontSize: '0.9rem', color: 'var(--accent-blue)', marginBottom: '0.5rem' }}>
-          📖 How Instant Web Calling Works (Zero Cost Telephony):
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-          <div>
-            <strong>1. Select AI Agent:</strong> Choose female (Swara/Ananya) or male (Madhur/Rohan) voice persona below.
-          </div>
-          <div>
-            <strong>2. Start WebRTC Call:</strong> Click <strong>`Start Instant Web Call`</strong> to connect live 2-way audio through your laptop/mobile mic.
-          </div>
-          <div>
-            <strong>3. Share with Clients:</strong> Send this link on WhatsApp so customers can talk to your AI agent directly without phone recharge!
-          </div>
-        </div>
-      </div>
-
-      {/* Main Calling Box */}
-      <div className="card" style={{ padding: '3rem 2rem', textAlign: 'center', background: '#0a0a10' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem' }}>
         
-        {/* Agent Selector */}
-        {!callActive && (
-          <div style={{ maxWidth: '400px', margin: '0 auto 2.5rem' }}>
-            <label style={{ fontSize: '0.85rem', fontWeight: '600', display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
-              Select Calling Agent Persona:
-            </label>
-            <select 
-              className="form-control" 
-              value={selectedAgent} 
-              onChange={e => setSelectedAgent(e.target.value)}
-              style={{ textAlign: 'center', fontWeight: '600', fontSize: '0.95rem' }}
-            >
-              {Object.keys(agents).map(k => (
-                <option key={k} value={k}>
-                  {agents[k].gender === 'Female' ? '👩' : '👨'} {agents[k].name} — {agents[k].title}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {/* Pulse Visualizer */}
-        <div style={{ position: 'relative', width: '130px', height: '130px', margin: '0 auto 2rem' }}>
-          <div style={{
-            position: 'absolute',
-            inset: 0,
-            borderRadius: '50%',
-            background: callActive ? 'radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0) 70%)' : 'rgba(255, 255, 255, 0.03)',
-            animation: callActive ? 'pulse 2s infinite' : 'none',
-            border: callActive ? '2px solid rgba(16, 185, 129, 0.4)' : '1px solid var(--border-light)'
-          }}></div>
+        {/* Left: Agent Selection Card */}
+        <div className="card" style={{ padding: '1.5rem', height: 'fit-content' }}>
+          <h2 style={{ fontSize: '1.1rem', marginBottom: '1rem', marginTop: 0 }}>Select Voice Agent</h2>
           
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {agentsList.map(ag => {
+              const isSelected = selectedAgentId === ag.id;
+              return (
+                <div
+                  key={ag.id}
+                  onClick={() => { if (!callActive) setSelectedAgentId(ag.id); }}
+                  style={{
+                    padding: '1rem',
+                    borderRadius: '10px',
+                    border: `1px solid ${isSelected ? 'var(--accent-green)' : 'var(--border-light)'}`,
+                    background: isSelected ? 'rgba(16, 185, 129, 0.08)' : 'rgba(255,255,255,0.02)',
+                    cursor: callActive ? 'not-allowed' : 'pointer',
+                    opacity: callActive && !isSelected ? 0.5 : 1
+                  }}
+                >
+                  <div className="flex justify-between items-center mb-1">
+                    <span style={{ fontWeight: '600', fontSize: '0.9rem', color: isSelected ? 'var(--accent-green)' : '#fff' }}>
+                      {ag.name}
+                    </span>
+                    <span className="badge primary" style={{ fontSize: '0.7rem' }}>{ag.gender}</span>
+                  </div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    {ag.useCase}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{ marginTop: '1.5rem', background: '#0a0a12', padding: '1rem', borderRadius: '8px', border: '1px solid var(--border-light)', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+            🎙️ <strong>Instant Barge-in Active:</strong> AI bolte samay jaise hi aap bolege, AI turant chup hokar aapka answer karegi.
+          </div>
+        </div>
+
+        {/* Right: Live Call Console */}
+        <div className="card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', background: '#0e0e16' }}>
+          
+          {/* Avatar Ring */}
           <div style={{
-            width: '100%',
-            height: '100%',
+            width: '120px',
+            height: '120px',
             borderRadius: '50%',
+            background: callActive ? 'radial-gradient(circle, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0) 70%)' : 'rgba(255,255,255,0.05)',
+            border: `3px solid ${callActive ? (isSpeaking ? 'var(--accent-green)' : 'var(--accent-blue)') : 'var(--border-light)'}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '3rem',
-            background: callActive ? (isSpeaking ? 'rgba(16, 185, 129, 0.15)' : 'rgba(59, 130, 246, 0.15)') : 'rgba(255, 255, 255, 0.05)'
+            fontSize: '3.5rem',
+            marginBottom: '1rem',
+            animation: isSpeaking ? 'pulse 1.5s infinite' : 'none'
           }}>
-            {callActive ? (isSpeaking ? '🔊' : '🎙️') : (currentAgent.gender === 'Female' ? '👩‍💼' : '👨‍💼')}
+            {currentAgent.gender === 'Female' ? '👩' : '👨'}
           </div>
-        </div>
 
-        {/* Call Info */}
-        <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.5rem' }}>
-          {currentAgent.name} ({currentAgent.title})
-        </h2>
+          <h2 style={{ margin: '0 0 0.25rem', fontSize: '1.3rem' }}>{currentAgent.name}</h2>
+          <p style={{ margin: '0 0 1rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{currentAgent.useCase}</p>
 
-        <div style={{ fontSize: '1rem', color: callActive ? 'var(--accent-green)' : 'var(--text-muted)', marginBottom: '1.5rem', fontWeight: '600' }}>
-          {callActive ? `🟢 Live Call in Progress • ${formatDuration(callDuration)}` : statusMsg}
-        </div>
-
-        {/* Action Button */}
-        <div>
-          {!callActive ? (
-            <button 
-              onClick={startWebCall} 
-              className="btn btn-primary" 
-              style={{ padding: '0.85rem 2.5rem', fontSize: '1rem', borderRadius: '30px', fontWeight: '600' }}
-            >
-              📞 Start Instant Web Call
-            </button>
-          ) : (
-            <button 
-              onClick={endWebCall} 
-              className="btn btn-danger" 
-              style={{ padding: '0.85rem 2.5rem', fontSize: '1rem', borderRadius: '30px', fontWeight: '600' }}
-            >
-              ⏹️ End Call
-            </button>
-          )}
-        </div>
-
-        {/* Live Transcript Box */}
-        {transcript.length > 0 && (
-          <div style={{ marginTop: '2.5rem', background: '#050508', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-light)', maxWidth: '600px', margin: '2.5rem auto 0', textAlign: 'left', maxHeight: '200px', overflowY: 'auto' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
-              💬 LIVE WEB CALL TRANSCRIPT:
-            </div>
-            {transcript.map((t, idx) => (
-              <div key={idx} style={{ fontSize: '0.85rem', marginBottom: '0.5rem', color: t.speaker === 'You' ? 'var(--accent-blue)' : 'var(--accent-green)' }}>
-                <strong>{t.speaker}:</strong> {t.text}
+          {/* Call Status & Timer */}
+          <div style={{ marginBottom: '1.5rem' }}>
+            {callActive ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
+                <span className="badge success" style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem' }}>
+                  🟢 Live: {formatDuration(callDuration)}
+                </span>
+                <span style={{ fontSize: '0.85rem', color: 'var(--accent-green)' }}>{statusMsg}</span>
               </div>
-            ))}
+            ) : (
+              <span className="badge warning" style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem' }}>
+                ⚪ Ready to Call (Click Start Below)
+              </span>
+            )}
           </div>
-        )}
+
+          {/* Call Buttons */}
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+            {!callActive ? (
+              <button
+                onClick={startWebCall}
+                className="btn btn-primary"
+                style={{
+                  padding: '0.85rem 2.5rem',
+                  fontSize: '1.05rem',
+                  fontWeight: '700',
+                  borderRadius: '30px',
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  border: 'none',
+                  boxShadow: '0 0 20px rgba(16,185,129,0.4)'
+                }}
+              >
+                📞 Start Voice Call Now
+              </button>
+            ) : (
+              <button
+                onClick={endWebCall}
+                className="btn btn-danger"
+                style={{
+                  padding: '0.85rem 2.5rem',
+                  fontSize: '1.05rem',
+                  fontWeight: '700',
+                  borderRadius: '30px',
+                  boxShadow: '0 0 20px rgba(239,68,68,0.4)'
+                }}
+              >
+                ⏹️ End Call
+              </button>
+            )}
+          </div>
+
+          {/* Live Transcript Box */}
+          <div style={{ width: '100%', textAlign: 'left', background: '#08080c', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)', minHeight: '160px', maxHeight: '220px', overflowY: 'auto' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+              Live Voice Transcript:
+            </div>
+            {transcript.length === 0 ? (
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic' }}>
+                Conversation will appear here in real time...
+              </div>
+            ) : (
+              transcript.map((t, idx) => (
+                <div key={idx} style={{ marginBottom: '0.6rem', fontSize: '0.85rem', lineHeight: '1.4' }}>
+                  <strong style={{ color: t.speaker === 'You' ? 'var(--accent-blue)' : 'var(--accent-green)' }}>
+                    {t.speaker}:
+                  </strong>{' '}
+                  <span style={{ color: '#fff' }}>{t.text}</span>
+                </div>
+              ))
+            )}
+          </div>
+
+        </div>
 
       </div>
     </div>

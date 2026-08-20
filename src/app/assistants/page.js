@@ -1,63 +1,38 @@
 'use client';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
+import { store } from '@/lib/store';
+import Link from 'next/link';
 
 export default function VoiceAgentStudioPage() {
   const [agents, setAgents] = useState([]);
 
   // Voice Studio Form Fields
-  const [callType, setCallType] = useState('Outbound (AI calls users)');
-  const [useCase, setUseCase] = useState('Real Estate & Sales Leads');
-  const [activityDescription, setActivityDescription] = useState('Qualify clients for 2 & 3 BHK luxury flats in Noida. Ask for budget, location preference, and schedule site visits.');
-  const [agentName, setAgentName] = useState('Swara - Luxury Real Estate Closer');
-  const [selectedVoice, setSelectedVoice] = useState('swara');
-  const [playingVoiceId, setPlayingVoiceId] = useState(null);
+  const [agentName, setAgentName] = useState('Pooja - Luxury Real Estate Closer');
+  const [selectedVoice, setSelectedVoice] = useState('pooja');
+  const [speed, setSpeed] = useState('1.0x (Normal)');
+  const [pitch, setPitch] = useState('Warm & Friendly');
+  const [bargeIn, setBargeIn] = useState(true);
+  const [callType, setCallType] = useState('Outbound (AI calls leads)');
+  const [useCase, setUseCase] = useState('Real Estate Sales & Discovery');
+  const [script, setScript] = useState('नमस्ते सर! मैं पूजा बात कर रही हूँ। हमारे पास 2 और 3 बीएचके लक्ज़री फ्लैट्स का एक्सक्लूसिव ऑफर है जो 45 लाख से शुरू है। क्या आप इस वीकेंड साइट विजिट के लिए फ्री हैं?');
+  const [objections, setObjections] = useState('अगर कस्टमर बोले बजट कम है, तो 35 लाख वाले विकल्प बताएं। अगर बोले WhatsApp पर भेजो, तो तुरंत सहमति देकर विवरण भेजने का वादा करें।');
 
+  const [editingId, setEditingId] = useState(null);
+  const [playingVoiceId, setPlayingVoiceId] = useState(null);
   const [status, setStatus] = useState(null);
 
   const voiceLibrary = [
-    { id: 'madhur', name: '👨 Madhur (Corporate Sales Consultant)', gender: 'Male', desc: 'Confident & trustworthy corporate tone for Sales & B2B (बोल रहा हूँ)' },
-    { id: 'rohan', name: '👨 Rohan (Executive Business Development)', gender: 'Male', desc: 'Deep & authoritative tone for High-Ticket Deals' },
-    { id: 'aarav', name: '👨 Aarav (Dynamic Tech & Ads Specialist)', gender: 'Male', desc: 'Young & enthusiastic for Startups & Tech' },
-    { id: 'swara', name: '👩 Swara (Warm Real Estate & Closer)', gender: 'Female', desc: 'Sweet, polite & persuasive female sales expert (बोल रही हूँ)' },
-    { id: 'ananya', name: '👩 Ananya (Client Support Manager)', gender: 'Female', desc: 'Clear, modern & energetic Hinglish sales voice' },
-    { id: 'pooja', name: '👩 Pooja (Brand Success Advisor)', gender: 'Female', desc: 'Soft & caring voice for Local Businesses & Clinics' },
-    { id: 'kavya', name: '👩 Kavya (Social Media & Deals Specialist)', gender: 'Female', desc: 'High conversion tone for Retail & Festive sales' },
+    { id: 'pooja', name: '👩 Pooja (Warm & Polite Closer)', gender: 'Female', desc: 'Soft, polite & highly persuasive female sales tone (बोल रही हूँ)' },
+    { id: 'aarav', name: '👨 Aarav (Dynamic Tech & Finance Specialist)', gender: 'Male', desc: 'Enthusiastic & sharp tone for Loans, Banking & Tech (बोल रहा हूँ)' },
+    { id: 'swara', name: '👩 Swara (Real Estate & Luxury Advisor)', gender: 'Female', desc: 'Sweet, empathetic and crystal-clear voice for premium consulting' },
+    { id: 'madhur', name: '👨 Madhur (Corporate B2B Executive)', gender: 'Male', desc: 'Confident & trustworthy corporate tone for High-Ticket Deals' },
+    { id: 'ananya', name: '👩 Ananya (Client Support Manager)', gender: 'Female', desc: 'Modern, fast and energetic Hinglish sales & support voice' },
+    { id: 'rohan', name: '👨 Rohan (Executive Business Development)', gender: 'Male', desc: 'Deep bass authoritative voice for Commercial & Industrial sales' },
+    { id: 'kavya', name: '👩 Kavya (Social Media & Retail Deals)', gender: 'Female', desc: 'High-conversion friendly tone for e-Commerce and Festive promotions' },
   ];
 
   useEffect(() => {
-    const saved = localStorage.getItem('suvidha_custom_agents');
-    if (!saved) {
-      const initial = [
-        {
-          id: 'ag_swara',
-          name: 'Swara - Luxury Real Estate Closer',
-          callType: 'Outbound (AI calls users)',
-          useCase: 'Real Estate Sales & Discovery',
-          description: 'Qualifies clients for 2 & 3 BHK luxury flats in Noida. Asks for budget, location preference, and schedules site visits.',
-          voice: '👩 Swara (Indian Female)'
-        },
-        {
-          id: 'ag_madhur',
-          name: 'Madhur - Financial & Loan Advisor',
-          callType: 'Outbound (AI calls users)',
-          useCase: 'Pre-Approved Loans',
-          description: 'Offers pre-approved personal & business loans up to 10 Lakhs. Collects KYC details and checks eligibility.',
-          voice: '👨 Madhur (Indian Male)'
-        },
-        {
-          id: 'ag_ananya',
-          name: 'Ananya - 24/7 Customer Support Agent',
-          callType: 'Inbound (Users call AI)',
-          useCase: 'Customer Service & Ticketing',
-          description: 'Answers customer queries, resolves order issues, and registers complaints directly into CRM.',
-          voice: '👩 Ananya (Indian Female)'
-        }
-      ];
-      localStorage.setItem('suvidha_custom_agents', JSON.stringify(initial));
-      setAgents(initial);
-    } else {
-      setAgents(JSON.parse(saved));
-    }
+    setAgents(store.getAgents());
   }, []);
 
   const playVoiceSample = async (voiceId) => {
@@ -68,8 +43,8 @@ export default function VoiceAgentStudioPage() {
       const personaName = vObj.name.split(' ')[1];
 
       const sampleText = isMale 
-        ? `नमस्ते! मैं ${personaName} बोल रहा हूँ सुविधा एआई से। बताइए, आज मैं आपकी क्या सहायता कर सकता हूँ?`
-        : `नमस्ते! मैं ${personaName} बोल रही हूँ सुविधा एआई से। बताइए, आज मैं आपकी क्या सहायता कर सकती हूँ?`;
+        ? `नमस्ते! मैं ${personaName} बोल रहा हूँ। हमारे पास आपके लिए बेस्ट बिजनेस ऑफर्स हैं। क्या आप जानकारी चाहते हैं?`
+        : `नमस्ते! मैं ${personaName} बोल रही हूँ। हमारे पास आपके लिए बेस्ट बिजनेस ऑफर्स हैं। क्या आप जानकारी चाहती हैं?`;
 
       const res = await fetch('/api/tts', {
         method: 'POST',
@@ -92,53 +67,80 @@ export default function VoiceAgentStudioPage() {
     }
   };
 
-  const handleCreateAgent = (e) => {
+  const handleSaveAgent = (e) => {
     e.preventDefault();
     const vObj = voiceLibrary.find(v => v.id === selectedVoice) || voiceLibrary[0];
-    const newAgent = {
-      id: 'ag_' + Date.now(),
-      name: agentName,
+
+    const agentData = {
+      id: editingId || ('ag_' + Date.now()),
+      name: agentName.trim(),
+      voiceId: selectedVoice,
+      voice: vObj.name,
+      gender: vObj.gender,
+      speed,
+      pitch,
+      bargeIn,
       callType,
-      useCase,
-      description: activityDescription,
-      voice: vObj.name
+      useCase: useCase.trim(),
+      script: script.trim(),
+      objections: objections.trim()
     };
 
-    const updated = [newAgent, ...agents];
-    localStorage.setItem('suvidha_custom_agents', JSON.stringify(updated));
-    setAgents(updated);
-    setStatus({ type: 'success', message: `🎉 Voice Agent "${agentName}" created and ready for campaigns!` });
+    if (editingId) {
+      store.updateAgent(editingId, agentData);
+      setStatus({ type: 'success', message: `✅ Voice Agent "${agentName}" updated successfully!` });
+      setEditingId(null);
+    } else {
+      store.addAgent(agentData);
+      setStatus({ type: 'success', message: `🎉 Voice Agent "${agentName}" created and permanently saved!` });
+    }
+
+    setAgents(store.getAgents());
     setTimeout(() => setStatus(null), 4000);
+  };
+
+  const handleEdit = (agent) => {
+    setEditingId(agent.id);
+    setAgentName(agent.name);
+    setSelectedVoice(agent.voiceId || 'pooja');
+    setSpeed(agent.speed || '1.0x (Normal)');
+    setPitch(agent.pitch || 'Warm & Friendly');
+    setBargeIn(agent.bargeIn !== false);
+    setCallType(agent.callType || 'Outbound (AI calls leads)');
+    setUseCase(agent.useCase || '');
+    setScript(agent.script || '');
+    setObjections(agent.objections || '');
+    window.scrollTo({ top: 380, behavior: 'smooth' });
+  };
+
+  const handleDelete = (id, name) => {
+    if (confirm(`Are you sure you want to delete Voice Agent "${name}"?`)) {
+      store.deleteAgent(id);
+      setAgents(store.getAgents());
+      if (editingId === id) setEditingId(null);
+      setStatus({ type: 'success', message: `🗑️ Voice Agent "${name}" removed.` });
+      setTimeout(() => setStatus(null), 3000);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setAgentName('Pooja - Luxury Real Estate Closer');
+    setSelectedVoice('pooja');
+    setScript('नमस्ते सर! मैं पूजा बात कर रही हूँ। हमारे पास 2 और 3 बीएचके लक्ज़री फ्लैट्स का एक्सक्लूसिव ऑफर है। क्या मैं आपको व्हाट्सएप पर डिटेल्स भेज दूँ?');
   };
 
   return (
     <div style={{ maxWidth: '1100px' }}>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1>🤖 AI Voice Agent Creation Studio</h1>
-          <p className="subtitle">Build, customize, and deploy AI voice agents for automated inbound & outbound calling</p>
+          <h1>🤖 AI Voice Agent Studio</h1>
+          <p className="subtitle">Build custom AI personas (Pooja, Aarav, Swara, Madhur) with tone, pitch & objection scripts</p>
         </div>
-      </div>
 
-      {/* 3-Step Guide Banner */}
-      <div className="card mb-6" style={{ padding: '1.25rem 1.5rem', background: 'rgba(16, 185, 129, 0.05)', borderColor: 'rgba(16, 185, 129, 0.2)' }}>
-        <div style={{ fontWeight: '600', fontSize: '0.9rem', color: 'var(--accent-green)', marginBottom: '0.5rem' }}>
-          📖 How to Create an Agent & Start Calling in 3 Simple Steps:
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-          <div>
-            <strong>Step 1: Choose Voice Persona</strong><br />
-            Select male or female voice and click <strong>`Listen Sample`</strong> to hear 100% human studio speech.
-          </div>
-          <div>
-            <strong>Step 2: Define Agent Script & Pitch</strong><br />
-            Give your agent a name, business use case (e.g. Loans / Real Estate), and instructions on how to answer.
-          </div>
-          <div>
-            <strong>Step 3: Launch in Campaigns</strong><br />
-            Go to <strong>`🎯 Campaigns`</strong>, upload your customer lead numbers, and click Start Calling!
-          </div>
-        </div>
+        <Link href="/campaigns" className="btn btn-primary" style={{ fontSize: '0.85rem' }}>
+          🚀 Launch in Bulk Campaigns &rarr;
+        </Link>
       </div>
 
       {status && (
@@ -147,9 +149,9 @@ export default function VoiceAgentStudioPage() {
         </div>
       )}
 
-      {/* Voice Library Preview Cards */}
+      {/* Voice Library Selector */}
       <div className="mb-8">
-        <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>🎧 Choose Your Voice Persona (Male / Female)</h2>
+        <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>🎧 Step 1: Choose Voice Model (Male / Female)</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
           {voiceLibrary.map(v => {
             const isSelected = selectedVoice === v.id;
@@ -186,7 +188,7 @@ export default function VoiceAgentStudioPage() {
                     className={`btn ${isPlaying ? 'btn-success' : 'btn-secondary'}`}
                     style={{ fontSize: '0.75rem', padding: '0.3rem 0.6rem' }}
                   >
-                    {isPlaying ? '🔊 Playing Sample...' : '🔊 Listen Sample'}
+                    {isPlaying ? '🔊 Playing Voice...' : '🔊 Listen Voice Sample'}
                   </button>
                   {isSelected && <span style={{ fontSize: '0.75rem', color: 'var(--accent-green)', fontWeight: 'bold' }}>✓ Selected</span>}
                 </div>
@@ -196,87 +198,189 @@ export default function VoiceAgentStudioPage() {
         </div>
       </div>
 
-      {/* Main Create Agent Box */}
-      <div className="card mb-8" style={{ padding: '2.5rem', background: '#0e0e14' }}>
-        <h2 style={{ marginTop: 0, fontSize: '1.35rem', marginBottom: '0.5rem' }}>Create Customized AI Voice Agent</h2>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '2rem' }}>Configure your agent pitch, business use case, and objections handling</p>
+      {/* Main Agent Creation & Tuning Form */}
+      <div className="card mb-8" style={{ padding: '2.5rem', background: '#0e0e14', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h2 style={{ margin: 0, fontSize: '1.35rem' }}>
+              {editingId ? '✏️ Edit AI Voice Agent' : '⚙️ Step 2: Configure Pitch, Speed, Script & Objections'}
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', margin: '0.25rem 0 0' }}>
+              Set how the agent sounds, what it speaks, and how it handles customer interruptions and questions.
+            </p>
+          </div>
+          {editingId && (
+            <button onClick={cancelEdit} className="btn btn-secondary" style={{ fontSize: '0.8rem' }}>
+              Cancel Edit
+            </button>
+          )}
+        </div>
 
-        <form onSubmit={handleCreateAgent}>
-          <div className="form-group mb-6">
-            <label style={{ fontSize: '0.875rem', fontWeight: '600' }}>1. Selected Voice Persona</label>
-            <select className="form-control" value={selectedVoice} onChange={e => setSelectedVoice(e.target.value)}>
-              {voiceLibrary.map(v => (
-                <option key={v.id} value={v.id}>{v.name} — {v.desc}</option>
-              ))}
-            </select>
+        <form onSubmit={handleSaveAgent}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
+            
+            {/* Agent Name */}
+            <div className="form-group">
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>1. Agent Name & Persona Title</label>
+              <input 
+                required
+                type="text" 
+                className="form-control" 
+                value={agentName}
+                onChange={e => setAgentName(e.target.value)} 
+                placeholder="e.g. Pooja - Luxury Real Estate Closer" 
+              />
+            </div>
+
+            {/* Core Industry Use Case */}
+            <div className="form-group">
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>2. Business Industry / Use Case</label>
+              <input 
+                required
+                type="text" 
+                className="form-control" 
+                value={useCase}
+                onChange={e => setUseCase(e.target.value)} 
+                placeholder="e.g. Real Estate Sales, Pre-Approved Loans, Clinic Appointments" 
+              />
+            </div>
+
+            {/* Speaking Pace / Speed */}
+            <div className="form-group">
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>3. Speaking Pace (Speed)</label>
+              <select className="form-control" value={speed} onChange={e => setSpeed(e.target.value)}>
+                <option value="0.8x (Slow & Clear)">🐢 0.8x (Slow & Clear - Best for Elderly / Complex Financial)</option>
+                <option value="1.0x (Normal)">⚡ 1.0x (Normal Pace - Recommended for Real Estate & Sales)</option>
+                <option value="1.2x (Fast & Energetic)">🚀 1.2x (Fast & Energetic - Best for Short Promotional Deals)</option>
+              </select>
+            </div>
+
+            {/* Voice Tone & Pitch */}
+            <div className="form-group">
+              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>4. Voice Tone & Pitch</label>
+              <select className="form-control" value={pitch} onChange={e => setPitch(e.target.value)}>
+                <option value="Warm & Friendly">🌸 Warm & Friendly (Soft, polite, conversational closer)</option>
+                <option value="Professional & Trustworthy">👔 Professional & Trustworthy (Corporate B2B & Banking)</option>
+                <option value="Confident & High-Energy">🔥 Confident & High-Energy (Excited, promotional pitch)</option>
+                <option value="Empathetic & Soft">💙 Empathetic & Soft (Customer Support & Retention)</option>
+              </select>
+            </div>
+
           </div>
 
-          <div className="form-group mb-6">
-            <label style={{ fontSize: '0.875rem', fontWeight: '600' }}>2. Call Type</label>
-            <select className="form-control" value={callType} onChange={e => setCallType(e.target.value)}>
-              <option value="Outbound (AI calls users)">Outbound (AI calls leads / Sales & Follow-ups)</option>
-              <option value="Inbound (Users call AI)">Inbound (Users call AI / Customer Support)</option>
-            </select>
+          {/* Interruption / Barge-in Feature */}
+          <div style={{ background: 'rgba(16, 185, 129, 0.08)', padding: '1rem 1.25rem', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.3)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <div style={{ fontWeight: '700', fontSize: '0.9rem', color: 'var(--accent-green)' }}>
+                🎙️ Instant Interruption Handling (Barge-In Active)
+              </div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                Jab customer beech mein koi sawal puchega, AI turant bolna band karke customer ki baat sunega aur jawab dega.
+              </div>
+            </div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem' }}>
+              <input type="checkbox" checked={bargeIn} onChange={e => setBargeIn(e.target.checked)} />
+              Enabled
+            </label>
           </div>
 
+          {/* Custom Call Script */}
           <div className="form-group mb-6">
-            <label style={{ fontSize: '0.875rem', fontWeight: '600' }}>3. Agent Name & Title</label>
-            <input 
-              required
-              type="text" 
-              className="form-control" 
-              value={agentName}
-              onChange={e => setAgentName(e.target.value)} 
-              placeholder="e.g. Swara - Real Estate Closer" 
-            />
-          </div>
-
-          <div className="form-group mb-6">
-            <label style={{ fontSize: '0.875rem', fontWeight: '600' }}>4. Core Use Case</label>
-            <input 
-              required
-              type="text" 
-              className="form-control" 
-              value={useCase}
-              onChange={e => setUseCase(e.target.value)} 
-              placeholder="e.g. Real Estate Sales, Loans, Support, Client Discovery" 
-            />
-          </div>
-
-          <div className="form-group mb-8">
-            <label style={{ fontSize: '0.875rem', fontWeight: '600' }}>5. AI Prompt & Company Pitch Instructions</label>
+            <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>
+              5. AI Spoken Opening Script <span style={{ color: 'var(--accent-green)' }}>(Call Receive Hote Hi AI Yeh Bolega)</span>
+            </label>
             <textarea 
               required
-              rows="4"
+              rows="3"
               className="form-control" 
-              value={activityDescription}
-              onChange={e => setActivityDescription(e.target.value)} 
-              placeholder="Describe how the agent should qualify clients and answer queries..." 
+              value={script}
+              onChange={e => setScript(e.target.value)} 
+              placeholder="नमस्ते सर! मैं पूजा बोल रही हूँ..." 
+              style={{ fontSize: '0.85rem', lineHeight: '1.5' }}
             />
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.85rem' }}>
-            🚀 Save & Deploy AI Voice Agent
+          {/* Objection Handling */}
+          <div className="form-group mb-8">
+            <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>
+              6. Objection Handling & FAQ Instructions <span style={{ color: 'var(--accent-blue)' }}>(Customer Ke Sawalo Ka Jawab)</span>
+            </label>
+            <textarea 
+              rows="3"
+              className="form-control" 
+              value={objections}
+              onChange={e => setObjections(e.target.value)} 
+              placeholder="अगर कस्टमर पूछे डिस्काउंट कितना है... अगर बोले बाद में कॉल करो..." 
+              style={{ fontSize: '0.85rem', lineHeight: '1.5' }}
+            />
+          </div>
+
+          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.85rem', fontWeight: '700', fontSize: '0.95rem' }}>
+            {editingId ? '💾 Update Voice Agent' : '🚀 Permanently Save & Deploy AI Voice Agent'}
           </button>
         </form>
       </div>
 
-      {/* Active Agents List */}
+      {/* Saved & Deployed Agents List */}
       <div>
-        <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Active Deployed Voice Agents ({agents.length})</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
+        <div className="flex justify-between items-center mb-4">
+          <h2 style={{ fontSize: '1.25rem', margin: 0 }}>
+            Active Saved Voice Agents ({agents.length})
+          </h2>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            Permanently saved in CRM database. Available in Bulk Campaigns.
+          </span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem' }}>
           {agents.map(ag => (
-            <div className="card" key={ag.id} style={{ padding: '1.5rem' }}>
-              <div className="flex justify-between items-center mb-3">
-                <h3 style={{ margin: 0, fontSize: '1.05rem' }}>{ag.name}</h3>
-                <span className="badge success">{ag.callType.includes('Outbound') ? 'Outbound' : 'Inbound'}</span>
+            <div className="card" key={ag.id} style={{ padding: '1.5rem', border: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff' }}>{ag.name}</h3>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--accent-green)', fontWeight: '600' }}>{ag.useCase}</span>
+                  </div>
+                  <span className="badge primary">{ag.voice}</span>
+                </div>
+
+                <div style={{ background: '#0a0a12', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', margin: '0.75rem 0', fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+                  <strong style={{ color: '#fff', display: 'block', marginBottom: '2px' }}>Opening Script:</strong>
+                  "{ag.script}"
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                  <span className="badge warning">Speed: {ag.speed || '1.0x'}</span>
+                  <span className="badge info">Tone: {ag.pitch || 'Warm'}</span>
+                  <span className="badge success">Barge-in: {ag.bargeIn !== false ? 'Active' : 'Off'}</span>
+                </div>
               </div>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.25rem', lineHeight: '1.5' }}>
-                {ag.description}
-              </p>
-              <div className="flex justify-between items-center pt-3" style={{ borderTop: '1px solid var(--border-light)', fontSize: '0.8125rem' }}>
-                <span style={{ color: 'var(--accent-purple)', fontWeight: '600' }}>{ag.voice}</span>
-                <span className="badge info">{ag.useCase}</span>
+
+              <div className="flex justify-between items-center pt-3" style={{ borderTop: '1px solid var(--border-light)' }}>
+                <Link 
+                  href={`/campaigns?agentId=${ag.id}`}
+                  className="btn btn-primary"
+                  style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem', fontWeight: '700' }}
+                >
+                  🚀 Use in Campaign
+                </Link>
+
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button 
+                    onClick={() => handleEdit(ag)}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem' }}
+                  >
+                    ✏️ Edit
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(ag.id, ag.name)}
+                    className="btn btn-secondary"
+                    style={{ fontSize: '0.75rem', padding: '0.35rem 0.65rem', borderColor: 'var(--accent-red)', color: 'var(--accent-red)' }}
+                  >
+                    🗑️ Delete
+                  </button>
+                </div>
               </div>
             </div>
           ))}

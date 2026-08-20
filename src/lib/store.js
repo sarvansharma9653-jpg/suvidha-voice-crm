@@ -4,6 +4,65 @@ const isBrowser = typeof window !== 'undefined';
 
 let currentUserId = 'default';
 
+export const initialDefaultAgents = [
+  {
+    id: 'ag_pooja',
+    name: 'Pooja - Real Estate & Luxury Sales Closer',
+    voiceId: 'pooja',
+    voice: '👩 Pooja (Warm & Polite Closer)',
+    gender: 'Female',
+    speed: '1.0x (Normal)',
+    pitch: 'Warm & Friendly',
+    bargeIn: true,
+    callType: 'Outbound (AI calls leads)',
+    useCase: 'Real Estate & Property',
+    script: 'नमस्ते सर! मैं पूजा बात कर रही हूँ। हमारे पास 2 और 3 बीएचके लक्ज़री फ्लैट्स का एक्सक्लूसिव ऑफर है। क्या मैं आपको व्हाट्सएप पर ब्रोशर और प्राइसिंग भेज दूँ?',
+    objections: 'अगर कस्टमर बोले बजट कम है, तो 35 लाख वाले अफोर्डेबल विकल्प बताएं। अगर बोले बिजी हूँ, तो शाम 6 बजे फॉलो-अप शेड्यूल करें।'
+  },
+  {
+    id: 'ag_aarav',
+    name: 'Aarav - Pre-Approved Loans & Finance Advisor',
+    voiceId: 'aarav',
+    voice: '👨 Aarav (Confident Finance Specialist)',
+    gender: 'Male',
+    speed: '1.0x (Normal)',
+    pitch: 'Professional & Trustworthy',
+    bargeIn: true,
+    callType: 'Outbound (AI calls leads)',
+    useCase: 'Loans & Banking',
+    script: 'नमस्ते! मैं आरव बात कर रहा हूँ। आपके नंबर पर 5 लाख तक का प्री-अप्रूव्ड पर्सनल लोन सबसे कम ब्याज दर पर अप्रूव हुआ है। क्या आपको फंड्स की जरूरत है?',
+    objections: 'अगर कस्टमer पूछे ब्याज दर क्या है, तो 9.99% से शुरू बताएं। अगर इंटरेस्टेड हो, तो तुरंत पैन और आधार की डिटेल व्हाट्सएप करने को कहें।'
+  },
+  {
+    id: 'ag_swara',
+    name: 'Swara - Client Support & Retention Manager',
+    voiceId: 'swara',
+    voice: '👩 Swara (Persuasive Support Expert)',
+    gender: 'Female',
+    speed: '0.9x (Slow & Clear)',
+    pitch: 'Empathetic & Polite',
+    bargeIn: true,
+    callType: 'Inbound & Outbound',
+    useCase: 'Customer Support & Retention',
+    script: 'नमस्ते! मैं स्वरा बात कर रही हूँ। हम यह सुनिश्चित करने के लिए कॉल कर रहे हैं कि आपकी सर्विस पूरी तरह से सही चल रही है। क्या आपको किसी सहायता की आवश्यकता है?',
+    objections: 'अगर कोई शिकायत हो तो तुरंत टिकट नंबर दर्ज करें और प्रायोरिटी सपोर्ट का आश्वासन दें।'
+  },
+  {
+    id: 'ag_madhur',
+    name: 'Madhur - High-Ticket B2B Growth Consultant',
+    voiceId: 'madhur',
+    voice: '👨 Madhur (Corporate Executive)',
+    gender: 'Male',
+    speed: '1.1x (Energetic)',
+    pitch: 'Authoritative Corporate',
+    bargeIn: true,
+    callType: 'Outbound (AI calls leads)',
+    useCase: 'B2B Sales & Digital Marketing',
+    script: 'नमस्ते सर! मैं मधुर बात कर रहा हूँ। हम आपके बिजनेस की सेल्स और सोशल मीडिया लीड्स को 3 गुना करने में मदद कर सकते हैं। क्या आप 2 मिनट बात कर सकते हैं?',
+    objections: 'अगर क्लाइंट पूछे कंपनी का नाम, तो सुविधा ग्रोथ लैब्स बताएं और फ्री ऑडिट कॉल ऑफर करें।'
+  }
+];
+
 export const store = {
   // Set active tenant user ID
   setUserId: (userId) => {
@@ -18,7 +77,62 @@ export const store = {
     return currentUserId;
   },
 
-  // 1. Contacts (Scoped by User ID)
+  // 1. Voice Agents (Scoped by User ID & Persisted Permanently)
+  getAgents: (userId) => {
+    if (!isBrowser) return initialDefaultAgents;
+    const uid = userId || store.getUserId();
+    const key = `suvidha_custom_agents_${uid}`;
+    const data = localStorage.getItem(key) || localStorage.getItem('suvidha_custom_agents');
+    
+    if (!data) {
+      localStorage.setItem(key, JSON.stringify(initialDefaultAgents));
+      localStorage.setItem('suvidha_custom_agents', JSON.stringify(initialDefaultAgents));
+      return initialDefaultAgents;
+    }
+    try {
+      return JSON.parse(data);
+    } catch(e) {
+      return initialDefaultAgents;
+    }
+  },
+
+  addAgent: (agent, userId) => {
+    if (!isBrowser) return;
+    const uid = userId || store.getUserId();
+    const key = `suvidha_custom_agents_${uid}`;
+    const agents = store.getAgents(uid);
+    const newAgent = { 
+      ...agent, 
+      id: agent.id || ('ag_' + Date.now()),
+      createdAt: new Date().toISOString()
+    };
+    const updated = [newAgent, ...agents.filter(a => a.id !== newAgent.id)];
+    localStorage.setItem(key, JSON.stringify(updated));
+    localStorage.setItem('suvidha_custom_agents', JSON.stringify(updated));
+    return newAgent;
+  },
+
+  updateAgent: (id, updates, userId) => {
+    if (!isBrowser) return;
+    const uid = userId || store.getUserId();
+    const key = `suvidha_custom_agents_${uid}`;
+    const agents = store.getAgents(uid);
+    const updated = agents.map(a => a.id === id ? { ...a, ...updates } : a);
+    localStorage.setItem(key, JSON.stringify(updated));
+    localStorage.setItem('suvidha_custom_agents', JSON.stringify(updated));
+  },
+
+  deleteAgent: (id, userId) => {
+    if (!isBrowser) return;
+    const uid = userId || store.getUserId();
+    const key = `suvidha_custom_agents_${uid}`;
+    const agents = store.getAgents(uid);
+    const filtered = agents.filter(a => a.id !== id);
+    localStorage.setItem(key, JSON.stringify(filtered));
+    localStorage.setItem('suvidha_custom_agents', JSON.stringify(filtered));
+  },
+
+  // 2. Contacts (Scoped by User ID)
   getContacts: (userId) => {
     if (!isBrowser) return [];
     const uid = userId || store.getUserId();
@@ -26,9 +140,8 @@ export const store = {
     const data = localStorage.getItem(key);
     
     if (!data) {
-      // If default/first-time admin, load mock data, otherwise clean starter for new clients
       const initial = uid === 'default' ? mockContacts : [
-        { id: '1', name: 'Sample Lead', phone: '+919876543210', email: 'lead@example.com', stage: 'New', status: 'New', lastCalled: null }
+        { id: '1', name: 'Sample Lead', phone: '+917707978068', email: 'lead@example.com', stage: 'New', status: 'New', lastCalled: null }
       ];
       localStorage.setItem(key, JSON.stringify(initial));
       return initial;
@@ -70,7 +183,7 @@ export const store = {
     localStorage.setItem(key, JSON.stringify(filtered));
   },
 
-  // 2. Campaigns (Scoped by User ID)
+  // 3. Campaigns (Scoped by User ID)
   getCampaigns: (userId) => {
     if (!isBrowser) return [];
     const uid = userId || store.getUserId();
@@ -111,7 +224,7 @@ export const store = {
     localStorage.setItem(key, JSON.stringify(updated));
   },
 
-  // 3. Calls & Transcripts (Scoped by User ID)
+  // 4. Calls & Transcripts (Scoped by User ID)
   getCalls: (userId) => {
     if (!isBrowser) return [];
     const uid = userId || store.getUserId();
@@ -140,7 +253,7 @@ export const store = {
     return newCall;
   },
 
-  // 4. Follow-up Queue (Scoped by User ID)
+  // 5. Follow-up Queue (Scoped by User ID)
   getFollowups: (userId) => {
     if (!isBrowser) return [];
     const uid = userId || store.getUserId();
@@ -165,7 +278,7 @@ export const store = {
     return newFollowup;
   },
 
-  // 5. Notifications (Scoped by User ID)
+  // 6. Notifications (Scoped by User ID)
   getNotifications: (userId) => {
     if (!isBrowser) return [];
     const uid = userId || store.getUserId();
