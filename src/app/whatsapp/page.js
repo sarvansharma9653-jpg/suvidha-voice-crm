@@ -5,23 +5,23 @@ import { store } from '@/lib/store';
 export default function WhatsAppPage() {
   const [adminNumber, setAdminNumber] = useState('');
   const [productName, setProductName] = useState('Suvidha Luxury 2 & 3 BHK Apartments');
-  const [productPricing, setProductPricing] = useState('Starting at ₹45 Lakhs with 10% Booking Offer');
+  const [productPricing, setProductPricing] = useState('Starting at �?5 Lakhs with 10% Booking Offer');
   const [brochureUrl, setBrochureUrl] = useState('https://suvidha-voice-crm.vercel.app/sample_brochure.pdf');
   const [productImageUrl, setProductImageUrl] = useState('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800');
-  const [whatsappMessageTemplate, setWhatsappMessageTemplate] = useState('नमस्ते! सुविधा AI से बात करने के लिए धन्यवाद। यहाँ हमारे प्रोजेक्ट की पूरी डिटेल्स, प्राइसिंग और ब्रोशर है:\n\n📌 ऑफर: 2 & 3 BHK Luxury Apartments\n💰 प्राइसिंग: ₹45 Lakhs onwards\n📄 ब्रोशर: https://suvidha-voice-crm.vercel.app/sample_brochure.pdf\n\nक्या आप इस वीकेंड साइट विजिट के लिए फ्री हैं?');
+  const [whatsappMessageTemplate, setWhatsappMessageTemplate] = useState('नमस्ते! सुविधा AI से बा�?करने के लि�?धन्यवाद। यहाँ हमार�?प्रोजेक्�?की पूरी डिटेल्�? प्राइसिं�?और ब्रोशर है:\n\n📌 ऑफ�? 2 & 3 BHK Luxury Apartments\n💰 प्राइसिं�? �?5 Lakhs onwards\n📄 ब्रोशर: https://suvidha-voice-crm.vercel.app/sample_brochure.pdf\n\nक्या आप इस वीकेंड साइट विजि�?के लि�?फ्री है�?');
   const [autoSendOnCallEnd, setAutoSendOnCallEnd] = useState(true);
 
   // Quick Direct WhatsApp Sender State
-  const [directPhone, setDirectPhone] = useState('+917707978068');
+  const [directPhone, setDirectPhone] = useState('+918739904737');
   const [directMsg, setDirectMsg] = useState('');
   const [status, setStatus] = useState(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const uid = localStorage.getItem('suvidha_auth_user_id') || 'default';
-      setAdminNumber(localStorage.getItem(`adminNumber_${uid}`) || localStorage.getItem('adminNumber') || '+917707978068');
+      setAdminNumber(localStorage.getItem(`adminNumber_${uid}`) || localStorage.getItem('adminNumber') || '+918739904737');
       setProductName(localStorage.getItem(`productName_${uid}`) || localStorage.getItem('productName') || 'Suvidha Luxury 2 & 3 BHK Apartments');
-      setProductPricing(localStorage.getItem(`productPricing_${uid}`) || localStorage.getItem('productPricing') || 'Starting at ₹45 Lakhs with 10% Booking Offer');
+      setProductPricing(localStorage.getItem(`productPricing_${uid}`) || localStorage.getItem('productPricing') || 'Starting at �?5 Lakhs with 10% Booking Offer');
       setBrochureUrl(localStorage.getItem(`brochureUrl_${uid}`) || localStorage.getItem('brochureUrl') || 'https://suvidha-voice-crm.vercel.app/sample_brochure.pdf');
       setProductImageUrl(localStorage.getItem(`productImageUrl_${uid}`) || localStorage.getItem('productImageUrl') || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800');
       
@@ -86,9 +86,9 @@ export default function WhatsAppPage() {
           💡 Voice Calling DID vs WhatsApp Number (Kaise Kaam Karta Hai?):
         </div>
         <div style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
-          • <strong>Calling Number (+917965854263):</strong> Yeh Vobiz ka Voice-Only DID hai jo customer ko phone call karne ke liye use hota hai.
+          �?<strong>Calling Number (+917965854263):</strong> Yeh Vobiz ka Voice-Only DID hai jo customer ko phone call karne ke liye use hota hai.
           <br />
-          • <strong>WhatsApp Delivery:</strong> AI call khatam hone par system customer ke number par direct <strong>WhatsApp Brochure, Photos aur Pricing Link</strong> deliver karta hai, aur aapke <strong>Admin WhatsApp Number</strong> par instant Hot Lead Alert bhejta hai!
+          �?<strong>WhatsApp Delivery:</strong> AI call khatam hone par system customer ke number par direct <strong>WhatsApp Brochure, Photos aur Pricing Link</strong> deliver karta hai, aur aapke <strong>Admin WhatsApp Number</strong> par instant Hot Lead Alert bhejta hai!
         </div>
       </div>
 
@@ -127,7 +127,7 @@ export default function WhatsAppPage() {
                 className="form-control" 
                 value={productPricing} 
                 onChange={e => setProductPricing(e.target.value)} 
-                placeholder="e.g. Starting at ₹45 Lakhs with 10% Booking Offer" 
+                placeholder="e.g. Starting at �?5 Lakhs with 10% Booking Offer" 
               />
             </div>
 
@@ -168,7 +168,7 @@ export default function WhatsAppPage() {
             {/* Toggle Auto Send */}
             <div style={{ background: '#0a0a10', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid var(--border-light)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: '0.825rem', color: '#fff', fontWeight: '600' }}>
-                ⚡ Auto-Send WhatsApp on Call Finish:
+                �?Auto-Send WhatsApp on Call Finish:
               </span>
               <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.825rem', color: 'var(--accent-green)', fontWeight: 'bold' }}>
                 <input type="checkbox" checked={autoSendOnCallEnd} onChange={e => setAutoSendOnCallEnd(e.target.checked)} />
@@ -202,7 +202,7 @@ export default function WhatsAppPage() {
                 className="form-control" 
                 value={adminNumber} 
                 onChange={e => setAdminNumber(e.target.value)} 
-                placeholder="e.g. +91 7707978068" 
+                placeholder="e.g. +91 8739904737" 
               />
             </div>
 
@@ -230,7 +230,7 @@ export default function WhatsAppPage() {
                 className="form-control" 
                 value={directPhone} 
                 onChange={e => setDirectPhone(e.target.value)} 
-                placeholder="e.g. +91 7707978068" 
+                placeholder="e.g. +91 8739904737" 
               />
             </div>
 

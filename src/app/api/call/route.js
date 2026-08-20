@@ -6,7 +6,7 @@ export async function POST(req) {
     const { phoneNumber, contactName, campaignId, systemPrompt, script, provider } = body;
 
     const selectedProvider = provider || 'vobiz';
-    const targetNumber = phoneNumber || '+917707978068';
+    const targetNumber = phoneNumber || '+918739904737';
 
     console.log(`📞 Dispatching Outbound Call via Provider: ${selectedProvider} to ${contactName || 'Lead'} (${targetNumber})...`);
 
