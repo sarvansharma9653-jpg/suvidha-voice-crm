@@ -15,10 +15,14 @@ export default function VoiceAgentStudioPage() {
   const [callType, setCallType] = useState('Outbound (AI calls leads)');
   const [useCase, setUseCase] = useState('Real Estate Sales');
   const [script, setScript] = useState('नमस्कार जी! मैं Pooja, Shree Aangan Developer की तरफ से बात कर रही हूँ। आपने property से related information में interest दिखाया था, उसी के regarding आपसे बात कर रही हूँ। क्या अभी 2 मिनट बात करना convenient रहेगा?');
-  const [objections, setObjections] = useState('अगर Customer बात करने के लिए तैयार है: "Thank you जी। सबसे पहले मैं आपकी requirement समझना चाहूँगी ताकि आपको आपकी ज़रूरत के हिसाब से सही property option की जानकारी दी जा सके।" अगर पूछे प्राइस कितना है तो बताएं कि 45 लाख से शुरू है और व्हाट्सएप पर ब्रोशर भेजने को कहें।');
+  const [objections, setObjections] = useState('अगर Customer बात करने के लिए तैयार है: "Thank you जी। सबसे पहले मैं आपकी requirement समझना चाहूँगी ताकि आपको आपकी ज़रूरत के हिसाब से सही property option की जानकारी दी जा सके।" अगर पूछे प्राइस कितना है तो बताएं कि 45 लाख से शुरू है।');
+  
+  // Call Transfer to Admin / Senior Manager
+  const [enableTransfer, setEnableTransfer] = useState(true);
+  const [adminTransferNumber, setAdminTransferNumber] = useState('+917707978068');
 
   // Live Q&A Simulation State (Connected to Real Gemini LLM)
-  const [testQuestion, setTestQuestion] = useState('price batao');
+  const [testQuestion, setTestQuestion] = useState('Senior se baat karao');
   const [testAnswer, setTestAnswer] = useState('');
   const [simulating, setSimulating] = useState(false);
 
@@ -37,6 +41,11 @@ export default function VoiceAgentStudioPage() {
 
   useEffect(() => {
     setAgents(store.getAgents());
+    if (typeof window !== 'undefined') {
+      const uid = localStorage.getItem('suvidha_auth_user_id') || 'default';
+      const savedAdmin = localStorage.getItem(`adminNumber_${uid}`) || localStorage.getItem('adminNumber');
+      if (savedAdmin) setAdminTransferNumber(savedAdmin);
+    }
   }, []);
 
   const playVoiceSample = async (voiceId, customText) => {
@@ -71,14 +80,28 @@ export default function VoiceAgentStudioPage() {
     }
   };
 
-  // REAL LLM INTELLIGENT Q&A SIMULATION
+  // REAL LLM INTELLIGENT Q&A SIMULATION WITH CALL TRANSFER
   const handleTestAgentQuestion = async () => {
     if (!testQuestion.trim()) return;
     setSimulating(true);
     setTestAnswer('');
 
+    const lower = testQuestion.toLowerCase();
+    const isTransferReq = lower.includes('senior') || lower.includes('manager') || lower.includes('admin') || lower.includes('human') || lower.includes('insaan') || lower.includes('transfer') || lower.includes('baat karao');
+
+    if (enableTransfer && isTransferReq) {
+      const vObj = voiceLibrary.find(v => v.id === selectedVoice) || voiceLibrary[0];
+      const reply = vObj.gender === 'Male'
+        ? `जी बिल्कुल सर! मैं आपकी कॉल तुरंत हमारे सीनियर मैनेजर (${adminTransferNumber}) को ट्रांसफर कर रहा हूँ। कृपया लाइन पर बने रहें!`
+        : `जी बिल्कुल सर! मैं आपकी कॉल तुरंत हमारे सीनियर मैनेजर (${adminTransferNumber}) को ट्रांसफर कर रही हूँ। कृपया लाइन पर बने रहें!`;
+      
+      setTestAnswer(reply);
+      setSimulating(false);
+      await playVoiceSample(selectedVoice, reply);
+      return;
+    }
+
     try {
-      // Call Real LLM API with the user's custom script, intro and objections
       const res = await fetch('/api/agent-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -96,7 +119,6 @@ export default function VoiceAgentStudioPage() {
       setTestAnswer(reply);
       setSimulating(false);
 
-      // Speak back the LLM generated response in real-time
       await playVoiceSample(selectedVoice, reply);
     } catch (e) {
       console.error('LLM Simulation Error:', e);
@@ -117,6 +139,8 @@ export default function VoiceAgentStudioPage() {
       speed,
       pitch,
       bargeIn,
+      enableTransfer,
+      adminTransferNumber: adminTransferNumber.trim(),
       callType,
       useCase: useCase.trim(),
       script: script.trim(),
@@ -143,6 +167,8 @@ export default function VoiceAgentStudioPage() {
     setSpeed(agent.speed || '1.0x (Normal)');
     setPitch(agent.pitch || 'Warm & Friendly');
     setBargeIn(agent.bargeIn !== false);
+    setEnableTransfer(agent.enableTransfer !== false);
+    setAdminTransferNumber(agent.adminTransferNumber || '+917707978068');
     setCallType(agent.callType || 'Outbound (AI calls leads)');
     setUseCase(agent.useCase || '');
     setScript(agent.script || agent.description || '');
@@ -312,10 +338,38 @@ export default function VoiceAgentStudioPage() {
             <span className="badge success" style={{ fontSize: '0.72rem' }}>सक्रिय (Active)</span>
           </div>
 
+          {/* CALL TRANSFER TO ADMIN / SENIOR MANAGER */}
+          <div style={{ background: '#0a0a14', padding: '1.25rem', borderRadius: '10px', border: '1px solid rgba(59, 130, 246, 0.3)', marginBottom: '1.5rem' }}>
+            <div className="flex justify-between items-center mb-2">
+              <div style={{ fontWeight: '700', fontSize: '0.925rem', color: 'var(--accent-blue)' }}>
+                📞 5. Live Call Transfer to Admin / Senior Manager (कॉल ट्रांसफर)
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.8rem', color: 'var(--accent-green)', fontWeight: 'bold' }}>
+                <input type="checkbox" checked={enableTransfer} onChange={e => setEnableTransfer(e.target.checked)} />
+                सक्रिय (Active)
+              </label>
+            </div>
+            
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '0.85rem' }}>
+              जब कस्टमर बोलेगा <em>"सीनियर/मैनेजर से बात कराओ"</em> ya <em>"कस्टमर केयर ट्रांसफर करो"</em>, तो AI तुरंत कॉल इस नंबर पर ट्रांसफर कर देगा:
+            </p>
+
+            <div className="form-group" style={{ maxWidth: '350px' }}>
+              <label style={{ fontSize: '0.825rem', fontWeight: '600' }}>Admin Mobile Number (+91)</label>
+              <input 
+                type="text" 
+                className="form-control" 
+                value={adminTransferNumber} 
+                onChange={e => setAdminTransferNumber(e.target.value)} 
+                placeholder="e.g. +91 7707978068" 
+              />
+            </div>
+          </div>
+
           {/* Custom Call Script */}
           <div className="form-group mb-4">
             <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>
-              5. AI क्या बोलेगा (Opening Call Script) <span style={{ color: 'var(--accent-green)' }}>*</span>
+              6. AI क्या बोलेगा (Opening Call Script) <span style={{ color: 'var(--accent-green)' }}>*</span>
             </label>
             <textarea 
               required
@@ -331,7 +385,7 @@ export default function VoiceAgentStudioPage() {
           {/* Objection Handling */}
           <div className="form-group mb-6">
             <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>
-              6. कस्टमर के सवालों के जवाब (FAQ / Objection Rules)
+              7. कस्टमर के सवालों के जवाब (FAQ / Objection Rules)
             </label>
             <textarea 
               rows="3"
@@ -347,12 +401,12 @@ export default function VoiceAgentStudioPage() {
           <div style={{ background: '#0a0a14', padding: '1.25rem', borderRadius: '10px', border: '1px solid var(--border-light)', marginBottom: '1.75rem' }}>
             <div className="flex justify-between items-center mb-2">
               <div style={{ fontWeight: '700', color: 'var(--accent-purple)', fontSize: '0.9rem' }}>
-                🧠 Step 3: लाइव AI LLM जवाब सुनकर टेस्ट करें:
+                🧠 Step 3: लाइव AI LLM जवाब व कॉल ट्रांसफर टेस्ट करें:
               </div>
-              <span className="badge primary" style={{ fontSize: '0.68rem' }}>Google Gemini 2.0 / 3.6 LLM Active</span>
+              <span className="badge primary" style={{ fontSize: '0.68rem' }}>Google Gemini LLM Active</span>
             </div>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginBottom: '0.75rem' }}>
-              ऊपर आपके लिखे हुए स्क्रिप्ट और कंपनी डिटेल्स के आधार पर AI लाइव सोचकर जवाब देगा:
+              ऊपर आपके लिखे हुए स्क्रिप्ट, कंपनी डिटेल्स या कॉल ट्रांसफर (e.g. <em>"Senior se baat karao"</em>) टेस्ट करें:
             </p>
 
             <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem' }}>
@@ -361,7 +415,7 @@ export default function VoiceAgentStudioPage() {
                 className="form-control" 
                 value={testQuestion} 
                 onChange={e => setTestQuestion(e.target.value)} 
-                placeholder="कस्टमर का सवाल लिखें e.g. price batao" 
+                placeholder="कस्टमर का सवाल लिखें e.g. Senior se baat karao ya Price batao" 
               />
               <button 
                 type="button" 
@@ -420,6 +474,7 @@ export default function VoiceAgentStudioPage() {
                 <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', fontSize: '0.72rem', color: 'var(--text-muted)', marginBottom: '0.85rem' }}>
                   <span className="badge warning">{ag.speed || '1.0x'}</span>
                   <span className="badge info">{ag.pitch || 'Warm'}</span>
+                  {ag.adminTransferNumber && <span className="badge success">Transfer: {ag.adminTransferNumber}</span>}
                 </div>
               </div>
 
