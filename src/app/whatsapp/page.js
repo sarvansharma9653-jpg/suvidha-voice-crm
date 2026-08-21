@@ -46,6 +46,58 @@ https://www.instagram.com/shreeaangandevelopers/
 📞 Site Visit Free है — कोई Commitment नहीं!
 एक बार देखिए, खुद फैसला कीजिए! 🏡✨`;
 
+  const [productName, setProductName] = useState(defaultShreeName);
+  const [productPricing, setProductPricing] = useState(defaultShreePrice);
+  const [brochureUrl, setBrochureUrl] = useState(defaultShreeBrochure);
+  const [productImageUrl, setProductImageUrl] = useState(defaultShreeImg);
+  const [whatsappMessageTemplate, setWhatsappMessageTemplate] = useState(defaultShreeTpl);
+  const [adminNumber, setAdminNumber] = useState('+918739904737');
+
+  // WhatsApp QR Gateway Configuration
+  const [ultraMsgInstanceId, setUltraMsgInstanceId] = useState('');
+  const [ultraMsgToken, setUltraMsgToken] = useState('');
+  const [evolutionApiUrl, setEvolutionApiUrl] = useState('');
+  const [evolutionApiKey, setEvolutionApiKey] = useState('');
+  const [metaAccessToken, setMetaAccessToken] = useState('');
+  const [metaPhoneNumberId, setMetaPhoneNumberId] = useState('');
+
+  const [testNumber, setTestNumber] = useState('+918739904737');
+  const [sendingTest, setSendingTest] = useState(false);
+  const [testResult, setTestResult] = useState(null);
+  const [showSavedToast, setShowSavedToast] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const uid = localStorage.getItem('suvidha_auth_user_id') || 'default';
+      const savedAdmin = localStorage.getItem(`adminNumber_${uid}`) || localStorage.getItem('adminNumber');
+      if (savedAdmin) setAdminNumber(savedAdmin);
+
+      const savedName = localStorage.getItem(`productName_${uid}`) || localStorage.getItem('productName');
+      if (savedName) setProductName(savedName);
+
+      const savedPrice = localStorage.getItem(`productPricing_${uid}`) || localStorage.getItem('productPricing');
+      if (savedPrice) setProductPricing(savedPrice);
+
+      const savedBrochure = localStorage.getItem(`brochureUrl_${uid}`) || localStorage.getItem('brochureUrl');
+      if (savedBrochure) setBrochureUrl(savedBrochure);
+
+      const savedTpl = localStorage.getItem(`whatsappMessageTemplate_${uid}`) || localStorage.getItem('whatsappMessageTemplate');
+      if (savedTpl) setWhatsappMessageTemplate(savedTpl);
+
+      const savedUInst = localStorage.getItem(`ultraMsgInstanceId_${uid}`) || localStorage.getItem('ultraMsgInstanceId');
+      if (savedUInst) setUltraMsgInstanceId(savedUInst);
+
+      const savedUTok = localStorage.getItem(`ultraMsgToken_${uid}`) || localStorage.getItem('ultraMsgToken');
+      if (savedUTok) setUltraMsgToken(savedUTok);
+
+      const savedEvoUrl = localStorage.getItem(`evolutionApiUrl_${uid}`) || localStorage.getItem('evolutionApiUrl');
+      if (savedEvoUrl) setEvolutionApiUrl(savedEvoUrl);
+
+      const savedEvoKey = localStorage.getItem(`evolutionApiKey_${uid}`) || localStorage.getItem('evolutionApiKey');
+      if (savedEvoKey) setEvolutionApiKey(savedEvoKey);
+    }
+  }, []);
+
   const handleFillShreeAangan = () => {
     setProductName(defaultShreeName);
     setProductPricing(defaultShreePrice);
@@ -70,38 +122,12 @@ https://www.instagram.com/shreeaangandevelopers/
       localStorage.setItem('whatsappMessageTemplate', defaultShreeTpl);
     }
 
-    setStatus({ type: 'success', message: '🎉 Shree Aangan Developers WhatsApp Catalog & Template Loaded & Saved!' });
-    setTimeout(() => setStatus(null), 4000);
+    setShowSavedToast(true);
+    setTimeout(() => setShowSavedToast(false), 4000);
   };
-  const [adminNumber, setAdminNumber] = useState('');
-  const [productName, setProductName] = useState('The Shree Aangan - 85 Acres JDA & RERA Township (Tonk Road, Jaipur)');
-  const [productPricing, setProductPricing] = useState('₹800 – ₹2,750 / sq.ft (EMI Available)');
-  const [brochureUrl, setBrochureUrl] = useState('https://drive.google.com/file/d/103owbyObLS3CVyerjrP_Ryr_OVlU2QDG/view?usp=sharing');
-  const [productImageUrl, setProductImageUrl] = useState('https://theshreeaangan.com/images/og-image.jpg');
-  const [whatsappMessageTemplate, setWhatsappMessageTemplate] = useState("नमस्ते जी! 🙏\n\nमैं Pooja बोल रही हूँ, The Shree Aangan Developers की तरफ से।\n\nअभी आपसे बात हुई थी — जैसा वादा किया था, यह रही हमारे 85 Acres JDA & RERA Approved Township की पूरी जानकारी:\n\n🏡 *THE SHREE AANGAN DEVELOPERS*\n📍 Location: Chaksu, Tonk Road, Jaipur (NH-12 पर)\n✅ RERA Reg No: RAJ/P/2026/4660 | JDA Approved\n📐 Project Size: 85 Acres Gated Township\n💰 Price: ₹800 – ₹2,750 / sq.ft (EMI Available)\n📈 Annual Growth: 18% to 25% (Jaipur Metro Phase 2 & Ring Road Connected)\n\n📍 *Office Maps:* https://maps.app.goo.gl/1PG2inY6tC69u2br7\n📍 *Project Site Maps:* https://maps.app.goo.gl/XsLcKe4BaHuZFT759\n🌐 *Website:* https://www.theshreeaangan.com/\n📸 *Instagram:* https://www.instagram.com/shreeaangandevelopers/\n📄 *Brochure PDF:* https://drive.google.com/file/d/103owbyObLS3CVyerjrP_Ryr_OVlU2QDG/view?usp=sharing\n\n📞 Site Visit Free है — कोई Commitment नहीं! क्या इस वीकेंड आप आ सकते हैं? 🏡✨");
-  const [autoSendOnCallEnd, setAutoSendOnCallEnd] = useState(true);
 
-  // Quick Direct WhatsApp Sender State
-  const [directPhone, setDirectPhone] = useState('+918739904737');
-  const [directMsg, setDirectMsg] = useState('');
-  const [status, setStatus] = useState(null);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const uid = localStorage.getItem('suvidha_auth_user_id') || 'default';
-      setAdminNumber(localStorage.getItem(`adminNumber_${uid}`) || localStorage.getItem('adminNumber') || '+918739904737');
-      setProductName(localStorage.getItem(`productName_${uid}`) || localStorage.getItem('productName') || 'Suvidha Luxury 2 & 3 BHK Apartments');
-      setProductPricing(localStorage.getItem(`productPricing_${uid}`) || localStorage.getItem('productPricing') || 'Starting at ?5 Lakhs with 10% Booking Offer');
-      setBrochureUrl(localStorage.getItem(`brochureUrl_${uid}`) || localStorage.getItem('brochureUrl') || 'https://suvidha-voice-crm.vercel.app/sample_brochure.pdf');
-      setProductImageUrl(localStorage.getItem(`productImageUrl_${uid}`) || localStorage.getItem('productImageUrl') || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=800');
-      
-      const savedTpl = localStorage.getItem(`whatsappMessageTemplate_${uid}`) || localStorage.getItem('whatsappMessageTemplate');
-      if (savedTpl) setWhatsappMessageTemplate(savedTpl);
-    }
-  }, []);
-
-  const handleSaveCatalog = (e) => {
-    e.preventDefault();
+  const handleSaveSettings = (e) => {
+    if (e) e.preventDefault();
     if (typeof window !== 'undefined') {
       const uid = localStorage.getItem('suvidha_auth_user_id') || 'default';
       localStorage.setItem(`adminNumber_${uid}`, adminNumber.trim());
@@ -116,220 +142,197 @@ https://www.instagram.com/shreeaangandevelopers/
       localStorage.setItem('productImageUrl', productImageUrl.trim());
       localStorage.setItem(`whatsappMessageTemplate_${uid}`, whatsappMessageTemplate.trim());
       localStorage.setItem('whatsappMessageTemplate', whatsappMessageTemplate.trim());
+
+      localStorage.setItem(`ultraMsgInstanceId_${uid}`, ultraMsgInstanceId.trim());
+      localStorage.setItem('ultraMsgInstanceId', ultraMsgInstanceId.trim());
+      localStorage.setItem(`ultraMsgToken_${uid}`, ultraMsgToken.trim());
+      localStorage.setItem('ultraMsgToken', ultraMsgToken.trim());
+
+      localStorage.setItem(`evolutionApiUrl_${uid}`, evolutionApiUrl.trim());
+      localStorage.setItem('evolutionApiUrl', evolutionApiUrl.trim());
+      localStorage.setItem(`evolutionApiKey_${uid}`, evolutionApiKey.trim());
+      localStorage.setItem('evolutionApiKey', evolutionApiKey.trim());
     }
-    setStatus({ type: 'success', message: '🎉 WhatsApp Product Brochure Catalog & Auto-Dispatch Settings Saved!' });
-    setTimeout(() => setStatus(null), 4000);
+
+    setShowSavedToast(true);
+    setTimeout(() => setShowSavedToast(false), 4000);
   };
 
-  const handleSendDirectWhatsApp = () => {
-    if (!directPhone) {
-      alert('Please enter recipient phone number (+91...)');
+  const handleSendTestMessage = async () => {
+    if (!testNumber.trim()) {
+      alert('Please enter a valid phone number!');
       return;
     }
-    const msgToSend = directMsg || whatsappMessageTemplate;
-    const cleanNum = directPhone.replace(/[^0-9]/g, '');
-    const target = cleanNum.startsWith('91') ? cleanNum : `91${cleanNum.replace(/^0+/, '')}`;
+    setSendingTest(true);
+    setTestResult(null);
 
-    const waLink = `https://api.whatsapp.com/send?phone=${target}&text=${encodeURIComponent(msgToSend)}`;
-    window.open(waLink, '_blank');
-    setStatus({ type: 'success', message: `📲 Opening WhatsApp Chat with ${directPhone} to send brochure & details!` });
+    try {
+      const res = await fetch('/api/whatsapp/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: testNumber.trim(),
+          leadName: 'Customer',
+          message: whatsappMessageTemplate,
+          brochureUrl: brochureUrl,
+          ultraMsgInstanceId: ultraMsgInstanceId.trim(),
+          ultraMsgToken: ultraMsgToken.trim(),
+          evolutionApiUrl: evolutionApiUrl.trim(),
+          evolutionApiKey: evolutionApiKey.trim(),
+          metaAccessToken: metaAccessToken.trim(),
+          metaPhoneNumberId: metaPhoneNumberId.trim()
+        })
+      });
+
+      const data = await res.json();
+      setTestResult(data);
+
+      if (data.provider === 'whatsapp_direct' && data.directLink) {
+        window.open(data.directLink, '_blank');
+      }
+    } catch (e) {
+      setTestResult({ success: false, error: e.message });
+    } finally {
+      setSendingTest(false);
+    }
   };
 
   return (
-    <div style={{ maxWidth: '1100px' }}>
+    <div style={{ maxWidth: '1050px' }}>
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1>💬 WhatsApp Automation & Brochure Catalog</h1>
-          <button 
-          type="button" 
-          onClick={handleFillShreeAangan}
-          className="btn btn-secondary"
-          style={{ float: 'right', fontSize: '0.85rem', borderColor: 'var(--accent-green)', color: 'var(--accent-green)', fontWeight: 'bold' }}
+          <h1>💬 WhatsApp Automation & QR Gateway</h1>
+          <p className="subtitle">Send automated Shree Aangan brochures from your Admin number (+91 87399 04737)</p>
+        </div>
+
+        <button 
+          onClick={handleFillShreeAangan} 
+          className="btn btn-primary"
+          style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)' }}
         >
           ✨ Auto-Fill Shree Aangan Details
         </button>
-        <p className="subtitle">Send automated WhatsApp brochures & hot lead alerts immediately when AI call completes</p>
-        </div>
       </div>
 
-      {status && (
-        <div className="card mb-6" style={{ padding: '1rem', borderColor: status.type === 'success' ? 'var(--accent-green)' : 'var(--accent-red)', background: status.type === 'success' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)' }}>
-          {status.message}
+      {showSavedToast && (
+        <div className="card mb-6" style={{ background: 'rgba(16, 185, 129, 0.15)', borderColor: '#10b981', color: '#10b981', padding: '1rem 1.5rem' }}>
+          ✅ WhatsApp settings & Shree Aangan automation saved successfully!
         </div>
       )}
 
-      {/* HOW WHATSAPP MESSAGING WORKS EXPLANATION */}
-      <div className="card mb-6" style={{ padding: '1.25rem 1.5rem', background: 'rgba(59, 130, 246, 0.05)', borderColor: 'rgba(59, 130, 246, 0.25)' }}>
-        <div style={{ fontWeight: '700', fontSize: '0.95rem', color: 'var(--accent-blue)', marginBottom: '0.4rem' }}>
-          💡 Voice Calling DID vs WhatsApp Number (Kaise Kaam Karta Hai?):
+      {/* WHATSAPP QR GATEWAY PAIRING SECTION */}
+      <div className="card mb-6" style={{ border: '1px solid rgba(16, 185, 129, 0.4)', background: 'rgba(16, 185, 129, 0.04)' }}>
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10b981' }}>
+              📱 WhatsApp Web QR Gateway (Background Auto-Send)
+            </h3>
+            <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              Link your Admin number once via QR code. AI will auto-send messages in background without opening WhatsApp app!
+            </p>
+          </div>
+          <div className="badge" style={{ background: ultraMsgInstanceId ? 'rgba(16, 185, 129, 0.2)' : 'rgba(245, 158, 11, 0.2)', color: ultraMsgInstanceId ? '#10b981' : '#f59e0b' }}>
+            {ultraMsgInstanceId ? '🟢 Gateway Configured' : '🟡 1-Click Scan Required'}
+          </div>
         </div>
-        <div style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
-          ?<strong>Calling Number (+917965854263):</strong> Yeh Vobiz ka Voice-Only DID hai jo customer ko phone call karne ke liye use hota hai.
-          <br />
-          ?<strong>WhatsApp Delivery:</strong> AI call khatam hone par system customer ke number par direct <strong>WhatsApp Brochure, Photos aur Pricing Link</strong> deliver karta hai, aur aapke <strong>Admin WhatsApp Number</strong> par instant Hot Lead Alert bhejta hai!
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+          <div className="form-group">
+            <label className="label">UltraMsg Instance ID (Free QR Gateway)</label>
+            <input 
+              className="input"
+              value={ultraMsgInstanceId}
+              onChange={(e) => setUltraMsgInstanceId(e.target.value)}
+              placeholder="e.g. instance105234"
+            />
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              👉 Free QR code available at <a href="https://ultramsg.com" target="_blank" rel="noreferrer" style={{ color: '#10b981', textDecoration: 'underline' }}>ultramsg.com</a> (Takes 10 seconds to scan)
+            </span>
+          </div>
+
+          <div className="form-group">
+            <label className="label">UltraMsg Token</label>
+            <input 
+              className="input"
+              type="password"
+              value={ultraMsgToken}
+              onChange={(e) => setUltraMsgToken(e.target.value)}
+              placeholder="e.g. abcd1234efgh"
+            />
+          </div>
+        </div>
+
+        {/* TEST MESSAGE SENDER BOX */}
+        <div style={{ padding: '1rem', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)' }}>
+          <label className="label" style={{ fontWeight: 600 }}>🧪 Test Send Message from Admin Number</label>
+          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+            <input 
+              className="input"
+              value={testNumber}
+              onChange={(e) => setTestNumber(e.target.value)}
+              placeholder="+918739904737"
+              style={{ maxWidth: '260px' }}
+            />
+            <button 
+              onClick={handleSendTestMessage}
+              disabled={sendingTest}
+              className="btn btn-primary"
+              style={{ background: '#10b981' }}
+            >
+              {sendingTest ? 'Sending...' : '🚀 Send Test WhatsApp'}
+            </button>
+          </div>
+
+          {testResult && (
+            <div style={{ marginTop: '0.75rem', fontSize: '0.85rem', padding: '0.5rem 0.75rem', borderRadius: '6px', background: testResult.success ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)', color: testResult.success ? '#10b981' : '#ef4444' }}>
+              {testResult.success ? '🎉 Success! Message dispatched successfully to ' + testResult.to : '⚠️ Notice: ' + (testResult.error || testResult.message || 'Ready for dispatch')}
+            </div>
+          )}
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: '2rem' }}>
-        
-        {/* CARD 1: Automated Brochure & Template Setup */}
-        <div className="card" style={{ padding: '2rem', background: '#0e0e14', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-          <div className="flex justify-between items-center mb-3">
-            <h2 style={{ margin: 0, fontSize: '1.2rem', color: 'var(--accent-green)' }}>
-              📁 1. Product Brochure & WhatsApp Template
-            </h2>
-            <span className="badge success">Auto-Dispatch</span>
-          </div>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.825rem', marginBottom: '1.5rem' }}>
-            Customer se call par baat hone ke baad AI yahi details WhatsApp par bhejegi:
-          </p>
+      {/* WHATSAPP MESSAGE TEMPLATE EDITOR */}
+      <div className="card mb-6">
+        <h3 className="mb-4">📝 Post-Call WhatsApp Follow-Up Message Template</h3>
 
-          <form onSubmit={handleSaveCatalog}>
-            <div className="form-group mb-4">
-              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Product / Project Name</label>
-              <input 
-                required
-                type="text" 
-                className="form-control" 
-                value={productName} 
-                onChange={e => setProductName(e.target.value)} 
-                placeholder="e.g. Suvidha Luxury 2 & 3 BHK Apartments" 
-              />
-            </div>
-
-            <div className="form-group mb-4">
-              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Pricing & Special Offers</label>
-              <input 
-                required
-                type="text" 
-                className="form-control" 
-                value={productPricing} 
-                onChange={e => setProductPricing(e.target.value)} 
-                placeholder="e.g. Starting at ?5 Lakhs with 10% Booking Offer" 
-              />
-            </div>
-
-            <div className="form-group mb-4">
-              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Brochure PDF Link (Google Drive / Direct URL)</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                value={brochureUrl} 
-                onChange={e => setBrochureUrl(e.target.value)} 
-                placeholder="https://drive.google.com/your-brochure.pdf" 
-              />
-            </div>
-
-            <div className="form-group mb-4">
-              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Product Photo / Image Link</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                value={productImageUrl} 
-                onChange={e => setProductImageUrl(e.target.value)} 
-                placeholder="https://your-domain.com/photo.jpg" 
-              />
-            </div>
-
-            <div className="form-group mb-4">
-              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Auto-WhatsApp Message Template</label>
-              <textarea 
-                required
-                rows="4" 
-                className="form-control" 
-                value={whatsappMessageTemplate} 
-                onChange={e => setWhatsappMessageTemplate(e.target.value)} 
-                style={{ fontSize: '0.85rem', lineHeight: '1.5' }}
-              />
-            </div>
-
-            {/* Toggle Auto Send */}
-            <div style={{ background: '#0a0a10', padding: '0.85rem 1rem', borderRadius: '8px', border: '1px solid var(--border-light)', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontSize: '0.825rem', color: '#fff', fontWeight: '600' }}>
-                ?Auto-Send WhatsApp on Call Finish:
-              </span>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.825rem', color: 'var(--accent-green)', fontWeight: 'bold' }}>
-                <input type="checkbox" checked={autoSendOnCallEnd} onChange={e => setAutoSendOnCallEnd(e.target.checked)} />
-                Active
-              </label>
-            </div>
-
-            <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '0.85rem', fontWeight: '700' }}>
-              💾 Save WhatsApp Catalog & Template
-            </button>
-          </form>
+        <div className="form-group mb-4">
+          <label className="label">Admin WhatsApp Phone Number</label>
+          <input 
+            className="input"
+            value={adminNumber}
+            onChange={(e) => setAdminNumber(e.target.value)}
+            placeholder="+918739904737"
+          />
         </div>
 
-        {/* CARD 2: Admin Alerts & 1-Click Direct WhatsApp Dispatch */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          
-          {/* Admin Hot Lead Alert Number */}
-          <div className="card" style={{ padding: '2rem', background: '#0e0e14', border: '1px solid rgba(59, 130, 246, 0.3)' }}>
-            <div className="flex justify-between items-center mb-2">
-              <h2 style={{ margin: 0, fontSize: '1.2rem' }}>📲 2. Admin Hot Lead Alert Mobile Number</h2>
-              <span className="badge primary">Real-time</span>
-            </div>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.825rem', marginBottom: '1.25rem' }}>
-              Customer ke "Interested" bolte hi is number par instant alert aayega:
-            </p>
-
-            <div className="form-group mb-4">
-              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Your Admin WhatsApp Number (+91)</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                value={adminNumber} 
-                onChange={e => setAdminNumber(e.target.value)} 
-                placeholder="e.g. +91 8739904737" 
-              />
-            </div>
-
-            <button 
-              type="button" 
-              onClick={handleSaveCatalog}
-              className="btn btn-secondary" 
-              style={{ width: '100%', padding: '0.75rem', fontWeight: '700', borderColor: 'var(--accent-blue)', color: 'var(--accent-blue)' }}
-            >
-              💾 Save Admin Mobile Number
-            </button>
-          </div>
-
-          {/* 1-Click Direct WhatsApp Tester */}
-          <div className="card" style={{ padding: '2rem', background: '#0e0e14', border: '1px solid var(--border-light)' }}>
-            <h2 style={{ margin: '0 0 0.5rem', fontSize: '1.2rem' }}>🚀 3. Instant WhatsApp Message Tester</h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.825rem', marginBottom: '1.25rem' }}>
-              Test karke dekhein ki customer ko WhatsApp message kaisa deliver hota hai:
-            </p>
-
-            <div className="form-group mb-3">
-              <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Target Phone Number (+91)</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                value={directPhone} 
-                onChange={e => setDirectPhone(e.target.value)} 
-                placeholder="e.g. +91 8739904737" 
-              />
-            </div>
-
-            <button 
-              type="button" 
-              onClick={handleSendDirectWhatsApp}
-              className="btn btn-primary" 
-              style={{ 
-                width: '100%', 
-                padding: '0.85rem', 
-                fontWeight: '700',
-                background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-                boxShadow: '0 0 15px rgba(37, 99, 235, 0.3)'
-              }}
-            >
-              📲 Test Send WhatsApp Brochure Now &rarr;
-            </button>
-          </div>
-
+        <div className="form-group mb-4">
+          <label className="label">Project Brochure PDF URL (Google Drive / Direct Link)</label>
+          <input 
+            className="input"
+            value={brochureUrl}
+            onChange={(e) => setBrochureUrl(e.target.value)}
+            placeholder="https://drive.google.com/..."
+          />
         </div>
 
+        <div className="form-group mb-4">
+          <label className="label">WhatsApp Message Body (Full Pitch + Metro + Maps)</label>
+          <textarea 
+            className="input"
+            rows={14}
+            value={whatsappMessageTemplate}
+            onChange={(e) => setWhatsappMessageTemplate(e.target.value)}
+            style={{ fontFamily: 'monospace', fontSize: '0.85rem', lineHeight: '1.5' }}
+          />
+        </div>
+
+        <button 
+          onClick={handleSaveSettings}
+          className="btn btn-primary"
+          style={{ width: '100%', padding: '0.85rem', fontSize: '1rem' }}
+        >
+          💾 Save WhatsApp Template & Gateway Settings
+        </button>
       </div>
     </div>
   );
