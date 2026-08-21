@@ -18,7 +18,7 @@ function generateInboundXml(reqUrl) {
         .replace(/'/g, '&apos;');
     }
 
-    const defaultSpeech = 'नमस्कार जी! मैं Pooja बोल रही हूँ, The Shree Aangan Developers की तरफ से। Chaksu, Tonk Road पर हमारे 85 Acres के JDA Approved और RERA Registered Gated Township प्रोजेक्ट के लिए कॉल कर रही हूँ। यहाँ Jaipur Metro Phase 2 का काम शुरू हो चुका है और कीमतें हर साल 18 से 25 प्रतिशत बढ़ रही हैं। क्या आप इस वीकेंड साइट विजिट के लिए आ सकते हैं? हम आपको सब कुछ खुद दिखाएंगे!';
+    const defaultSpeech = 'नमस्कार जी! मैं Pooja बोल रही हूँ, The Shree Aangan Developers की तरफ से। Chaksu, Tonk Road पर हमारे 85 Acres के JDA Approved टाउनशिप प्रोजेक्ट के लिए कॉल कर रही हूँ। क्या आप जयपुर में सही कीमत पर प्लॉट या इन्वेस्टमेंट के बारे में सोच रहे हैं?';
 
     const speechToSpeak = (customScript.trim() || defaultSpeech)
       .replace(/[*_#`]/g, '')
@@ -26,16 +26,18 @@ function generateInboundXml(reqUrl) {
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
 
-    // 100% Guaranteed 0ms Latency Zero-Drop Plivo/Vobiz Voice XML
-    // Plays instantly on telecom edge server without external HTTP timeouts
+    // Plivo GetInput with Speech Recognition in Hindi (hi-IN)
+    // As soon as the customer speaks, Plivo stops speaking (Barge-in), transcribes customer speech, and POSTs to process-speech
+    const actionUrl = 'https://suvidha-voice-crm.vercel.app/api/inbound/process-speech';
+
     const responseXml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Speak language="hi-IN" voice="WOMAN">${speechToSpeak}</Speak>
-  <Wait length="2" />
+  <GetInput action="${actionUrl}" method="POST" inputType="speech" language="hi-IN" speechEndTimeout="2" redirect="true">
+    <Speak language="hi-IN" voice="WOMAN">${speechToSpeak}</Speak>
+  </GetInput>
   <Speak language="hi-IN" voice="WOMAN">
-    प्रोजेक्ट की पूरी जानकारी, लोकेशन और ब्रोशर हम आपके व्हाट्सएप पर भेज रहे हैं। आपका बहुत-बहुत धन्यवाद!
+    साइट विजिट और पूरी जानकारी के लिए हम आपको व्हाट्सएप पर ब्रोशर भेज रहे हैं। आपका धन्यवाद!
   </Speak>
-  <Wait length="3" />
 </Response>`;
 
     return responseXml.trim();
