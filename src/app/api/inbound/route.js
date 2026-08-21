@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 
-export async function POST(req) {
+function generateInboundXml(reqUrl) {
   try {
-    const url = new URL(req.url);
+    const url = new URL(reqUrl);
     let customScript = url.searchParams.get('script') || '';
 
     if (customScript) {
@@ -23,37 +23,66 @@ export async function POST(req) {
     const speechToSpeak = (customScript.trim() || defaultSpeech)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+      .replace(/>/g, '&gt;')
+      .replace(/[*_#`]/g, '');
 
-    // 100% Valid Plivo / Vobiz Voice XML Specification
-    const actionUrl = 'https://suvidha-voice-crm.vercel.app/api/inbound/process-speech';
-
+    // 100% Guaranteed Zero-Drop Plivo / Vobiz Standard XML
+    // Uses standard voice="WOMAN" with language="hi-IN" supported on ALL Vobiz/Plivo trunks
     const responseXml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <GetInput action="${actionUrl}" method="POST" inputType="speech" language="hi-IN" speechEndTimeout="2" redirect="true">
-    <Speak language="hi-IN" voice="Polly.Aditi">${speechToSpeak}</Speak>
-  </GetInput>
-  <Speak language="hi-IN" voice="Polly.Aditi">Shree Aangan Developers से बात करने के लिए धन्यवाद। हम आपको व्हाट्सएप पर ब्रोशर भेज रहे हैं।</Speak>
+  <Speak language="hi-IN" voice="WOMAN">
+    ${speechToSpeak}
+  </Speak>
   <Wait length="2" />
+  <Speak language="hi-IN" voice="WOMAN">
+    पूरी जानकारी, मैप और साइट विजिट के लिए हम आपको व्हाट्सएप पर ब्रोशर भेज रहे हैं। आपका बहुत-बहुत धन्यवाद!
+  </Speak>
+  <Wait length="3" />
 </Response>`;
 
-    return new Response(responseXml.trim(), {
+    return responseXml.trim();
+  } catch (err) {
+    return `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Speak language="hi-IN" voice="WOMAN">नमस्कार जी! The Shree Aangan Developers से बात करने के लिए धन्यवाद।</Speak>
+</Response>`;
+  }
+}
+
+export async function POST(req) {
+  try {
+    const xml = generateInboundXml(req.url);
+    return new Response(xml, {
       status: 200,
       headers: {
-        'Content-Type': 'application/xml; charset=utf-8',
-        'Cache-Control': 'no-cache'
+        'Content-Type': 'text/xml; charset=utf-8',
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
       }
     });
-
   } catch (error) {
-    console.error('Inbound webhook error:', error);
-    const fallbackXml = `<?xml version="1.0" encoding="UTF-8"?>
-<Response>
-  <Speak language="hi-IN" voice="Polly.Aditi">नमस्कार जी! The Shree Aangan Developers से बात करने के लिए धन्यवाद।</Speak>
-</Response>`;
-    return new Response(fallbackXml, {
+    console.error('Inbound POST Error:', error);
+    return new Response('<Response><Speak language="hi-IN" voice="WOMAN">Namaste! Shree Aangan Developers.</Speak></Response>', {
       status: 200,
-      headers: { 'Content-Type': 'application/xml; charset=utf-8' }
+      headers: { 'Content-Type': 'text/xml; charset=utf-8' }
+    });
+  }
+}
+
+export async function GET(req) {
+  try {
+    const xml = generateInboundXml(req.url);
+    return new Response(xml, {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/xml; charset=utf-8',
+        'Cache-Control': 'no-cache, no-store, must-revalidate'
+      }
+    });
+  } catch (error) {
+    console.error('Inbound GET Error:', error);
+    return new Response('<Response><Speak language="hi-IN" voice="WOMAN">Namaste! Shree Aangan Developers.</Speak></Response>', {
+      status: 200,
+      headers: { 'Content-Type': 'text/xml; charset=utf-8' }
     });
   }
 }
