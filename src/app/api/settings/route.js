@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 
-// Server-side persistent memory cache & default fallback
 let serverConfigStore = {
   adminNumber: '+918739904737',
   telephonyProvider: 'vobiz',
@@ -9,6 +8,7 @@ let serverConfigStore = {
   vobizVirtualNumber: '+917965854263',
   callerNumber: '+917965854263',
   elevenLabsApiKey: '',
+  deepgramApiKey: '',
   ultraMsgInstanceId: '',
   ultraMsgToken: '',
   evolutionApiUrl: '',
@@ -39,16 +39,17 @@ export async function POST(req) {
       ...body
     };
 
-    console.log('💾 Server-Side Settings Permanently Updated (Incognito & Cross-Device Sync):', {
+    console.log('💾 Server-Side Settings Permanently Updated:', {
       vobizAuthId: serverConfigStore.vobizAuthId,
       hasVobizToken: !!serverConfigStore.vobizAuthToken,
       hasElevenKey: !!serverConfigStore.elevenLabsApiKey,
+      hasDeepgramKey: !!serverConfigStore.deepgramApiKey,
       adminNumber: serverConfigStore.adminNumber
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Settings saved permanently to backend server! Available in Incognito and across all devices.',
+      message: 'Settings saved permanently to backend server!',
       settings: serverConfigStore
     });
   } catch (error) {

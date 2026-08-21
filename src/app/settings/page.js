@@ -11,6 +11,7 @@ export default function SettingsPage() {
   const [authToken, setAuthToken] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [elevenLabsApiKey, setElevenLabsApiKey] = useState('');
+  const [deepgramApiKey, setDeepgramApiKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [elevenValidating, setElevenValidating] = useState(false);
   const [elevenStatus, setElevenStatus] = useState(null);
@@ -53,6 +54,7 @@ export default function SettingsPage() {
       setVobizAuthToken(localStorage.getItem(`vobizAuthToken_${uid}`) || localStorage.getItem('vobizAuthToken') || localStorage.getItem(`vobizApiKey_${uid}`) || localStorage.getItem('vobizApiKey') || '');
 
       setElevenLabsApiKey(localStorage.getItem(`elevenLabsApiKey_${uid}`) || localStorage.getItem('elevenLabsApiKey') || '');
+      setDeepgramApiKey(localStorage.getItem(`deepgramApiKey_${uid}`) || localStorage.getItem('deepgramApiKey') || '');
       setAccountSid(localStorage.getItem(`accountSid_${uid}`) || localStorage.getItem('accountSid') || '');
       setAuthToken(localStorage.getItem(`authToken_${uid}`) || localStorage.getItem('authToken') || '');
       setPhoneNumber(localStorage.getItem(`phoneNumber_${uid}`) || localStorage.getItem('phoneNumber') || '');
