@@ -9,20 +9,19 @@ export async function POST(req) {
 
     const apiKey = (elevenLabsApiKey || process.env.ELEVENLABS_API_KEY || 'sk_fd1cace7cf05a5e700ce78a557f61815046a23576e8cb477').trim();
 
-    // Map each Voice Model to high-quality ElevenLabs Voice IDs
+    // Energetic, high-conversion ElevenLabs Voice IDs
     const voiceMap = {
-      pooja: 'EXAVITQu4vr4xnSDxMaL',    // Sarah / Warm Indian Closer
-      aarav: 'JBFqnCBsd6RMkjVDRZzb',    // George / Energetic Finance Specialist
-      swara: '21m00Tcm4TlvDq8ikWAM',    // Rachel / Premium Consultant
-      madhur: 'VR6AewLTigWG4xSOukaG',   // Josh / Corporate B2B
-      ananya: 'AZnzlk1XvdvUeBnXmlld',   // Domi / Modern Hinglish
-      rohan: 'pNInz6obpgDQGcFmaJgB',    // Adam / Deep Bass Executive
-      kavya: 'LcfcDJNUP1GQjkzn1xUU'     // Emily / Retail & Deals
+      pooja: 'EXAVITQu4vr4xnSDxMaL',    // Sarah - Warm, confident, human Closer
+      aarav: 'JBFqnCBsd6RMkjVDRZzb',    // George - Energetic, fast-paced Closer
+      swara: '21m00Tcm4TlvDq8ikWAM',    // Rachel - Smooth, persuasive Consultant
+      madhur: 'VR6AewLTigWG4xSOukaG',   // Josh - Deep, corporate Executive
+      ananya: 'AZnzlk1XvdvUeBnXmlld',   // Domi - Energetic, modern Hinglish
+      rohan: 'pNInz6obpgDQGcFmaJgB'     // Adam - Strong, authoritative Director
     };
 
     let targetVoiceId = voiceMap[voice?.toLowerCase()] || (gender?.toLowerCase() === 'male' ? 'JBFqnCBsd6RMkjVDRZzb' : 'EXAVITQu4vr4xnSDxMaL');
 
-    // 1. ElevenLabs Multilingual v2 Ultra-Human Real Studio Voice
+    // 1. ElevenLabs Multilingual v2 Ultra-Human Real Studio Voice with Energetic Settings
     if (apiKey && apiKey.length > 15) {
       try {
         console.log(`🎙️ Synthesizing Voice via ElevenLabs Multilingual v2 (Voice ID: ${targetVoiceId})...`);
@@ -36,9 +35,9 @@ export async function POST(req) {
             text: text,
             model_id: 'eleven_multilingual_v2',
             voice_settings: {
-              stability: 0.45,
-              similarity_boost: 0.85,
-              style: 0.20,
+              stability: 0.35,          // Lower stability = more expressive, dynamic, human intonation
+              similarity_boost: 0.85,   // High clarity
+              style: 0.40,              // High expressive energy & punch
               use_speaker_boost: true
             }
           })
@@ -63,7 +62,7 @@ export async function POST(req) {
       }
     }
 
-    // 2. High-Speed Fallback
+    // 2. High-Speed Neural Fallback
     const encodedText = encodeURIComponent(text);
     const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=hi&client=tw-ob`;
 

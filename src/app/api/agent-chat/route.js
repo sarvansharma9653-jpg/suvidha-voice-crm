@@ -2,107 +2,142 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req) {
   try {
-    const { agentName, useCase, script, objections, userQuestion, history } = await req.json();
+    const { agentName, useCase, script, objections, userQuestion } = await req.json();
 
-    if (!userQuestion) {
+    if (!userQuestion || !userQuestion.trim()) {
       return NextResponse.json({ error: 'Question required' }, { status: 400 });
     }
 
-    const cleanQuestion = userQuestion.trim().toLowerCase();
+    const question = userQuestion.trim();
     const cleanScript = (script || '').trim();
     const cleanObjections = (objections || '').trim();
-    const combinedContext = `${cleanScript} ${cleanObjections}`.trim();
-
-    // 1. Extract Name from Script (e.g. "mai sarvan baat kar rha hu" -> "Sarvan")
-    const nameMatch = cleanScript.match(/(?:mai|main|मैं|naam|name|here is)\s+([A-Za-z\u0900-\u097F]+)/i);
-    const extractedName = nameMatch ? nameMatch[1] : (agentName ? agentName.split(' ')[0] : 'AI Assistant');
-
-    // 2. Extract Location (e.g. "location ludhiana", "नोएडा", "दिल्ली", etc.)
-    const locMatch = combinedContext.match(/(?:location|लोकेशन|city|शहर|जगह)\s*:?\s*([A-Za-z\u0900-\u097F]+)/i) ||
-      combinedContext.match(/(लधियाना|लुधियाना|नोएडा|गुड़गांव|दिल्ली|मुंबई|जयपुर|लखनऊ|गाजियाबाद|Ludhiana|Noida|Gurgaon|Delhi|Mumbai|Jaipur|Lucknow)/i);
-    const extractedLocation = locMatch ? (locMatch[1] || locMatch[0]).trim() : null;
-
-    // 3. Extract Prices & Numbers (e.g. 50 rupeye, 300 me, 10लाख, 45 Lakhs, 500 रुपये, etc.)
-    const priceMatches = combinedContext.match(/(\d+[\d\.,]*\s*(?:लाख|lakh|lakhs|crore|crores|करोड़|हजार|hazaar|rupeye|rupee|रुपये|रु|rs|\/-|\bme\b))/gi);
-    const extractedPriceText = priceMatches ? priceMatches.join(', ') : null;
-
-    // 4. Extract Products / Items (e.g. jute, paint shirt, flat, plot, loan, etc.)
-    const productKeywords = [];
-    if (/jute|जूते|shoes/i.test(combinedContext)) productKeywords.push('2 जोड़ी जूते');
-    if (/paint|shirt|पैंट|शर्ट|कपड़े|clothes/i.test(combinedContext)) productKeywords.push('पैंट-शर्ट');
-    if (/flat|flats|फ्लैट|bhk|BHK/i.test(combinedContext)) productKeywords.push('फ्लैट्स');
-    if (/plot|plots|प्लॉट/i.test(combinedContext)) productKeywords.push('प्लॉट्स');
-    if (/loan|लोन|finance/i.test(combinedContext)) productKeywords.push('लोन सर्विसेज');
-    if (/clinic|doctor|डेंटल|इलाज/i.test(combinedContext)) productKeywords.push('क्लीनिक चेकअप');
+    const persona = (agentName || 'Pooja').trim();
+    const business = (useCase || 'Real Estate').trim();
 
     let aiReply = '';
 
-    // === HUMAN BRAIN CONVERSATIONAL REASONING ENGINE ===
+    // =========================================================================
+    // 1. REAL GOOGLE GEMINI LLM CALL (HUMAN BRAIN CONVERSATIONAL REASONER)
+    // =========================================================================
+    const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
 
-    // INTENT 1: WHO ARE YOU? ("tum kon ho", "naam kya hai", "kahan se bol rahe ho")
-    if (cleanQuestion.includes('kon ho') || cleanQuestion.includes('koun ho') || cleanQuestion.includes('kaun ho') || cleanQuestion.includes('naam') || cleanQuestion.includes('who are you') || cleanQuestion.includes('kahan se')) {
-      if (extractedLocation) {
-        aiReply = `नमस्ते! मैं ${extractedName} बात कर रहा हूँ ${extractedLocation} से। मैंने आपको हमारे स्पेशल ऑफर्स की जानकारी देने के लिए कॉल किया है।`;
-      } else {
-        aiReply = `नमस्ते! मैं ${extractedName} बात कर रहा हूँ। मैंने आपको हमारे खास ऑफर्स और डिटेल्स शेयर करने के लिए कॉल किया है।`;
+    if (geminiKey) {
+      const modelsToTry = [
+        'gemini-2.5-flash',
+        'gemini-2.0-flash',
+        'gemini-2.0-flash-lite',
+        'gemini-1.5-flash',
+        'gemini-flash'
+      ];
+
+      const systemPrompt = `You are ${persona}, a top-performing, energetic, polite, and highly persuasive Indian human sales consultant working for ${business}.
+
+CRITICAL INSTRUCTIONS:
+1. Speak in natural, energetic, conversational Hindi / Hinglish (1 to 2 crisp sentences only).
+2. Answer the customer's question directly, accurately, and confidently using the provided Script and Objection Handling Rules below.
+3. NEVER make up fake details, store names, or placeholder words like 'kahan'.
+4. If customer asks about price, location, metro, RERA, investment return, or company details, use the exact facts from the rules.
+5. End with a warm, energetic call-to-action (e.g. asking for site visit or offering WhatsApp details).
+
+---
+BUSINESS SCRIPT:
+${cleanScript}
+
+---
+OBJECTION & FAQ RULES:
+${cleanObjections}
+`;
+
+      for (const model of modelsToTry) {
+        try {
+          const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [
+                {
+                  role: 'user',
+                  parts: [
+                    { text: `${systemPrompt}\n\nCustomer says: "${question}"\n\nRespond as ${persona} in natural spoken Hindi:` }
+                  ]
+                }
+              ],
+              generationConfig: {
+                temperature: 0.6,
+                maxOutputTokens: 120
+              }
+            })
+          });
+
+          if (geminiRes.ok) {
+            const data = await geminiRes.json();
+            const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (rawText && rawText.trim().length > 5) {
+              aiReply = rawText.replace(/[*_#`"]/g, '').trim();
+              break;
+            }
+          }
+        } catch (e) {
+          console.log(`Gemini model ${model} note:`, e.message);
+        }
       }
     }
 
-    // INTENT 2: PRICE / COST / RATE ("price", "rate", "cost", "kitne", "paisa", "daam")
-    else if (cleanQuestion.includes('price') || cleanQuestion.includes('rate') || cleanQuestion.includes('cost') || cleanQuestion.includes('kitne') || cleanQuestion.includes('daam') || cleanQuestion.includes('paisa')) {
-      if (extractedPriceText) {
-        aiReply = `सर, हमारे पास ${extractedPriceText} में स्पेशल डिस्काउंट ऑफर्स उपलब्ध हैं। क्या मैं आपको व्हाट्सएप पर सारी डिटेल भेज दूँ?`;
-      } else {
-        aiReply = `सर, हमारे प्राइसेज बहुत ही किफायती हैं और बेस्ट डिस्काउंट पर उपलब्ध हैं। क्या मैं आपको व्हाट्सएप पर प्राइस लिस्ट भेज दूँ?`;
+    // =========================================================================
+    // 2. INTELLIGENT RULE PARSER FALLBACK (IF LLM OFFLINE)
+    // =========================================================================
+    if (!aiReply) {
+      const qLower = question.toLowerCase();
+
+      // Check rule lines inside objections directly
+      const ruleLines = cleanObjections.split('\n').map(l => l.trim()).filter(Boolean);
+
+      // Match Location
+      if (qLower.includes('location') || qLower.includes('kahan') || qLower.includes('address') || qLower.includes('jagah') || qLower.includes('city')) {
+        const locRule = ruleLines.find(l => /location|kahan|जगह|कहाँ/i.test(l) && !l.startsWith('अगर'));
+        if (locRule) {
+          aiReply = locRule.replace(/^[-d.s*]+/, '').trim();
+        } else {
+          aiReply = 'जी, प्रोजेक्ट Chaksu, Tonk Road पर है — Jaipur से सिर्फ 25-30 km की दूरी पर NH-12 Jaipur-Kota Highway पर, Sheetla Mata Mandir के पास। क्या मैं आपको WhatsApp पर मैप भेज दूँ?';
+        }
+      }
+      // Match Price
+      else if (qLower.includes('price') || qLower.includes('rate') || qLower.includes('cost') || qLower.includes('kitne') || qLower.includes('paisa') || qLower.includes('daam') || qLower.includes('budget')) {
+        const priceRule = ruleLines.find(l => /price|rate|रुपये|plots|sq.ft|लाख/i.test(l) && !l.startsWith('अगर'));
+        if (priceRule) {
+          aiReply = priceRule.replace(/^[-d.s*]+/, '').trim();
+        } else {
+          aiReply = 'जी, हमारे JDA Approved Plots ₹800 से ₹2,750 प्रति वर्ग फुट के बीच उपलब्ध हैं — EMI सुविधा के साथ। Complete Price List अभी आपके WhatsApp पर भेज रही हूँ!';
+        }
+      }
+      // Match Metro / Growth / Return
+      else if (qLower.includes('metro') || qLower.includes('growth') || qLower.includes('return') || qLower.includes('badhega') || qLower.includes('faayda')) {
+        aiReply = 'जी बिल्कुल! Chaksu में 18 से 25% annual growth है और Jaipur Metro Phase 2 की नींव July 2026 में रखी गई है, जिससे कीमतें 40 से 60% और बढ़ेंगी!';
+      }
+      // Match RERA / Legal / Documents
+      else if (qLower.includes('rera') || qLower.includes('legal') || qLower.includes('jda') || qLower.includes('government') || qLower.includes('document')) {
+        aiReply = 'जी बिल्कुल 100% Legal है! हमारा RERA नंबर है RAJ/P/2026/4660 और प्रोजेक्ट JDA Approved है। पूरा Documentation बिल्कुल Clear है।';
+      }
+      // Match Who Are You
+      else if (qLower.includes('kon ho') || qLower.includes('koun ho') || qLower.includes('kaun ho') || qLower.includes('naam') || qLower.includes('who are you')) {
+        aiReply = `नमस्कार जी! मैं ${persona} बोल रही हूँ, The Shree Aangan Developers की तरफ से। Chaksu Tonk Road 85 Acres Township प्रोजेक्ट के सिलसिले में बात कर रही हूँ।`;
+      }
+      // Match Call Transfer / Senior Manager
+      else if (qLower.includes('senior') || qLower.includes('manager') || qLower.includes('admin') || qLower.includes('transfer') || qLower.includes('baat karao')) {
+        aiReply = 'जी बिल्कुल सर! मैं आपकी कॉल तुरंत हमारे सीनियर मैनेजर (+918739904737) को ट्रांसफर कर रही हूँ। कृपया लाइन पर बने रहें!';
+      }
+      // Default Intelligent Response
+      else {
+        aiReply = `जी बिल्कुल सर! Chaksu, Tonk Road पर हमारे 85 Acres JDA & RERA Approved Township के लिए क्या आप इस वीकेंड Free Site Visit के लिए आ सकते हैं?`;
       }
     }
 
-    // INTENT 3: WHAT PRODUCTS / OFFERS DO YOU HAVE? ("kya hai", "kya bechte ho", "kya offer hai", "product", "details")
-    else if (cleanQuestion.includes('kya hai') || cleanQuestion.includes('kya bechte') || cleanQuestion.includes('kya offer') || cleanQuestion.includes('product') || cleanQuestion.includes('service') || cleanQuestion.includes('details') || cleanQuestion.includes('item')) {
-      if (productKeywords.length > 0) {
-        aiReply = `हमारे पास ${productKeywords.join(' और ')} के शानदार ऑफर्स उपलब्ध हैं${extractedLocation ? ' ' + extractedLocation + ' में' : ''}। क्या आप पूरी डिटेल जानना चाहते हैं?`;
-      } else if (cleanObjections) {
-        aiReply = `हमारे पास ${cleanObjections.substring(0, 60)} के बेहतरीन ऑफर्स उपलब्ध हैं। क्या मैं आपको व्हाट्सएप पर डिटेल्स भेज दूँ?`;
-      } else {
-        aiReply = `हमारे पास आपके लिए बेस्ट डिस्काउंटेड ऑफर्स उपलब्ध हैं। क्या मैं आपको व्हाट्सएप पर पूरा कैटलॉग भेज दूँ?`;
-      }
-    }
-
-    // INTENT 4: LOCATION / ADDRESS / CITY ("kahan", "location", "address", "jagah", "shop kahan hai", "city")
-    else if (cleanQuestion.includes('kahan') || cleanQuestion.includes('location') || cleanQuestion.includes('address') || cleanQuestion.includes('jagah') || cleanQuestion.includes('city') || cleanQuestion.includes('dukaan')) {
-      if (extractedLocation) {
-        aiReply = `हमारा यह स्टोर और डिलीवरी ${extractedLocation} में उपलब्ध है। क्या मैं आपको व्हाट्सएप पर पूरा पता और मैप भेज दूँ?`;
-      } else {
-        aiReply = `हमारा यह ऑफर आपकी सिटी में प्राइम लोकेशन पर उपलब्ध है। क्या मैं आपको व्हाट्सएप पर पूरा एड्रेस भेज दूँ?`;
-      }
-    }
-
-    // INTENT 5: CALL TRANSFER / SENIOR / MANAGER ("senior", "manager", "admin", "transfer", "baat karao", "insaan")
-    else if (cleanQuestion.includes('senior') || cleanQuestion.includes('manager') || cleanQuestion.includes('transfer') || cleanQuestion.includes('baat karao') || cleanQuestion.includes('insaan')) {
-      aiReply = `जी बिल्कुल सर! मैं आपकी कॉल तुरंत हमारे सीनियर मैनेजर को ट्रांसफर कर रहा हूँ, कृपया लाइन पर बने रहें!`;
-    }
-
-    // INTENT 6: YES / SEND / INTERESTED ("haan", "yes", "theek hai", "bhejo", "send karo")
-    else if (cleanQuestion.includes('haan') || cleanQuestion.includes('yes') || cleanQuestion.includes('theek') || cleanQuestion.includes('bhejo') || cleanQuestion.includes('send') || cleanQuestion.includes('batao')) {
-      aiReply = `अरे बहुत ही बढ़िया सर! मैंने आपका नंबर नोट कर लिया है, मैं तुरंत आपको व्हाट्सएप पर सारी जानकारी और फोटो भेज रहा हूँ!`;
-    }
-
-    // INTENT 7: NO / NOT INTERESTED / BUSY ("nahi", "no", "busy", "cut karo", "baad me")
-    else if (cleanQuestion.includes('nahi') || cleanQuestion.includes('no') || cleanQuestion.includes('busy') || cleanQuestion.includes('baad me') || cleanQuestion.includes('mat karo')) {
-      aiReply = `जी कोई बात नहीं सर, आपका समय देने के लिए बहुत-बहुत धन्यवाद। आपका दिन शुभ रहे!`;
-    }
-
-    // DEFAULT SMART CONVERSATIONAL CLOSER
-    else {
-      aiReply = `जी बिल्कुल सर! ${cleanScript ? cleanScript.replace(/(?:good morning|namaste|नमस्ते)/gi, '').trim().substring(0, 40) : 'हमारे पास आपके लिए बेस्ट ऑफर हैं'}। क्या मैं आपको व्हाट्सएप पर पूरी जानकारी भेज दूँ?`;
-    }
-
-    aiReply = aiReply.replace(/[*_#`]/g, '').trim();
+    aiReply = aiReply.replace(/[*_#`"]/g, '').trim();
 
     return NextResponse.json({
       success: true,
       reply: aiReply,
-      agentName: extractedName || 'AI Assistant'
+      agentName: persona
     });
 
   } catch (error) {
