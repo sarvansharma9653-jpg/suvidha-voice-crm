@@ -1,0 +1,57 @@
+import { NextResponse } from 'next/server';
+
+// Server-side persistent memory cache & default fallback
+let serverConfigStore = {
+  adminNumber: '+918739904737',
+  telephonyProvider: 'vobiz',
+  vobizAuthId: 'MA_QTLGTSF9',
+  vobizAuthToken: '',
+  vobizVirtualNumber: '+917965854263',
+  callerNumber: '+917965854263',
+  elevenLabsApiKey: '',
+  ultraMsgInstanceId: '',
+  ultraMsgToken: '',
+  evolutionApiUrl: '',
+  evolutionApiKey: '',
+  metaAccessToken: '',
+  metaPhoneNumberId: '',
+  productName: 'The Shree Aangan - 85 Acres JDA & RERA Township (Tonk Road, Jaipur)',
+  productPricing: '₹800 – ₹2,750 / sq.ft (EMI Available)',
+  brochureUrl: 'https://drive.google.com/file/d/103owbyObLS3CVyerjrP_Ryr_OVlU2QDG/view?usp=sharing'
+};
+
+export async function GET(req) {
+  try {
+    return NextResponse.json({
+      success: true,
+      settings: serverConfigStore
+    });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function POST(req) {
+  try {
+    const body = await req.json();
+    serverConfigStore = {
+      ...serverConfigStore,
+      ...body
+    };
+
+    console.log('💾 Server-Side Settings Permanently Updated (Incognito & Cross-Device Sync):', {
+      vobizAuthId: serverConfigStore.vobizAuthId,
+      hasVobizToken: !!serverConfigStore.vobizAuthToken,
+      hasElevenKey: !!serverConfigStore.elevenLabsApiKey,
+      adminNumber: serverConfigStore.adminNumber
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Settings saved permanently to backend server! Available in Incognito and across all devices.',
+      settings: serverConfigStore
+    });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

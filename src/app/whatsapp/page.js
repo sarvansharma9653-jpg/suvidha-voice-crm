@@ -67,6 +67,19 @@ https://www.instagram.com/shreeaangandevelopers/
   const [showSavedToast, setShowSavedToast] = useState(false);
 
   useEffect(() => {
+    fetch('/api/settings')
+      .then(r => r.json())
+      .then(data => {
+        if (data.settings) {
+          const s = data.settings;
+          if (s.adminNumber) setAdminNumber(s.adminNumber);
+          if (s.ultraMsgInstanceId) setUltraMsgInstanceId(s.ultraMsgInstanceId);
+          if (s.ultraMsgToken) setUltraMsgToken(s.ultraMsgToken);
+          if (s.brochureUrl) setBrochureUrl(s.brochureUrl);
+        }
+      })
+      .catch(console.error);
+
     if (typeof window !== 'undefined') {
       const uid = localStorage.getItem('suvidha_auth_user_id') || 'default';
       const savedAdmin = localStorage.getItem(`adminNumber_${uid}`) || localStorage.getItem('adminNumber');
@@ -122,6 +135,18 @@ https://www.instagram.com/shreeaangandevelopers/
       localStorage.setItem('whatsappMessageTemplate', defaultShreeTpl);
     }
 
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        adminNumber: adminNumber.trim(),
+        productName: productName.trim(),
+        productPricing: productPricing.trim(),
+        brochureUrl: brochureUrl.trim(),
+        ultraMsgInstanceId: ultraMsgInstanceId.trim(),
+        ultraMsgToken: ultraMsgToken.trim()
+      })
+    }).catch(console.error);
     setShowSavedToast(true);
     setTimeout(() => setShowSavedToast(false), 4000);
   };
@@ -154,6 +179,18 @@ https://www.instagram.com/shreeaangandevelopers/
       localStorage.setItem('evolutionApiKey', evolutionApiKey.trim());
     }
 
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        adminNumber: adminNumber.trim(),
+        productName: productName.trim(),
+        productPricing: productPricing.trim(),
+        brochureUrl: brochureUrl.trim(),
+        ultraMsgInstanceId: ultraMsgInstanceId.trim(),
+        ultraMsgToken: ultraMsgToken.trim()
+      })
+    }).catch(console.error);
     setShowSavedToast(true);
     setTimeout(() => setShowSavedToast(false), 4000);
   };

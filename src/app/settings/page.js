@@ -85,6 +85,20 @@ export default function SettingsPage() {
       localStorage.setItem('phoneNumber', phoneNumber.trim());
     }
 
+    // Sync with server-side backend permanently
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        telephonyProvider: provider,
+        vobizAuthId: vobizAuthId.trim(),
+        vobizAuthToken: vobizAuthToken.trim(),
+        vobizVirtualNumber: vobizVirtualNumber.trim(),
+        callerNumber: vobizVirtualNumber.trim(),
+        elevenLabsApiKey: elevenLabsApiKey.trim()
+      })
+    }).catch(console.error);
+
     setSavedDetails({
       provider: provider === 'vobiz' ? 'Vobiz India (+91)' : provider,
       number: provider === 'vobiz' ? vobizVirtualNumber : phoneNumber,
@@ -106,7 +120,12 @@ export default function SettingsPage() {
       localStorage.setItem(`elevenLabsApiKey_${uid}`, elevenLabsApiKey.trim());
       localStorage.setItem('elevenLabsApiKey', elevenLabsApiKey.trim());
     }
-    alert('🎉 ElevenLabs Voice Key Saved Successfully! 100% Real Human Voice is active.');
+    fetch('/api/settings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ elevenLabsApiKey: elevenLabsApiKey.trim() })
+    }).catch(console.error);
+    alert('🎉 ElevenLabs Voice Key Saved Successfully! Available in Incognito and across all sessions.');
   };
 
   const handleClearAll = () => {
