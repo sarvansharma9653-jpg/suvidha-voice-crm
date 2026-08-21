@@ -18,7 +18,7 @@ function generateInboundXml(reqUrl) {
         .replace(/'/g, '&apos;');
     }
 
-    const defaultSpeech = 'नमस्कार जी! मैं Pooja बोल रही हूँ, The Shree Aangan Developers की तरफ से। Chaksu, Tonk Road पर हमारे 85 Acres के JDA Approved और RERA Registered Gated Township प्रोजेक्ट के लिए कॉल कर रही हूँ। यहाँ Jaipur Metro Phase 2 का काम शुरू हो चुका है और कीमतें हर साल 18 से 25 प्रतिशत बढ़ रही हैं। क्या आप इस वीकेंड साइट विजिट के लिए आ सकते हैं? हम आपको सब कुछ खुद दिखाएंगे!';
+    const defaultSpeech = 'नमस्कार जी! मैं Pooja बोल रही हूँ, The Shree Aangan Developers की तरफ से। जी, Chaksu, Tonk Road पर हमारे 85 Acres के JDA Approved और RERA Registered Gated Township प्रोजेक्ट के लिए कॉल कर रही हूँ — जहाँ Jaipur Metro Phase 2 की नींव रखी जा चुकी है और कीमतें हर साल 18 से 25 प्रतिशत बढ़ रही हैं। यह सही समय है इन्वेस्टमेंट का! क्या आप इस वीकेंड हमारी फ्री साइट विजिट के लिए आ सकते हैं? हम आपको सब कुछ खुद दिखाएंगे!';
 
     const speechToSpeak = (customScript.trim() || defaultSpeech)
       .replace(/[*_#`]/g, '')
@@ -26,22 +26,15 @@ function generateInboundXml(reqUrl) {
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
 
-    // 100% Guaranteed Zero-Drop Plivo/Vobiz Trunk XML
-    // Universally compatible across all Indian telecom providers with 0 drops
-    const digitsActionUrl = 'https://suvidha-voice-crm.vercel.app/api/inbound/digits';
-
+    // 100% Natural Human Telecaller Flow (Zero IVR / No Button Pressing)
     const responseXml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <GetDigits action="${digitsActionUrl}" method="POST" numDigits="1" timeout="7">
-    <Speak language="hi-IN" voice="WOMAN">${speechToSpeak}</Speak>
-    <Wait length="1" />
-    <Speak language="hi-IN" voice="WOMAN">
-      प्रोजेक्ट ब्रोशर और मैप WhatsApp पर पाने के लिए 1 दबाएं, या हमारे सीनियर मैनेजर से बात करने के लिए 2 दबाएं।
-    </Speak>
-  </GetDigits>
+  <Speak language="hi-IN" voice="WOMAN">${speechToSpeak}</Speak>
+  <Wait length="2" />
   <Speak language="hi-IN" voice="WOMAN">
-    The Shree Aangan Developers से बात करने के लिए धन्यवाद। ब्रोशर आपके व्हाट्सएप पर भेजा जा रहा है।
+    पूरी जानकारी, प्लॉट मैप और साइट लोकेशन हम आपके व्हाट्सएप पर भेज रहे हैं। आपका बहुत-बहुत धन्यवाद!
   </Speak>
+  <Wait length="2" />
 </Response>`;
 
     return responseXml.trim();
