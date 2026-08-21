@@ -251,7 +251,7 @@ export const store = {
     const data = localStorage.getItem(key);
     
     if (!data) {
-      const initial = uid === 'default' ? mockCalls : [];
+      const initial = [];
       localStorage.setItem(key, JSON.stringify(initial));
       return initial;
     }

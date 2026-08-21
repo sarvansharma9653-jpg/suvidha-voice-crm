@@ -111,7 +111,7 @@ export default function CampaignsPage() {
     });
   };
 
-  // Launch Sequential Auto-Dialer Engine (Real Calls via Vobiz)
+    // Launch Sequential Auto-Dialer Engine (Real Calls via Vobiz)
   const startAutoDialer = async (campaign) => {
     const selectedIds = campaign.selectedLeadIds || [];
     let leadList = contacts.filter(c => selectedIds.includes(c.id));
@@ -120,21 +120,33 @@ export default function CampaignsPage() {
       leadList = contacts.length > 0 ? contacts : [{ id: '1', name: 'Lead', phone: '+918739904737' }];
     }
 
-    setActiveDialer(campaign.id);
-    setDialerProgress({ current: 0, total: leadList.length, activeName: leadList[0].name });
-
     const uid = typeof window !== 'undefined' ? (localStorage.getItem('suvidha_auth_user_id') || 'default') : 'default';
     const provider = typeof window !== 'undefined' ? (localStorage.getItem(`telephonyProvider_${uid}`) || localStorage.getItem('telephonyProvider') || 'vobiz') : 'vobiz';
     const vobizAuthId = typeof window !== 'undefined' ? (localStorage.getItem(`vobizAuthId_${uid}`) || localStorage.getItem('vobizAuthId') || 'MA_QTLGTSF9') : 'MA_QTLGTSF9';
     const vobizAuthToken = typeof window !== 'undefined' ? (localStorage.getItem(`vobizAuthToken_${uid}`) || localStorage.getItem('vobizAuthToken') || localStorage.getItem(`vobizApiKey_${uid}`) || localStorage.getItem('vobizApiKey') || '') : '';
     const vobizVirtualNumber = typeof window !== 'undefined' ? (localStorage.getItem(`vobizVirtualNumber_${uid}`) || localStorage.getItem('vobizVirtualNumber') || '+917965854263') : '+917965854263';
 
+    // Validate credentials before dialing
+    if (provider === 'vobiz' && !vobizAuthToken) {
+      setCallStatus({
+        type: 'error',
+        message: '⚠️ Vobiz Auth Token missing! Please go to Telephony Settings, enter your Vobiz Auth Token, and click Save to make real phone calls.'
+      });
+      return;
+    }
+
+    setActiveDialer(campaign.id);
+    setDialerProgress({ current: 0, total: leadList.length, activeName: leadList[0].name });
+
+    let successCount = 0;
+    let failedCount = 0;
+
     for (let i = 0; i < leadList.length; i++) {
       const lead = leadList[i];
       setDialerProgress({ current: i + 1, total: leadList.length, activeName: `${lead.name} (${lead.phone})` });
       
       try {
-        console.log(`🚀 Calling Lead ${i + 1}/${leadList.length}: ${lead.name} (${lead.phone})...`);
+        console.log(`🚀 Initiating Real Call to Lead ${i + 1}/${leadList.length}: ${lead.name} (${lead.phone})...`);
         const res = await fetch('/api/call', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -153,46 +165,95 @@ export default function CampaignsPage() {
         });
 
         const data = await res.json();
-        console.log(`Call result for ${lead.phone}:`, data);
+        console.log(`Call dispatch response for ${lead.phone}:`, data);
 
-        store.addCall({
-          contactId: lead.id,
-          contactName: lead.name,
-          phone: lead.phone,
-          callerNumber: vobizVirtualNumber,
-          agentName: campaign.agentName || 'Pooja (Closer)',
-          campaignId: campaign.name,
-          duration: Math.floor(Math.random() * 35) + 30,
-          status: 'Completed',
-          sentiment: i % 2 === 0 ? '😊 Interested' : '?Follow-up Requested',
-          stage: 'Qualified',
-          recordingUrl: 'https://suvidha-voice-crm.vercel.app/audio/call_rec.mp3',
-          summary: `Campaign "${campaign.name}" called ${lead.name} (${lead.phone}) with agent "${campaign.agentName}". AI completed sales qualification and WhatsApp brochure dispatched.`,
-          transcript: `AI (${campaign.agentName}): ${campaign.script}\n${lead.name}: Haan details WhatsApp par bhejiye.\nAI: Maine details note kar li hain, turant WhatsApp bhej rahi hoon!`
-        });
+        if (data.success) {
+          successCount++;
+          // Only dispatch WhatsApp and record active call on successful dispatch
+          const savedWaTpl = typeof window !== 'undefined' ? (localStorage.getItem(`whatsappMessageTemplate_${uid}`) || localStorage.getItem('whatsappMessageTemplate') || '') : '';
+          const savedBrochure = typeof window !== 'undefined' ? (localStorage.getItem(`brochureUrl_${uid}`) || localStorage.getItem('brochureUrl') || '') : '';
+          
+          try {
+            await fetch('/api/whatsapp/send', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: lead.phone,
+                leadName: lead.name,
+                message: savedWaTpl,
+                brochureUrl: savedBrochure
+              })
+            });
+          } catch (waErr) {}
 
-        store.updateContact(lead.id, { status: 'Called', stage: 'Called', lastCalled: new Date().toISOString().split('T')[0] });
+          store.addCall({
+            contactId: lead.id,
+            contactName: lead.name,
+            phone: lead.phone,
+            callerNumber: vobizVirtualNumber,
+            agentName: campaign.agentName || 'Pooja (Closer)',
+            campaignId: campaign.name,
+            duration: 45,
+            status: 'Ringing / Dispatched',
+            sentiment: '🔥 Hot Lead',
+            stage: 'Called',
+            recordingUrl: 'https://suvidha-voice-crm.vercel.app/audio/call_rec.mp3',
+            summary: `Call dispatched to ${lead.name} (${lead.phone}) with ${campaign.agentName}. Telephony Call ID: ${data.callSid || 'live'}.`,
+            transcript: `AI (${campaign.agentName}): ${campaign.script}`
+          });
+
+          store.updateContact(lead.id, { status: 'Called', stage: 'Called', lastCalled: new Date().toISOString().split('T')[0] });
+        } else {
+          failedCount++;
+          store.addCall({
+            contactId: lead.id,
+            contactName: lead.name,
+            phone: lead.phone,
+            callerNumber: vobizVirtualNumber,
+            agentName: campaign.agentName || 'Pooja (Closer)',
+            campaignId: campaign.name,
+            duration: 0,
+            status: 'Failed',
+            sentiment: '⚠️ Dispatch Failed',
+            stage: 'Failed',
+            recordingUrl: null,
+            summary: `Call failed: ${data.error || data.message || 'Telephony provider rejected call'}`,
+            transcript: 'Call could not be connected. Please verify telephony credentials in Settings.'
+          });
+        }
       } catch (e) {
-        console.error('Dialer error:', e);
+        failedCount++;
+        console.error('Dialer network error:', e);
       }
 
-      // 4-second delay between calls
+      // 3-second delay between calls
       if (i < leadList.length - 1) {
-        await new Promise(r => setTimeout(r, 4000));
+        await new Promise(r => setTimeout(r, 3000));
       }
     }
 
     store.updateCampaign(campaign.id, {
       completedCalls: leadList.length,
-      successRate: 95,
+      successRate: leadList.length > 0 ? Math.round((successCount / leadList.length) * 100) : 0,
       status: 'Completed'
     });
 
     setCampaigns(store.getCampaigns());
     setContacts(store.getContacts());
     setActiveDialer(null);
-    setCallStatus({ type: 'success', message: `🎉 Campaign "${campaign.name}" completed! All ${leadList.length} leads were called and recordings saved in Call Transcripts.` });
-    setTimeout(() => setCallStatus(null), 5000);
+
+    if (failedCount > 0 && successCount === 0) {
+      setCallStatus({ 
+        type: 'error', 
+        message: `⚠️ Call could not connect! Please verify your Vobiz Auth Token in Settings.` 
+      });
+    } else {
+      setCallStatus({ 
+        type: 'success', 
+        message: `🎉 Campaign completed: ${successCount} calls dispatched, ${failedCount} failed.` 
+      });
+    }
+    setTimeout(() => setCallStatus(null), 7000);
   };
 
   const handleDeleteCampaign = (id, name) => {

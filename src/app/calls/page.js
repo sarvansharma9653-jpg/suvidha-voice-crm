@@ -3,6 +3,15 @@ import React, { useEffect, useState, useRef } from 'react';
 import { store } from '@/lib/store';
 
 export default function CallsPage() {
+  const handleClearAllCalls = () => {
+    if (confirm('Are you sure you want to clear all call logs?')) {
+      if (typeof window !== 'undefined') {
+        const uid = localStorage.getItem('suvidha_auth_user_id') || 'default';
+        localStorage.setItem(`calls_${uid}`, JSON.stringify([]));
+      }
+      setCalls([]);
+    }
+  };
   const handleSendWhatsAppToLead = (phone, name, e) => {
     if (e) e.stopPropagation();
     const cleanNum = phone.replace(/[^0-9]/g, '');
