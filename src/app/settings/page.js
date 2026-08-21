@@ -197,7 +197,9 @@ export default function SettingsPage() {
             <div className="form-group mb-4">
               <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>Select Calling Carrier</label>
               <select className="form-control" value={provider} onChange={e => setProvider(e.target.value)}>
-                <option value="vobiz">🇮🇳 Vobiz India (+91 Indian DID Calling - Recommended)</option>
+                <option value="vapi">⚡ Vapi.ai (100% Real-Time 2-Way Conversational Voice AI on Phone Calls)</option>
+              <option value="dograh">🐶 Dograh AI (Open-Source Real-Time Voice Agent Engine)</option>
+              <option value="vobiz">🇮🇳 Vobiz India (+91 Indian DID Outbound Calling)</option>
                 <option value="twilio">🇺🇸 Twilio (Global Real Calling)</option>
                 <option value="webphone">🌐 Free In-Browser WebCall (Zero Telecom / Free Testing)</option>
               </select>

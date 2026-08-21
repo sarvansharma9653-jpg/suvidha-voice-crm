@@ -14,6 +14,102 @@ export async function POST(req) {
     let statusMessage = `🎉 Outbound Call Dispatched to ${targetNumber}! Your phone will ring shortly.`;
     let isSuccess = true;
 
+    
+    // 0. VAPI REAL-TIME 2-WAY CONVERSATIONAL PHONE ENGINE (DEEPGRAM + GEMINI + ELEVENLABS + INSTANT BARGE-IN)
+    if (selectedProvider === 'vapi') {
+      const vapiApiKey = (body.vapiApiKey || process.env.VAPI_API_KEY || '2f9388e0-90b9-4878-a91a-180a0cb934ff').trim();
+      const assistantId = (body.vapiAssistantId || process.env.VAPI_ASSISTANT_ID || '87481c66-aa13-4d21-9c65-ec5df2465222').trim();
+      const vapiPhoneNumberId = (body.vapiPhoneNumberId || '').trim();
+
+      const rawTarget = targetNumber.replace(/[^0-9]/g, '');
+      const cleanTarget91 = rawTarget.startsWith('91') ? rawTarget : `91${rawTarget.replace(/^0+/, '')}`;
+      const plusTarget = `+${cleanTarget91}`;
+
+      try {
+        console.log(`⚡ Dispatching Vapi 2-Way Conversational Call to ${plusTarget}...`);
+
+        const vapiPayload = {
+          assistantId: assistantId,
+          customer: {
+            number: plusTarget,
+            name: contactName || 'Lead'
+          }
+        };
+
+        if (vapiPhoneNumberId) {
+          vapiPayload.phoneNumberId = vapiPhoneNumberId;
+        }
+
+        const vapiRes = await fetch('https://api.vapi.ai/call/phone', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${vapiApiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(vapiPayload)
+        });
+
+        const vapiData = await vapiRes.json();
+        console.log('Vapi Call Response:', vapiRes.status, vapiData);
+
+        if (vapiRes.ok && (vapiData.id || vapiData.status)) {
+          callSid = vapiData.id || callSid;
+          statusMessage = `🎉 2-WAY REAL-TIME PHONE CALL DISPATCHED! Phone ringing on ${plusTarget} (Call ID: ${callSid})`;
+          isSuccess = true;
+        } else {
+          statusMessage = `⚠️ Vapi Notice: ${vapiData.message || JSON.stringify(vapiData)}`;
+          isSuccess = false;
+        }
+      } catch (err) {
+        console.error('Vapi Call Exception:', err);
+        statusMessage = `⚠️ Vapi Exception: ${err.message}`;
+        isSuccess = false;
+      }
+    }
+    // 0.1 DOGRAH OPEN-SOURCE REAL-TIME 2-WAY CONVERSATIONAL ENGINE
+    else if (selectedProvider === 'dograh') {
+      const dograhApiKey = (body.dograhApiKey || process.env.DOGRAH_API_KEY || 'dgr_HOjrtFJ3TBVXkUI6MVbjAZPjiEdYqPrR7QTZsXLXzaU').trim();
+      const workflowId = (body.dograhWorkflowId || process.env.DOGRAH_WORKFLOW_ID || '9487').trim();
+
+      const rawTarget = targetNumber.replace(/[^0-9]/g, '');
+      const cleanTarget91 = rawTarget.startsWith('91') ? rawTarget : `91${rawTarget.replace(/^0+/, '')}`;
+      const plusTarget = `+${cleanTarget91}`;
+
+      try {
+        console.log(`⚡ Dispatching Dograh 2-Way Conversational Call to ${plusTarget}...`);
+
+        const dograhRes = await fetch('https://api.dograh.com/v1/calls', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${dograhApiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            workflowId: workflowId,
+            phoneNumber: plusTarget,
+            variables: {
+              customerName: contactName || 'Lead',
+              projectName: 'The Shree Aangan - 85 Acres Township'
+            }
+          })
+        });
+
+        const dograhData = await dograhRes.json();
+        if (dograhRes.ok && (dograhData.id || dograhData.callId)) {
+          callSid = dograhData.id || dograhData.callId || callSid;
+          statusMessage = `🎉 DOGRAH 2-WAY CONVERSATIONAL CALL DISPATCHED to ${plusTarget}!`;
+          isSuccess = true;
+        } else {
+          statusMessage = `⚠️ Dograh: ${dograhData.message || JSON.stringify(dograhData)}`;
+          isSuccess = false;
+        }
+      } catch (err) {
+        console.error('Dograh Exception:', err);
+        statusMessage = `⚠️ Dograh Exception: ${err.message}`;
+        isSuccess = false;
+      }
+    }
+
     // 1. VOBIZ INDIA (+91) TELEPHONY OUTBOUND DISPATCH
     if (selectedProvider === 'vobiz') {
       const authId = (body.vobizAuthId || process.env.VOBIZ_AUTH_ID || 'MA_QTLGTSF9').trim();
