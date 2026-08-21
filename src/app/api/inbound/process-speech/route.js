@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 
-const defaultShreeScript = `नमस्कार जी! मैं Pooja बोल रही हूँ, The Shree Aangan Developers की तरफ से।
-Chaksu, Tonk Road पर हमारा 85 Acres का JDA Approved और RERA Registered Gated Township प्रोजेक्ट है — जहाँ Property की कीमतें हर साल 18 से 25 प्रतिशत बढ़ रही हैं!
-Jaipur Metro Phase 2 की नींव July 2026 में रख दी गई है, जिससे कीमतें 40 से 60 प्रतिशत तक और बढ़ जाएंगी।
-यह Last Chance है सही Price में लेने का — क्या आप इस Weekend हमारी Site Visit के लिए आ सकते हैं?`;
+const defaultShreeScript = `Namaskar ji! Main Pooja bol rahi hoon, The Shree Aangan Developers ki taraf se.
+Chaksu, Tonk Road par hamara 85 Acres ka JDA Approved aur RERA Registered Gated Township project hai — jahan property prices har saal 18 se 25 percent badh rahi hain!
+Jaipur Metro Phase 2 ki neev July 2026 mein rakh di gayi hai, jisse prices 40 se 60 percent tak aur badh jayengi.
+Kya aap is weekend hamari free site visit ke liye aa sakte hain?`;
 
-const defaultShreeObjections = `अगर पूछे "Price kya hai": जी, हमारे JDA Approved Plots ₹800 से ₹2,750 प्रति वर्ग फुट के बीच उपलब्ध हैं EMI Facility के साथ।
-अगर पूछे "Location kahan hai": जी, प्रोजेक्ट Chaksu, Tonk Road पर है — Jaipur से सिर्फ 25-30 km की दूरी पर NH-12 Jaipur-Kota Highway पर Sheetla Mata Mandir के पास।
-अगर पूछे "Metro": जी बिल्कुल! Jaipur Metro Phase 2 का काम शुरू हो गया है, जिससे कीमतें 40-60% और बढ़ेंगी।
-अगर पूछे "Legal / RERA": जी बिल्कुल Legal है! हमारा RERA नंबर है RAJ/P/2026/4660 और JDA Approved है।`;
+const defaultShreeObjections = `Agar customer pooche "Price kya hai": Ji, hamare JDA Approved Plots 800 se 2750 rupaye per sq ft ke beech available hain EMI facility ke sath.
+Agar pooche "Location kahan hai": Ji, project Chaksu, Tonk Road par hai — Jaipur se sirf 25-30 km ki doori par NH-12 Highway par Sheetla Mata Mandir ke paas.
+Agar pooche "Metro": Ji bilkul! Jaipur Metro Phase 2 ka kaam shuru ho chuka hai, jisse prices 40 se 60 percent aur badhengi.
+Agar pooche "Legal / RERA": Ji bilkul 100% legal hai! Hamara RERA number hai RAJ/P/2026/4660 aur project JDA Approved hai.`;
 
 export async function POST(req) {
   try {
@@ -25,15 +25,15 @@ export async function POST(req) {
       } catch(e) {}
     }
 
-    console.log(`🎙️ Live Phone Speech Detected: "${customerSpeech}"`);
+    console.log(`🎙️ [Phone Call STT] Customer Spoke: "${customerSpeech}"`);
 
     const cleanInput = (customerSpeech || '').trim();
 
     if (!cleanInput) {
       const silenceXml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Speak language="hi-IN" voice="WOMAN">
-    क्या आप मुझे सुन पा रहे हैं sir? यदि आप Shree Aangan प्रोजेक्ट की साइट विजिट या प्राइसिंग चाहते हैं, तो हम आपको व्हाट्सएप पर पूरी जानकारी भेज रहे हैं।
+  <Speak language="en-IN">
+    Kya aap mujhe sun pa rahe hain sir? Shree Aangan project ki site visit aur pricing ke liye hum aapko WhatsApp par poori details bhej rahe hain. Dhanyawaad!
   </Speak>
 </Response>`;
       return new Response(silenceXml.trim(), {
@@ -48,8 +48,8 @@ export async function POST(req) {
     if (lower.includes('senior') || lower.includes('manager') || lower.includes('admin') || lower.includes('transfer') || lower.includes('baat')) {
       const transferXml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Speak language="hi-IN" voice="WOMAN">
-    जी बिल्कुल sir! मैं आपकी कॉल तुरंत हमारे सीनियर मैनेजर को ट्रांसफर कर रही हूँ। कृपया लाइन पर बने रहें।
+  <Speak language="en-IN">
+    Ji bilkul sir! Main aapki call turant hamare senior manager ko connect kar rahi hoon. Kripya line par bane rahein.
   </Speak>
   <Wait length="1" />
   <Dial callerId="+917965854263">
@@ -62,7 +62,7 @@ export async function POST(req) {
       });
     }
 
-    // 2. REAL GEMINI LLM REASONING
+    // 2. REAL GEMINI 2.5 FLASH LLM REASONING
     let aiResponse = '';
     const geminiKey = (process.env.GEMINI_API_KEY || '').trim();
 
@@ -75,18 +75,18 @@ export async function POST(req) {
             contents: [{
               role: 'user',
               parts: [{
-                text: `Aap Pooja hain, The Shree Aangan Developers (Jaipur) ki sales consultant.
-Phone call par customer ne aapse pucha: "${cleanInput}".
-Aapko 1-2 natural, crisp Hinglish sentences mein factual aur polite jawab dena hai.
+                text: `Aap Pooja hain, The Shree Aangan Developers (Jaipur) ki sales telecaller.
+Live phone call par customer ne aapse pucha: "${cleanInput}".
+Aapko 1-2 natural, crisp Hinglish sentences mein polite aur factual jawab dena hai jaise ek Indian telecaller phone par bolti hai.
 
 FACTS:
 ${defaultShreeScript}
 ${defaultShreeObjections}
 
-Jawab Hindi mein dein:`
+Jawab Hinglish/Hindi mein dein (maximum 20 words):`
               }]
             }],
-            generationConfig: { temperature: 0.6, maxOutputTokens: 80 }
+            generationConfig: { temperature: 0.6, maxOutputTokens: 60 }
           })
         });
 
@@ -102,46 +102,50 @@ Jawab Hindi mein dein:`
 
     // Fallback if LLM offline
     if (!aiResponse) {
-      if (lower.includes('location') || lower.includes('kahan') || lower.includes('jagah')) {
-        aiResponse = 'जी बिल्कुल sir! हमारा प्रोजेक्ट Chaksu, Tonk Road पर NH-12 Highway पर Sheetla Mata Mandir के पास है। क्या मैं आपको WhatsApp पर मैप भेज दूँ?';
-      } else if (lower.includes('price') || lower.includes('rate') || lower.includes('cost') || lower.includes('kitne')) {
-        aiResponse = 'जी, हमारे JDA Approved Plots ₹800 से ₹2,750 प्रति वर्ग फुट से शुरू हैं आसान EMI के साथ। Complete Price List अभी आपके WhatsApp पर भेज रही हूँ!';
-      } else if (lower.includes('metro')) {
-        aiResponse = 'जी बिल्कुल! Jaipur Metro Phase 2 का काम शुरू हो गया है, जिससे कीमतें 40 से 60% और बढ़ेंगी!';
+      if (lower.includes('location') || lower.includes('kahan') || lower.includes('jagah') || lower.includes('address')) {
+        aiResponse = 'Ji bilkul sir! Hamara 85 Acres ka project Chaksu, Tonk Road par NH-12 Highway par Sheetla Mata Mandir ke paas hai. Kya main aapko WhatsApp par map bhej doon?';
+      } else if (lower.includes('price') || lower.includes('rate') || lower.includes('cost') || lower.includes('kitne') || lower.includes('budget')) {
+        aiResponse = 'Ji, hamare JDA Approved Plots 800 se 2750 rupaye per sq ft se shuru hain easy EMI ke sath. Complete price list abhi aapke WhatsApp par bhej rahi hoon!';
+      } else if (lower.includes('metro') || lower.includes('growth') || lower.includes('return')) {
+        aiResponse = 'Ji bilkul! Chaksu mein 18 se 25% annual growth hai aur Jaipur Metro Phase 2 ka kaam shuru ho gaya hai, jisse prices 40 se 60% aur badhengi!';
+      } else if (lower.includes('rera') || lower.includes('legal') || lower.includes('jda')) {
+        aiResponse = 'Ji 100% Legal hai sir! Hamara RERA number hai RAJ/P/2026/4660 aur project JDA Approved hai. Poora documentation clear hai.';
       } else {
-        aiResponse = 'जी बहुत बढ़िया sir! मैं आपको WhatsApp पर तुरंत प्रोजेक्ट की पूरी डिटेल्स और ब्रोशर भेज रही हूँ। क्या कल आप साइट विजिट के लिए फ्री हैं?';
+        aiResponse = 'Ji bahut badhiya sir! Main aapko WhatsApp par turant project ki poori details aur brochure bhej rahi hoon. Kya is weekend aap site visit ke liye aa sakte hain?';
       }
     }
 
     const cleanReply = aiResponse
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
 
     const actionUrl = 'https://suvidha-voice-crm.vercel.app/api/inbound/process-speech';
 
     // Loop back with GetInput for continuous two-way conversation
     const nextTurnXml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <GetInput action="${actionUrl}" method="POST" inputType="speech" language="hi-IN" speechEndTimeout="2" redirect="true">
-    <Speak language="hi-IN" voice="WOMAN">${cleanReply}</Speak>
+  <GetInput action="${actionUrl}" method="POST" inputType="speech" language="en-IN" speechEndTimeout="2" redirect="true">
+    <Speak language="en-IN">${cleanReply}</Speak>
   </GetInput>
-  <Speak language="hi-IN" voice="WOMAN">
-    धन्यवाद sir! हमने आपकी डिटेल्स नोट कर ली हैं और व्हाट्सएप पर ब्रोशर भेज दिया है।
+  <Speak language="en-IN">
+    Dhanyawaad sir! Hamne aapki details note kar li hain aur WhatsApp par brochure bhej diya hai.
   </Speak>
 </Response>`;
 
     return new Response(nextTurnXml.trim(), {
       status: 200,
       headers: {
-        'Content-Type': 'application/xml; charset=utf-8',
+        'Content-Type': 'text/xml; charset=utf-8',
         'Cache-Control': 'no-cache, no-store, must-revalidate'
       }
     });
 
   } catch (error) {
     console.error('Process speech error:', error);
-    return new Response('<Response><Speak language="hi-IN" voice="WOMAN">Shree Aangan Developers se baat karne ke liye dhanyawaad.</Speak></Response>', {
+    return new Response('<Response><Speak language="en-IN">Shree Aangan Developers se baat karne ke liye dhanyawaad.</Speak></Response>', {
       status: 200,
       headers: { 'Content-Type': 'text/xml; charset=utf-8' }
     });
