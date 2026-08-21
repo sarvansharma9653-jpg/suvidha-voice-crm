@@ -4,6 +4,7 @@ function generateInboundXml(reqUrl) {
   try {
     const url = new URL(reqUrl);
     let customScript = url.searchParams.get('script') || '';
+    let elevenKey = url.searchParams.get('elevenKey') || '';
 
     if (customScript) {
       try {
@@ -24,9 +25,10 @@ function generateInboundXml(reqUrl) {
       .replace(/[*_#`]/g, '');
 
     const encodedSpeech = encodeURIComponent(speechToSpeak);
-    const audioUrl = `https://suvidha-voice-crm.vercel.app/api/tts/stream?text=${encodedSpeech}&voice=pooja`;
+    const encodedKey = encodeURIComponent(elevenKey);
+    const audioUrl = `https://suvidha-voice-crm.vercel.app/api/tts/stream?text=${encodedSpeech}&voice=pooja${elevenKey ? `&elevenKey=${encodedKey}` : ''}`;
 
-    // 100% Human Studio Audio via <Play> tag for ElevenLabs human voice quality
+    // 100% Reliable Play XML with ElevenLabs audio stream
     const responseXml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Play>${audioUrl}</Play>

@@ -125,6 +125,7 @@ export default function CampaignsPage() {
     const vobizAuthId = typeof window !== 'undefined' ? (localStorage.getItem(`vobizAuthId_${uid}`) || localStorage.getItem('vobizAuthId') || 'MA_QTLGTSF9') : 'MA_QTLGTSF9';
     const vobizAuthToken = typeof window !== 'undefined' ? (localStorage.getItem(`vobizAuthToken_${uid}`) || localStorage.getItem('vobizAuthToken') || localStorage.getItem(`vobizApiKey_${uid}`) || localStorage.getItem('vobizApiKey') || '') : '';
     const vobizVirtualNumber = typeof window !== 'undefined' ? (localStorage.getItem(`vobizVirtualNumber_${uid}`) || localStorage.getItem('vobizVirtualNumber') || '+917965854263') : '+917965854263';
+    const savedElevenKey = typeof window !== 'undefined' ? (localStorage.getItem(`elevenLabsApiKey_${uid}`) || localStorage.getItem('elevenLabsApiKey') || '') : '';
 
     // Validate credentials before dialing
     if (provider === 'vobiz' && !vobizAuthToken) {
@@ -160,7 +161,8 @@ export default function CampaignsPage() {
             vobizAuthId,
             vobizAuthToken,
             vobizVirtualNumber,
-            callerNumber: vobizVirtualNumber
+            callerNumber: vobizVirtualNumber,
+            elevenLabsApiKey: savedElevenKey
           })
         });
 

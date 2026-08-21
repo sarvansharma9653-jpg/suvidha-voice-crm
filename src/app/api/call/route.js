@@ -48,9 +48,11 @@ export async function POST(req) {
           .trim();
 
         const encodedScript = encodeURIComponent(spokenScript);
+        const passedElevenKey = (body.elevenLabsApiKey || '').trim();
+        const encodedElevenKey = encodeURIComponent(passedElevenKey);
         const answerUrl = encodedScript 
-          ? `https://suvidha-voice-crm.vercel.app/api/inbound?script=${encodedScript}`
-          : 'https://suvidha-voice-crm.vercel.app/api/inbound';
+          ? `https://suvidha-voice-crm.vercel.app/api/inbound?script=${encodedScript}${passedElevenKey ? `&elevenKey=${encodedElevenKey}` : ''}`
+          : `https://suvidha-voice-crm.vercel.app/api/inbound${passedElevenKey ? `?elevenKey=${encodedElevenKey}` : ''}`;
 
         console.log(`📡 Vobiz API Call: AuthID=${authId}, From=${plusCaller}, To=${plusTarget}, AnswerUrl=${answerUrl}`);
 

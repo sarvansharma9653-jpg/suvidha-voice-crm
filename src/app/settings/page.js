@@ -12,6 +12,31 @@ export default function SettingsPage() {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [elevenLabsApiKey, setElevenLabsApiKey] = useState('');
   const [loading, setLoading] = useState(false);
+  const [elevenValidating, setElevenValidating] = useState(false);
+  const [elevenStatus, setElevenStatus] = useState(null);
+
+  const handleValidateElevenKey = async () => {
+    if (!elevenLabsApiKey.trim()) {
+      alert('Please enter your ElevenLabs API Key first!');
+      return;
+    }
+    setElevenValidating(true);
+    setElevenStatus(null);
+
+    try {
+      const res = await fetch('/api/tts/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: elevenLabsApiKey.trim() })
+      });
+      const data = await res.json();
+      setElevenStatus(data);
+    } catch (e) {
+      setElevenStatus({ success: false, error: e.message });
+    } finally {
+      setElevenValidating(false);
+    }
+  };
   const [fetching, setFetching] = useState(true);
   const [showSavedModal, setShowSavedModal] = useState(false);
   const [savedDetails, setSavedDetails] = useState(null);
