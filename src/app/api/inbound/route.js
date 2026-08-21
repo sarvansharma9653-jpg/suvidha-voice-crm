@@ -21,21 +21,18 @@ function generateInboundXml(reqUrl) {
     const defaultSpeech = 'नमस्कार जी! मैं Pooja बोल रही हूँ, The Shree Aangan Developers की तरफ से। Chaksu, Tonk Road पर हमारे 85 Acres के JDA Approved और RERA Registered Gated Township प्रोजेक्ट के लिए कॉल कर रही हूँ। क्या आप इस वीकेंड साइट विजिट के लिए आ सकते हैं?';
 
     const speechToSpeak = (customScript.trim() || defaultSpeech)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
       .replace(/[*_#`]/g, '');
 
-    // 100% Guaranteed Zero-Drop Plivo / Vobiz Standard XML
-    // Uses standard voice="WOMAN" with language="hi-IN" supported on ALL Vobiz/Plivo trunks
+    const encodedSpeech = encodeURIComponent(speechToSpeak);
+    const audioUrl = `https://suvidha-voice-crm.vercel.app/api/tts/stream?text=${encodedSpeech}&voice=pooja`;
+
+    // 100% Human Studio Audio via <Play> tag for ElevenLabs human voice quality
     const responseXml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Speak language="hi-IN" voice="WOMAN">
-    ${speechToSpeak}
-  </Speak>
+  <Play>${audioUrl}</Play>
   <Wait length="2" />
   <Speak language="hi-IN" voice="WOMAN">
-    पूरी जानकारी, मैप और साइट विजिट के लिए हम आपको व्हाट्सएप पर ब्रोशर भेज रहे हैं। आपका बहुत-बहुत धन्यवाद!
+    साइट विजिट और पूरी जानकारी के लिए हम आपको व्हाट्सएप पर ब्रोशर भेज रहे हैं। आपका बहुत-बहुत धन्यवाद!
   </Speak>
   <Wait length="3" />
 </Response>`;
