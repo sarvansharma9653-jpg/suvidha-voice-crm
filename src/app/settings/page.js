@@ -39,6 +39,7 @@ export default function SettingsPage() {
   };
   const [fetching, setFetching] = useState(true);
   const [showSavedModal, setShowSavedModal] = useState(false);
+  const [voiceSavedToast, setVoiceSavedToast] = useState(null);
   const [savedDetails, setSavedDetails] = useState(null);
 
   useEffect(() => {
@@ -112,7 +113,7 @@ export default function SettingsPage() {
   const handleSaveVoice = (e) => {
     e.preventDefault();
     if (!elevenLabsApiKey.trim()) {
-      alert('Please enter your ElevenLabs API Key!');
+      setVoiceSavedToast({ type: 'error', message: '⚠️ Please enter your ElevenLabs API Key first!' });
       return;
     }
     const uid = (typeof window !== 'undefined' && localStorage.getItem('suvidha_auth_user_id')) || 'default';
@@ -125,7 +126,9 @@ export default function SettingsPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ elevenLabsApiKey: elevenLabsApiKey.trim() })
     }).catch(console.error);
-    alert('🎉 ElevenLabs Voice Key Saved Successfully! Available in Incognito and across all sessions.');
+
+    setVoiceSavedToast({ type: 'success', message: '🎉 ElevenLabs Voice API Key Saved Successfully & Synced with Server!' });
+    setTimeout(() => setVoiceSavedToast(null), 5000);
   };
 
   const handleClearAll = () => {
