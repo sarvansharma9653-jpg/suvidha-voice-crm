@@ -3,6 +3,14 @@ import React, { useEffect, useState, useRef } from 'react';
 import { store } from '@/lib/store';
 
 export default function CallsPage() {
+  const handleSendWhatsAppToLead = (phone, name, e) => {
+    if (e) e.stopPropagation();
+    const cleanNum = phone.replace(/[^0-9]/g, '');
+    const target = cleanNum.startsWith('91') ? cleanNum : `91${cleanNum.replace(/^0+/, '')}`;
+    const defaultMsg = `नमस्ते ${name || 'जी'}! 🙏\n\nThe Shree Aangan Developers की तरफ से कॉल की पूरी जानकारी और ब्रोशर:\n\n🏡 *The Shree Aangan - 85 Acres Township (Jaipur)*\n📍 Chaksu, Tonk Road, NH-12\n📄 Brochure: https://drive.google.com/file/d/103owbyObLS3CVyerjrP_Ryr_OVlU2QDG/view\n\nक्या इस वीकेंड आप साइट विजिट के लिए आ सकते हैं?`;
+    const waLink = `https://api.whatsapp.com/send?phone=${target}&text=${encodeURIComponent(defaultMsg)}`;
+    window.open(waLink, '_blank');
+  };
   const [calls, setCalls] = useState([]);
   const [expandedCall, setExpandedCall] = useState(null);
   const [filter, setFilter] = useState('All');
