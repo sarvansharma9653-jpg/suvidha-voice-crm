@@ -11,7 +11,7 @@ export default function SettingsPage() {
   const [authToken, setAuthToken] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [elevenLabsApiKey, setElevenLabsApiKey] = useState('');
-  const [deepgramApiKey, setDeepgramApiKey] = useState('');
+  const [deepgramApiKey, setDeepgramApiKey] = useState('bdecaf66610d26ffe9d5ca2e8521e9daaa4814ae');
   const [loading, setLoading] = useState(false);
   const [elevenValidating, setElevenValidating] = useState(false);
   const [elevenStatus, setElevenStatus] = useState(null);

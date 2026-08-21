@@ -8,7 +8,7 @@ let serverConfigStore = {
   vobizVirtualNumber: '+917965854263',
   callerNumber: '+917965854263',
   elevenLabsApiKey: '',
-  deepgramApiKey: '',
+  deepgramApiKey: process.env.DEEPGRAM_API_KEY || 'bdecaf66610d26ffe9d5ca2e8521e9daaa4814ae',
   ultraMsgInstanceId: '',
   ultraMsgToken: '',
   evolutionApiUrl: '',
